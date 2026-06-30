@@ -1,0 +1,94 @@
+// 普攻與大招定義。每個技能 (caster, ctx) 直接套用效果並透過 ctx.emit 發事件。
+// ctx = { allies, enemies, rng, emit }
+import { computeDamage } from './damage.js';
+import { pickMeleeTarget, aliveEnemies, lowestHpAlly } from './targeting.js';
+
+// 大招倍率與數值（佔位平衡常數）
+export const ULT = {
+  burstMult: 2.6, // 輸出單體爆發
+  guardReduction: 0.5, // 坦克減傷（受傷 x0.5）
+  guardDuration: 6, // 秒
+  guardSelfHeal: 0.15, // 自療 maxHp 比例
+  healPower: 3.0, // 輔助治療 = atk * 此值
+  healSplash: 0.4, // 其餘隊友獲得主治療量的比例
+};
+
+// 套用一次傷害並處理能量/死亡事件。
+function applyDamage(attacker, target, mult, ctx, skill) {
+  const guardMult = activeGuardMult(target);
+  const res = computeDamage(attacker, target, mult, ctx.rng, guardMult);
+  const dealt = target.takeDamage(res.amount);
+  // 受擊回能
+  target.gainEnergy(target.classDef.energyOnHitTaken);
+  ctx.emit('damage', {
+    source: attacker,
+    target,
+    amount: dealt,
+    skill,
+    isAdvantage: res.isAdvantage,
+    isDisadvantage: res.isDisadvantage,
+  });
+  if (!target.alive) ctx.emit('death', { unit: target });
+}
+
+// 防守方目前的減傷倍率（坦克 guard buff）。
+function activeGuardMult(unit) {
+  const g = unit.buffs?.find((b) => b.type === 'guard');
+  return g ? g.mult : 1;
+}
+
+// ---- 普攻：前排優先單體 ----
+export function normalAttack(caster, ctx) {
+  const target = pickMeleeTarget(ctx.enemies, ctx.rng);
+  if (!target) return;
+  ctx.emit('attack', { attacker: caster, target, skill: 'normal' });
+  applyDamage(caster, target, 1.0, ctx, 'normal');
+  caster.gainEnergy(caster.classDef.energyOnAction);
+}
+
+// ---- 大招 ----
+export const ULTIMATES = {
+  // 輸出：對前排優先目標造成高倍率爆發
+  burst(caster, ctx) {
+    const target = pickMeleeTarget(ctx.enemies, ctx.rng);
+    if (!target) return;
+    ctx.emit('ultimate', { caster, skill: 'burst', target });
+    applyDamage(caster, target, ULT.burstMult, ctx, 'burst');
+  },
+
+  // 坦克：全體我方減傷 + 自療
+  guard(caster, ctx) {
+    ctx.emit('ultimate', { caster, skill: 'guard' });
+    for (const ally of ctx.allies) {
+      if (!ally.alive) continue;
+      ally.buffs = ally.buffs || [];
+      // 覆蓋既有 guard，刷新時間
+      ally.buffs = ally.buffs.filter((b) => b.type !== 'guard');
+      ally.buffs.push({ type: 'guard', mult: ULT.guardReduction, time: ULT.guardDuration });
+    }
+    const healed = caster.heal(caster.maxHp * ULT.guardSelfHeal);
+    if (healed > 0) ctx.emit('heal', { source: caster, target: caster, amount: healed });
+  },
+
+  // 輔助：治療最低血隊友 + 其餘小量回復
+  heal(caster, ctx) {
+    const main = lowestHpAlly(ctx.allies);
+    if (!main) return;
+    ctx.emit('ultimate', { caster, skill: 'heal', target: main });
+    const power = caster.atk * ULT.healPower;
+    const mainHealed = main.heal(power);
+    if (mainHealed > 0) ctx.emit('heal', { source: caster, target: main, amount: mainHealed });
+    for (const ally of ctx.allies) {
+      if (!ally.alive || ally === main) continue;
+      const h = ally.heal(power * ULT.healSplash);
+      if (h > 0) ctx.emit('heal', { source: caster, target: ally, amount: h });
+    }
+  },
+};
+
+// 取得單位的大招行為（依職業）。
+export function ultimateFor(unit) {
+  return ULTIMATES[unit.classDef.ultimate] || ULTIMATES.burst;
+}
+
+export { aliveEnemies };

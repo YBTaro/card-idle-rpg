@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>卡牌每日養成 · 自動戰鬥</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🃏</text></svg>"
+    />
+  </head>
+  <body>
+    <div id="app">
+      <!-- 頂部 HUD：貨幣 + 每日領取 + 戰鬥速度 -->
+      <header id="hud"></header>
+
+      <!-- 分頁切換 -->
+      <nav id="tabs"></nav>
+
+      <!-- 主畫面容器：戰鬥 / 角色 / 抽卡 -->
+      <main id="screens">
+        <section id="screen-battle" class="screen">
+          <div id="battle-canvas"></div>
+          <div id="battle-status"></div>
+        </section>
+        <section id="screen-roster" class="screen"></section>
+        <section id="screen-gacha" class="screen"></section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
