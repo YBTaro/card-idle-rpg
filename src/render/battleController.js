@@ -51,6 +51,17 @@ export class BattleController {
     this.speed = x;
   }
 
+  // 快轉當前戰鬥到結束（不逐格動畫），再刷新一次畫面。battleEnd 事件照常觸發結算。
+  skip() {
+    if (!this.engine || this.engine.over) return;
+    let guard = 0;
+    while (!this.engine.over && guard < 100000) {
+      this.engine.step();
+      guard += 1;
+    }
+    this.scene?.renderTick();
+  }
+
   _onEnd(winner) {
     const s = store.state;
     if (winner === 0) {
