@@ -9,8 +9,9 @@ import { levelUp, levelUpCost, canLevelUp, MAX_LEVEL } from '../systems/leveling
 import {
   isInFormation,
   toggleFormation,
-  toggleRow,
+  setPosition,
   formationSlot,
+  positionTaken,
   MAX_FORMATION,
 } from '../systems/formation.js';
 
@@ -33,34 +34,30 @@ export class RosterUI {
       el('p', { class: 'section-title', text: `出戰陣容（${store.state.formation.length}/${MAX_FORMATION}）` })
     );
     const formation = el('div', { class: 'formation' });
-    for (const row of ['front', 'back']) {
+    const rows = [
+      { label: '前排', positions: [1, 2, 3] },
+      { label: '後排', positions: [4, 5, 6] },
+    ];
+    for (const { label, positions } of rows) {
       const rowEl = el('div', { class: 'formation-row' }, [
-        el('div', { class: 'row-label', text: row === 'front' ? '前排' : '後排' }),
+        el('div', { class: 'row-label', text: label }),
       ]);
-      const members = store.state.formation.filter((e) => e.row === row);
-      if (members.length === 0) {
-        rowEl.appendChild(el('div', { class: 'slot empty', text: '（空）' }));
-      }
-      for (const entry of members) {
+      for (const pos of positions) {
+        const entry = store.state.formation.find((e) => e.pos === pos);
+        if (!entry) {
+          rowEl.appendChild(el('div', { class: 'slot empty', text: `${pos}・（空）` }));
+          continue;
+        }
         const inst = store.getCard(entry.instanceId);
-        if (!inst) continue;
-        const card = CARDS[inst.cardId];
+        const card = inst ? CARDS[inst.cardId] : null;
         rowEl.appendChild(
-          el(
-            'div',
-            {
-              class: 'slot filled',
-              title: '點擊切換前/後排',
-              onClick: () => {
-                toggleRow(entry.instanceId);
-                this._changed();
-              },
-            },
-            [
-              el('span', { class: 'slot-name', text: card.name }),
-              el('span', { class: 'slot-sub', text: `Lv${inst.level}・${CLASSES[card.class].label}` }),
-            ]
-          )
+          el('div', { class: 'slot filled', title: '點擊下陣' , onClick: () => {
+            toggleFormation(entry.instanceId);
+            this._changed();
+          } }, [
+            el('span', { class: 'slot-name', text: card ? card.name : '?' }),
+            el('span', { class: 'slot-sub', text: card ? `${pos}・Lv${inst.level}・${CLASSES[card.class].label}` : '' }),
+          ])
         );
       }
       formation.appendChild(rowEl);
@@ -99,7 +96,7 @@ export class RosterUI {
         el('span', { class: `badge element ${card.element}`, text: ELEMENT_LABEL[card.element] }),
         el('span', { class: 'badge class', text: CLASSES[card.class].label }),
       ]),
-      el('div', { class: 'stats', html: `❤ <b>${st.hp}</b>　⚔ <b>${st.atk}</b>　🛡 <b>${st.def}</b>　⚡ <b>${st.spd}</b>` }),
+      el('div', { class: 'stats', html: `❤ <b>${st.hp}</b>　⚔ <b>${st.atk}</b>　🛡 <b>${st.def}</b>` }),
     ]);
 
     const actions = el('div', { class: 'card-actions' });
@@ -123,20 +120,27 @@ export class RosterUI {
         text: inForm ? '下陣' : '上陣',
         class: inForm ? '' : 'primary',
         onClick: () => {
-          const r = toggleFormation(inst.instanceId, CLASSES[card.class].preferredRow);
+          const r = toggleFormation(inst.instanceId, null);
           if (!r.ok && r.reason === 'full') toast(`陣容已滿（${MAX_FORMATION} 人）`);
           this._changed();
         },
       })
     );
 
-    // 前/後排切換
+    // 換位置
     if (inForm) {
       actions.appendChild(
         el('button', {
-          text: slot.row === 'front' ? '→後排' : '→前排',
+          text: '換位置',
           onClick: () => {
-            toggleRow(inst.instanceId);
+            const cur = formationSlot(inst.instanceId).pos;
+            // 找下一個未被占用的位置（環狀）
+            let next = cur;
+            for (let i = 1; i <= 6; i++) {
+              const cand = ((cur - 1 + i) % 6) + 1;
+              if (!positionTaken(cand) || cand === cur) { next = cand; break; }
+            }
+            setPosition(inst.instanceId, next);
             this._changed();
           },
         })
