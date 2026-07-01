@@ -53,3 +53,7 @@ export function dotEntries(unit) {
 export function hasControl(unit, name) {
   return !!unit.buffs && unit.buffs.some((b) => b.kind === 'control' && b.control === name);
 }
+
+export function clearAuras(unit) {
+  if (unit.buffs) unit.buffs = unit.buffs.filter((b) => !b.aura);
+}

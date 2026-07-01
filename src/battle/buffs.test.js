@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { applyBuff, tickBuffs, resolve, absorbWithShields, dotEntries } from './buffs.js';
 import { hasControl } from './buffs.js';
+import { clearAuras } from './buffs.js';
 
 const u = () => ({ buffs: [] });
 
@@ -63,5 +64,17 @@ describe('control buff', () => {
     expect(hasControl(u, 'stun')).toBe(true);
     expect(hasControl(u, 'silence')).toBe(false);
     expect(hasControl({}, 'stun')).toBe(false);
+  });
+});
+
+describe('clearAuras', () => {
+  it('只移除 aura、保留其他 buff', () => {
+    const u = { buffs: [
+      { kind: 'stat', stat: 'atk', op: 'add', value: 5 },
+      { kind: 'stat', stat: 'def', op: 'mul', value: 1.2, aura: true },
+    ] };
+    clearAuras(u);
+    expect(u.buffs.length).toBe(1);
+    expect(u.buffs[0].aura).toBeUndefined();
   });
 });
