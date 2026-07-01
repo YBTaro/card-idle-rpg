@@ -103,6 +103,12 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
       case 'energy':
         u.gainEnergy(effect.amount);
         break;
+      case 'control':
+        applyBuff(u, {
+          kind: 'control', control: effect.control,
+          duration: effect.duration, key: effect.key, stackable: effect.stackable,
+        });
+        break;
     }
   }
 }

@@ -49,3 +49,7 @@ export function absorbWithShields(unit, amount) {
 export function dotEntries(unit) {
   return unit.buffs ? unit.buffs.filter((b) => b.kind === 'dot') : [];
 }
+
+export function hasControl(unit, name) {
+  return !!unit.buffs && unit.buffs.some((b) => b.kind === 'control' && b.control === name);
+}
