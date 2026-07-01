@@ -5,7 +5,7 @@ import { Rng } from '../core/rng.js';
 import { ENERGY_MAX } from './unit.js';
 import { TURN_SEQUENCE } from './positions.js';
 import { normalAttack, castSkill, skillFor } from './skills.js';
-import { tickBuffs, dotEntries } from './buffs.js';
+import { tickBuffs, dotEntries, hasControl } from './buffs.js';
 import { dealDot } from './effects.js';
 
 export const MAX_ROUNDS = 100; // 回合上限，防打不完
@@ -39,8 +39,12 @@ export class BattleEngine {
     return this.teams[team].find((u) => u.alive && u.pos === pos) || null;
   }
 
+  _canCast(u) {
+    return u.alive && u.energy >= ENERGY_MAX && !hasControl(u, 'silence') && !hasControl(u, 'stun');
+  }
+
   _anyoneCharged() {
-    return this.units.some((u) => u.alive && u.energy >= ENERGY_MAX);
+    return this.units.some((u) => this._canCast(u));
   }
 
   _advanceToActor(startIdx) {
@@ -90,7 +94,7 @@ export class BattleEngine {
       const [team, pos] = TURN_SEQUENCE[this.cursor];
       this.cursor += 1;
       const u = this._unitAt(team, pos);
-      if (u && u.energy >= ENERGY_MAX) {
+      if (u && this._canCast(u)) {
         this._act(u, true);
         this._checkEnd();
         this._skillCastThisPass = true;
@@ -128,7 +132,11 @@ export class BattleEngine {
     for (const dot of dotEntries(u)) dealDot(u, dot, ctx);
     if (!u.alive) return;
     this.emit('turn', { unit: u });
-    normalAttack(u, ctx);
+    if (hasControl(u, 'stun')) {
+      this.emit('stunned', { unit: u });
+    } else {
+      normalAttack(u, ctx);
+    }
     if (tickBuffs(u)) this.emit('buffchange', { unit: u });
   }
 
