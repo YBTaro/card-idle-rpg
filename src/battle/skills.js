@@ -7,7 +7,7 @@ import { singleEnemyByColumn, lowestHpAlly } from './targeting.js';
 export const ULT = {
   burstMult: 2.6, // 輸出單體爆發
   guardReduction: 0.5, // 坦克減傷（受傷 x0.5）
-  guardDuration: 6, // 秒
+  guardDuration: 2, // 回合
   guardSelfHeal: 0.15, // 自療 maxHp 比例
   healPower: 3.0, // 輔助治療 = atk * 此值
   healSplash: 0.4, // 其餘隊友獲得主治療量的比例
@@ -70,7 +70,7 @@ export const ULTIMATES = {
       ally.buffs = ally.buffs || [];
       // 覆蓋既有 guard，刷新時間
       ally.buffs = ally.buffs.filter((b) => b.type !== 'guard');
-      ally.buffs.push({ type: 'guard', mult: ULT.guardReduction, time: ULT.guardDuration });
+      ally.buffs.push({ type: 'guard', mult: ULT.guardReduction, rounds: ULT.guardDuration });
     }
     const healed = caster.heal(caster.maxHp * ULT.guardSelfHeal);
     if (healed > 0) ctx.emit('heal', { source: caster, target: caster, amount: healed });

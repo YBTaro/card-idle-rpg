@@ -2,7 +2,7 @@
 // 每幀依 Unit 狀態刷新 HP / ATB / 能量條。與引擎以事件解耦。
 import { Container, Graphics, Text } from 'pixi.js';
 import { STAGE_W, STAGE_H } from './pixiApp.js';
-import { ATB_MAX, ENERGY_MAX } from '../battle/unit.js';
+import { ENERGY_MAX } from '../battle/unit.js';
 import { lunge, hitFlash, ultPulse, floatText, deathFade, resetVisual, killFx } from './fx.js';
 
 const ELEMENT_COLOR = {
@@ -118,8 +118,7 @@ export class BattleScene {
       const g = sprite._bars;
       g.clear();
       this._bar(g, 0, u.hpRatio, 0x57d77a, 0x2a3b30); // HP
-      this._bar(g, 9, u.atb / ATB_MAX, 0x6ca8ff, 0x202a3a); // ATB
-      this._bar(g, 18, u.energy / ENERGY_MAX, 0xf5c451, 0x33301f); // 能量
+      this._bar(g, 9, u.energyRatio, 0xf5c451, 0x33301f); // 能量
     }
   }
 

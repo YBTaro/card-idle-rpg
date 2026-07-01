@@ -1,8 +1,7 @@
-// 戰鬥單位：封裝 hp / atb / energy 與衍生數值。純資料 + 小方法，不碰渲染。
+// 戰鬥單位：封裝 hp / energy 與衍生數值。純資料 + 小方法，不碰渲染。
 import { CLASSES } from '../data/classes.js';
 import { rowOf, columnOf } from './positions.js';
 
-export const ATB_MAX = 500; // Task 6 之後移除
 export const ENERGY_MAX = 100;
 
 let _uidSeq = 1;
@@ -24,7 +23,6 @@ export class Unit {
     this.def = stats.def;
     this.spd = stats.spd; // Task 9 移除
 
-    this.atb = 0; // Task 6 移除
     this.energy = 0;
   }
 

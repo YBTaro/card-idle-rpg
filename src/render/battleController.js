@@ -8,6 +8,7 @@ import { Rng } from '../core/rng.js';
 
 export const WIN_GOLD = 60; // 勝利掛機獎勵（佔位）
 const RESTART_DELAY = 1.4; // 秒
+const STEP_INTERVAL = 0.35; // 每個動作間隔（秒），再除以速度
 
 export class BattleController {
   constructor(app, statusEl) {
@@ -18,6 +19,7 @@ export class BattleController {
     this.scene = null;
     this._cooldown = 0;
     this._lastResult = '';
+    this._stepAccum = 0;
 
     this.app.ticker.add(this._tick, this);
     this.start();
@@ -78,7 +80,13 @@ export class BattleController {
       return;
     }
 
-    this.engine.update(dt * this.speed);
+    this._stepAccum += dt * this.speed;
+    let guard = 0;
+    while (this._stepAccum >= STEP_INTERVAL && this.engine && !this.engine.over && guard < 50) {
+      this._stepAccum -= STEP_INTERVAL;
+      this.engine.step();
+      guard += 1;
+    }
     this.scene?.renderTick();
     this._renderStatus();
   }
@@ -88,7 +96,7 @@ export class BattleController {
     const a = e.teams[0].filter((u) => u.alive).length;
     const b = e.teams[1].filter((u) => u.alive).length;
     const stage = store.state.progress.stage || 1;
-    this._setStatus(`關卡 ${stage}　我方 ${a} vs 敵方 ${b}　|　${e.elapsed.toFixed(1)}s`);
+    this._setStatus(`關卡 ${stage}　我方 ${a} vs 敵方 ${b}　|　回合 ${e.round}`);
   }
 
   _setStatus(text) {
