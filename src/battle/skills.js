@@ -25,10 +25,60 @@ export const SKILLS = {
       { type: 'heal', power: 1.2, scope: 'alliesExceptTarget' },
     ],
   },
+  infernoNova: { name: '焚天', target: 'enemyFrontRow', effects: [
+    { type: 'damage', mult: 1.8, scope: 'target' },
+    { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target' },
+  ]},
+  moltenBulwark: { name: '熔壁', effects: [
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'shield', power: 1.5, duration: 3, scope: 'allAllies' },
+  ]},
+  galeAssault: { name: '疾襲', target: 'enemyBackRow', effects: [
+    { type: 'damage', mult: 2.2, scope: 'target' },
+  ]},
+  windsong: { name: '風歌', effects: [
+    { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.5, duration: 3, scope: 'allAllies' },
+    { type: 'heal', power: 1.0, scope: 'allAllies' },
+  ]},
+  tidalPrison: { name: '潮牢', target: 'enemyColumn', effects: [
+    { type: 'damage', mult: 1.6, scope: 'target' },
+    { type: 'control', control: 'silence', duration: 2, scope: 'target' },
+  ]},
+  dragonGuard: { name: '龍護', effects: [
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.6, duration: 2, key: 'guard', scope: 'allAllies' },
+    { type: 'shield', power: 2.0, duration: 3, scope: 'self' },
+  ]},
+  radiantGrace: { name: '聖恩', target: 'lowestHpAlly', effects: [
+    { type: 'heal', power: 3.5, scope: 'target' },
+    { type: 'buff', stat: 'critChance', op: 'add', value: 0.2, duration: 2, scope: 'allAllies' },
+  ]},
+  dawnStrike: { name: '曙擊', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 2.8, scope: 'target' },
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'self' },
+  ]},
+  shadowExecute: { name: '影誅', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 3.0, scope: 'target' },
+    { type: 'control', control: 'stun', duration: 1, scope: 'target' },
+  ]},
+  gravePact: { name: '墓約', effects: [
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'buff', stat: 'atk', op: 'mul', value: 0.7, duration: 2, scope: 'allEnemies' },
+  ]},
 };
 
 // cardId → skillId（Task 2 填入 10 招）
-export const CARD_SKILLS = {};
+export const CARD_SKILLS = {
+  ifrit: 'infernoNova',
+  emberguard: 'moltenBulwark',
+  zephyr: 'galeAssault',
+  galewind: 'windsong',
+  tidecaller: 'tidalPrison',
+  aegis: 'dragonGuard',
+  seraph: 'radiantGrace',
+  dawnblade: 'dawnStrike',
+  nightreaper: 'shadowExecute',
+  gravewarden: 'gravePact',
+};
 
 export function skillFor(unit) {
   return CARD_SKILLS[unit.cardId] ?? unit.classDef.ultimate;
