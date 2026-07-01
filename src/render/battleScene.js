@@ -1,5 +1,5 @@
-// 戰鬥場景：用佔位圖形畫出 5v5 前後排，訂閱 engine 事件播放 GSAP 特效，
-// 每幀依 Unit 狀態刷新 HP / ATB / 能量條。與引擎以事件解耦。
+// 戰鬥場景：6 固定位置(前3後3)，訂閱 engine 事件播放 GSAP 特效，
+// 每幀依 Unit 狀態刷新 HP / 能量條。與引擎以事件解耦。
 import { Container, Graphics, Text } from 'pixi.js';
 import { STAGE_W, STAGE_H } from './pixiApp.js';
 import { ENERGY_MAX } from '../battle/unit.js';
@@ -42,12 +42,13 @@ export class BattleScene {
     this.root.addChild(bg);
   }
 
-  _layoutFor(team, row, indexInRow, rowCount) {
-    // 欄位 x：玩家(0)在左、敵方(1)在右；前排靠中央。
-    const cols =
-      team === 0 ? { back: 150, front: 330 } : { front: STAGE_W - 330, back: STAGE_W - 150 };
+  _layoutFor(team, pos) {
+    const row = pos <= 3 ? 'front' : 'back';
+    const cols = team === 0 ? { back: 150, front: 330 } : { front: STAGE_W - 330, back: STAGE_W - 150 };
     const x = cols[row];
+    const indexInRow = row === 'front' ? pos - 1 : pos - 4; // 0..2
     const spacing = 92;
+    const rowCount = 3;
     const totalH = (rowCount - 1) * spacing;
     const y = STAGE_H / 2 - totalH / 2 + indexInRow * spacing;
     return { x, y };
@@ -55,18 +56,15 @@ export class BattleScene {
 
   _buildUnits() {
     for (const team of [0, 1]) {
-      for (const row of ['front', 'back']) {
-        const inRow = this.engine.teams[team].filter((u) => u.row === row);
-        inRow.forEach((unit, i) => {
-          const { x, y } = this._layoutFor(team, row, i, inRow.length);
-          const sprite = this._makeSprite(unit);
-          sprite.x = x;
-          sprite.y = y;
-          sprite._homeX = x;
-          sprite._homeY = y;
-          this.root.addChild(sprite);
-          this.sprites.set(unit.uid, sprite);
-        });
+      for (const unit of this.engine.teams[team]) {
+        const { x, y } = this._layoutFor(team, unit.pos);
+        const sprite = this._makeSprite(unit);
+        sprite.x = x;
+        sprite.y = y;
+        sprite._homeX = x;
+        sprite._homeY = y;
+        this.root.addChild(sprite);
+        this.sprites.set(unit.uid, sprite);
       }
     }
   }

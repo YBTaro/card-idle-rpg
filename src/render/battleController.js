@@ -39,6 +39,7 @@ export class BattleController {
     this.scene = new BattleScene(this.app, this.engine);
     this.engine.on('battleEnd', ({ winner }) => this._onEnd(winner));
     this._cooldown = 0;
+    this._stepAccum = 0;
   }
 
   // 陣容/等級變更後呼叫，重啟當前戰鬥。
