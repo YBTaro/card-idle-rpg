@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { lowestHpAlly, singleEnemyByColumn, SELECTORS } from './targeting.js';
 import { makeUnit } from './testHelpers.js';
+import { applyBuff } from './buffs.js';
 
 describe('治療目標', () => {
   it('挑血量比例最低的存活隊友', () => {
@@ -42,6 +43,23 @@ describe('直行選擇器 singleEnemyByColumn', () => {
     const es = enemies([1]);
     es[0].takeDamage(es[0].hp);
     expect(singleEnemyByColumn(makeUnit({ team: 0, pos: 1 }), es)).toBe(null);
+  });
+});
+
+describe('嘲諷（單體選敵）', () => {
+  it('有嘲諷者時單體攻擊指向嘲諷者', () => {
+    const attacker = makeUnit({ team: 0, pos: 1 }); // 直行A → 平常打 pos1
+    const e1 = makeUnit({ team: 1, pos: 1, name: 'e1' });
+    const e2 = makeUnit({ team: 1, pos: 2, name: 'e2' });
+    applyBuff(e2, { kind: 'control', control: 'taunt', duration: 2 });
+    expect(singleEnemyByColumn(attacker, [e1, e2]).name).toBe('e2');
+  });
+
+  it('無嘲諷時照原本規則（直行A → pos1）', () => {
+    const attacker = makeUnit({ team: 0, pos: 1 });
+    const e1 = makeUnit({ team: 1, pos: 1, name: 'e1' });
+    const e2 = makeUnit({ team: 1, pos: 2, name: 'e2' });
+    expect(singleEnemyByColumn(attacker, [e1, e2]).name).toBe('e1');
   });
 });
 

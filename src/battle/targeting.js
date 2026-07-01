@@ -1,5 +1,6 @@
 // 選敵邏輯。直行對位優先：本行 → 往小號 → 往大號。
 import { columnOf, rowOf } from './positions.js';
+import { hasControl } from './buffs.js';
 
 // 直行偏好序：本行 → 往小號 → 往大號（值為前排位置號，後排 +3）
 const COLUMN_PREF = {
@@ -14,16 +15,18 @@ function aliveInRowT(enemies, row) {
 
 // 普攻預設選擇器：直行對位、前排優先、缺位往小號靠、前排全空才打後排。
 export function singleEnemyByColumn(attacker, enemies) {
+  const taunters = enemies.filter((u) => u.alive && hasControl(u, 'taunt'));
+  const pool = taunters.length ? taunters : enemies;
   const col = columnOf(attacker.pos);
   for (const row of ['front', 'back']) {
-    const pool = aliveInRowT(enemies, row);
-    if (pool.length === 0) continue; // 該排全空 → 換下一排
+    const inRow = pool.filter((u) => u.alive && rowOf(u.pos) === row);
+    if (inRow.length === 0) continue; // 該排全空 → 換下一排
     const offset = row === 'front' ? 0 : 3;
     for (const c of COLUMN_PREF[col]) {
-      const hit = pool.find((u) => u.pos === c + offset);
+      const hit = inRow.find((u) => u.pos === c + offset);
       if (hit) return hit;
     }
-    return pool[0]; // 保險（理論上不會走到）
+    return inRow[0]; // 保險（理論上不會走到）
   }
   return null;
 }
