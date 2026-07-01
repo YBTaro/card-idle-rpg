@@ -61,13 +61,14 @@ describe('BattleEngine（回合制）', () => {
     expect(advDmg).toBeGreaterThan(disDmg);
   });
 
-  it('坦克技能給全隊減傷 buff', () => {
+  it('坦克技能給全隊減傷 buff（dmgTaken stat）', () => {
     const tank = makeUnit({ team: 0, pos: 1, class: 'tank', name: 'tank', energy: ENERGY_MAX });
     const ally = makeUnit({ team: 0, pos: 2, class: 'dps', name: 'ally' });
     const foe = makeUnit({ team: 1, pos: 1, hp: 99999, name: 'foe' });
     const engine = new BattleEngine([tank, ally], [foe], { rng: new Rng(5) });
-    for (let i = 0; i < 6; i += 1) engine.step();
-    expect(ally.buffs?.some((b) => b.type === 'guard')).toBe(true);
+    engine.step(); // tank 普攻（滿氣）→ 中斷
+    engine.step(); // 技能階段：tank 放 guard
+    expect(ally.buffs?.some((b) => b.key === 'guard' && b.stat === 'dmgTaken')).toBe(true);
   });
 
   it('達回合上限依存活血量判定（同分平手）', () => {

@@ -5,6 +5,7 @@ import { Rng } from '../core/rng.js';
 import { ENERGY_MAX } from './unit.js';
 import { TURN_SEQUENCE } from './positions.js';
 import { normalAttack, ultimateFor } from './skills.js';
+import { tickBuffs } from './buffs.js';
 
 export const MAX_ROUNDS = 100; // 回合上限，防打不完
 export const MAX_SKILL_PASSES = 50; // 技能階段掃描上限，防死迴圈
@@ -64,7 +65,6 @@ export class BattleEngine {
 
     if (idx <= this._lastActedIdx) {
       this.round += 1;
-      this._tickRoundBuffs();
       if (this.round >= MAX_ROUNDS) { this._endByHp(); return { type: 'timeout', unit }; }
     }
     this._lastActedIdx = idx;
@@ -123,16 +123,7 @@ export class BattleEngine {
     } else {
       normalAttack(u, ctx);
     }
-  }
-
-  _tickRoundBuffs() {
-    for (const u of this.units) {
-      if (!u.buffs || u.buffs.length === 0) continue;
-      for (const b of u.buffs) if (b.rounds != null) b.rounds -= 1;
-      const before = u.buffs.length;
-      u.buffs = u.buffs.filter((b) => b.rounds == null || b.rounds > 0);
-      if (u.buffs.length !== before) this.emit('buffchange', { unit: u });
-    }
+    if (tickBuffs(u)) this.emit('buffchange', { unit: u });
   }
 
   _checkEnd() {

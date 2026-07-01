@@ -2,6 +2,7 @@
 // ctx = { allies, enemies, rng, emit }
 import { computeDamage } from './damage.js';
 import { singleEnemyByColumn, lowestHpAlly } from './targeting.js';
+import { applyBuff } from './buffs.js';
 
 // 大招倍率與數值（佔位平衡常數）
 export const ULT = {
@@ -15,8 +16,7 @@ export const ULT = {
 
 // 套用一次傷害並處理能量/死亡事件。
 function applyDamage(attacker, target, mult, ctx, skill) {
-  const guardMult = activeGuardMult(target);
-  const res = computeDamage(attacker, target, mult, ctx.rng, guardMult);
+  const res = computeDamage(attacker, target, mult, ctx.rng);
   const dealt = target.takeDamage(res.amount);
   // 受擊回能
   target.gainEnergy(target.classDef.energyOnHitTaken);
@@ -30,12 +30,6 @@ function applyDamage(attacker, target, mult, ctx, skill) {
     isCrit: res.isCrit,
   });
   if (!target.alive) ctx.emit('death', { unit: target });
-}
-
-// 防守方目前的減傷倍率（坦克 guard buff）。
-function activeGuardMult(unit) {
-  const g = unit.buffs?.find((b) => b.type === 'guard');
-  return g ? g.mult : 1;
 }
 
 // ---- 普攻：直行對位選敵、施放者集氣、其餘存活隊友各獲 energyOnAllyAction ----
@@ -67,10 +61,7 @@ export const ULTIMATES = {
     ctx.emit('ultimate', { caster, skill: 'guard' });
     for (const ally of ctx.allies) {
       if (!ally.alive) continue;
-      ally.buffs = ally.buffs || [];
-      // 覆蓋既有 guard，刷新時間
-      ally.buffs = ally.buffs.filter((b) => b.type !== 'guard');
-      ally.buffs.push({ type: 'guard', mult: ULT.guardReduction, rounds: ULT.guardDuration });
+      applyBuff(ally, { kind: 'stat', stat: 'dmgTaken', op: 'mul', value: ULT.guardReduction, duration: ULT.guardDuration, key: 'guard' });
     }
     const healed = caster.heal(caster.maxHp * ULT.guardSelfHeal);
     if (healed > 0) ctx.emit('heal', { source: caster, target: caster, amount: healed });
