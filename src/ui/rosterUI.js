@@ -51,7 +51,7 @@ export class RosterUI {
         const inst = store.getCard(entry.instanceId);
         const card = inst ? CARDS[inst.cardId] : null;
         rowEl.appendChild(
-          el('div', { class: 'slot filled', title: '點擊下陣' , onClick: () => {
+          el('div', { class: 'slot filled', title: '點擊下陣', onClick: () => {
             toggleFormation(entry.instanceId);
             this._changed();
           } }, [
@@ -133,15 +133,19 @@ export class RosterUI {
         el('button', {
           text: '換位置',
           onClick: () => {
-            const cur = formationSlot(inst.instanceId).pos;
+            const slot = formationSlot(inst.instanceId);
+            if (!slot) return;
+            const cur = slot.pos;
             // 找下一個未被占用的位置（環狀）
             let next = cur;
             for (let i = 1; i <= 6; i++) {
               const cand = ((cur - 1 + i) % 6) + 1;
               if (!positionTaken(cand) || cand === cur) { next = cand; break; }
             }
-            setPosition(inst.instanceId, next);
-            this._changed();
+            if (next !== cur) {
+              setPosition(inst.instanceId, next);
+              this._changed();
+            }
           },
         })
       );
