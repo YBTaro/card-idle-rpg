@@ -4,8 +4,9 @@ import { EventEmitter } from '../core/events.js';
 import { Rng } from '../core/rng.js';
 import { ENERGY_MAX } from './unit.js';
 import { TURN_SEQUENCE } from './positions.js';
-import { normalAttack, ultimateFor } from './skills.js';
-import { tickBuffs } from './buffs.js';
+import { normalAttack, castSkill, skillFor } from './skills.js';
+import { tickBuffs, dotEntries } from './buffs.js';
+import { dealDot } from './effects.js';
 
 export const MAX_ROUNDS = 100; // 回合上限，防打不完
 export const MAX_SKILL_PASSES = 50; // 技能階段掃描上限，防死迴圈
@@ -116,10 +117,16 @@ export class BattleEngine {
       rng: this.rng,
       emit: (event, payload) => this.emit(event, payload),
     };
+    // 出手前：結算身上的 DoT
+    for (const dot of dotEntries(u)) {
+      if (!u.alive) break;
+      dealDot(u, dot, ctx);
+    }
+    if (!u.alive) return; // 被 DoT 擊殺 → 不行動（buff 隨死亡失效）
     this.emit('turn', { unit: u });
     if (isSkill) {
       u.energy = 0;
-      ultimateFor(u)(u, ctx);
+      castSkill(u, skillFor(u), ctx);
     } else {
       normalAttack(u, ctx);
     }
