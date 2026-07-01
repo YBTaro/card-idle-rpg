@@ -117,19 +117,18 @@ export class BattleEngine {
       rng: this.rng,
       emit: (event, payload) => this.emit(event, payload),
     };
-    // 出手前：結算身上的 DoT
-    for (const dot of dotEntries(u)) {
-      if (!u.alive) break;
-      dealDot(u, dot, ctx);
-    }
-    if (!u.alive) return; // 被 DoT 擊殺 → 不行動（buff 隨死亡失效）
-    this.emit('turn', { unit: u });
     if (isSkill) {
+      // 技能不算回合：免費行動，不結算 DoT、不遞減 buff duration
+      this.emit('turn', { unit: u });
       u.energy = 0;
       castSkill(u, skillFor(u), ctx);
-    } else {
-      normalAttack(u, ctx);
+      return;
     }
+    // 普攻才算回合：出手前結算 DoT（可致死 → 跳過行動），行動後遞減 buff
+    for (const dot of dotEntries(u)) dealDot(u, dot, ctx);
+    if (!u.alive) return;
+    this.emit('turn', { unit: u });
+    normalAttack(u, ctx);
     if (tickBuffs(u)) this.emit('buffchange', { unit: u });
   }
 

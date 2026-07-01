@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { BattleEngine, ENERGY_MAX } from './engine.js';
 import { makeUnit } from './testHelpers.js';
 import { Rng } from '../core/rng.js';
+import { applyBuff } from './buffs.js';
 
 function runSteps(engine, maxSteps = 200000) {
   let n = 0;
@@ -80,5 +81,24 @@ describe('BattleEngine（回合制）', () => {
     runSteps(engine);
     expect(engine.over).toBe(true);
     expect(winner).toBe(-1);
+  });
+
+  it('普攻會遞減 buff duration', () => {
+    const me = makeUnit({ team: 0, pos: 1, class: 'dps', atk: 100 });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 99999 });
+    applyBuff(me, { kind: 'stat', stat: 'atk', op: 'add', value: 5, duration: 2 });
+    const engine = new BattleEngine([me], [foe], { rng: new Rng(1) });
+    engine.step(); // me 普攻（我1 先手，能量不足 → 普攻）
+    expect(me.buffs.find((b) => b.stat === 'atk').duration).toBe(1);
+  });
+
+  it('放技能不算回合、不遞減 buff duration', () => {
+    const me = makeUnit({ team: 0, pos: 1, class: 'dps', atk: 100, energy: ENERGY_MAX });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 99999 });
+    applyBuff(me, { kind: 'stat', stat: 'atk', op: 'add', value: 5, duration: 2 });
+    const engine = new BattleEngine([me], [foe], { rng: new Rng(1) });
+    engine.step(); // me 普攻（滿氣）→ tick 2→1，之後中斷進技能階段
+    engine.step(); // 技能階段：me 放技能 → 不 tick → 維持 1
+    expect(me.buffs.find((b) => b.stat === 'atk')?.duration).toBe(1);
   });
 });
