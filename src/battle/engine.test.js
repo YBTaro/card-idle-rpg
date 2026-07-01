@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { BattleEngine, ENERGY_MAX } from './engine.js';
 import { makeUnit } from './testHelpers.js';
 import { Rng } from '../core/rng.js';
+import { applyBuff } from './buffs.js';
 
 function runSteps(engine, maxSteps = 200000) {
   let n = 0;
@@ -61,13 +62,14 @@ describe('BattleEngine（回合制）', () => {
     expect(advDmg).toBeGreaterThan(disDmg);
   });
 
-  it('坦克技能給全隊減傷 buff', () => {
+  it('坦克技能給全隊減傷 buff（dmgTaken stat）', () => {
     const tank = makeUnit({ team: 0, pos: 1, class: 'tank', name: 'tank', energy: ENERGY_MAX });
     const ally = makeUnit({ team: 0, pos: 2, class: 'dps', name: 'ally' });
     const foe = makeUnit({ team: 1, pos: 1, hp: 99999, name: 'foe' });
     const engine = new BattleEngine([tank, ally], [foe], { rng: new Rng(5) });
-    for (let i = 0; i < 6; i += 1) engine.step();
-    expect(ally.buffs?.some((b) => b.type === 'guard')).toBe(true);
+    engine.step(); // tank 普攻（滿氣）→ 中斷
+    engine.step(); // 技能階段：tank 放 guard
+    expect(ally.buffs?.some((b) => b.key === 'guard' && b.stat === 'dmgTaken')).toBe(true);
   });
 
   it('達回合上限依存活血量判定（同分平手）', () => {
@@ -79,5 +81,24 @@ describe('BattleEngine（回合制）', () => {
     runSteps(engine);
     expect(engine.over).toBe(true);
     expect(winner).toBe(-1);
+  });
+
+  it('普攻會遞減 buff duration', () => {
+    const me = makeUnit({ team: 0, pos: 1, class: 'dps', atk: 100 });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 99999 });
+    applyBuff(me, { kind: 'stat', stat: 'atk', op: 'add', value: 5, duration: 2 });
+    const engine = new BattleEngine([me], [foe], { rng: new Rng(1) });
+    engine.step(); // me 普攻（我1 先手，能量不足 → 普攻）
+    expect(me.buffs.find((b) => b.stat === 'atk').duration).toBe(1);
+  });
+
+  it('放技能不算回合、不遞減 buff duration', () => {
+    const me = makeUnit({ team: 0, pos: 1, class: 'dps', atk: 100, energy: ENERGY_MAX });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 99999 });
+    applyBuff(me, { kind: 'stat', stat: 'atk', op: 'add', value: 5, duration: 2 });
+    const engine = new BattleEngine([me], [foe], { rng: new Rng(1) });
+    engine.step(); // me 普攻（滿氣）→ tick 2→1，之後中斷進技能階段
+    engine.step(); // 技能階段：me 放技能 → 不 tick → 維持 1
+    expect(me.buffs.find((b) => b.stat === 'atk')?.duration).toBe(1);
   });
 });

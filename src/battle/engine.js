@@ -4,7 +4,9 @@ import { EventEmitter } from '../core/events.js';
 import { Rng } from '../core/rng.js';
 import { ENERGY_MAX } from './unit.js';
 import { TURN_SEQUENCE } from './positions.js';
-import { normalAttack, ultimateFor } from './skills.js';
+import { normalAttack, castSkill, skillFor } from './skills.js';
+import { tickBuffs, dotEntries } from './buffs.js';
+import { dealDot } from './effects.js';
 
 export const MAX_ROUNDS = 100; // 回合上限，防打不完
 export const MAX_SKILL_PASSES = 50; // 技能階段掃描上限，防死迴圈
@@ -64,7 +66,6 @@ export class BattleEngine {
 
     if (idx <= this._lastActedIdx) {
       this.round += 1;
-      this._tickRoundBuffs();
       if (this.round >= MAX_ROUNDS) { this._endByHp(); return { type: 'timeout', unit }; }
     }
     this._lastActedIdx = idx;
@@ -116,23 +117,19 @@ export class BattleEngine {
       rng: this.rng,
       emit: (event, payload) => this.emit(event, payload),
     };
-    this.emit('turn', { unit: u });
     if (isSkill) {
+      // 技能不算回合：免費行動，不結算 DoT、不遞減 buff duration
+      this.emit('turn', { unit: u });
       u.energy = 0;
-      ultimateFor(u)(u, ctx);
-    } else {
-      normalAttack(u, ctx);
+      castSkill(u, skillFor(u), ctx);
+      return;
     }
-  }
-
-  _tickRoundBuffs() {
-    for (const u of this.units) {
-      if (!u.buffs || u.buffs.length === 0) continue;
-      for (const b of u.buffs) if (b.rounds != null) b.rounds -= 1;
-      const before = u.buffs.length;
-      u.buffs = u.buffs.filter((b) => b.rounds == null || b.rounds > 0);
-      if (u.buffs.length !== before) this.emit('buffchange', { unit: u });
-    }
+    // 普攻才算回合：出手前結算 DoT（可致死 → 跳過行動），行動後遞減 buff
+    for (const dot of dotEntries(u)) dealDot(u, dot, ctx);
+    if (!u.alive) return;
+    this.emit('turn', { unit: u });
+    normalAttack(u, ctx);
+    if (tickBuffs(u)) this.emit('buffchange', { unit: u });
   }
 
   _checkEnd() {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lowestHpAlly, singleEnemyByColumn } from './targeting.js';
+import { lowestHpAlly, singleEnemyByColumn, SELECTORS } from './targeting.js';
 import { makeUnit } from './testHelpers.js';
 
 describe('治療目標', () => {
@@ -42,5 +42,33 @@ describe('直行選擇器 singleEnemyByColumn', () => {
     const es = enemies([1]);
     es[0].takeDamage(es[0].hp);
     expect(singleEnemyByColumn(makeUnit({ team: 0, pos: 1 }), es)).toBe(null);
+  });
+});
+
+describe('SELECTORS registry', () => {
+  const ctxWith = (enemies, allies = []) => ({ enemies, allies, rng: null });
+
+  it('enemyFrontRow：前排全空退位打後排', () => {
+    const back = [makeUnit({ team: 1, pos: 4 }), makeUnit({ team: 1, pos: 5 })];
+    const res = SELECTORS.enemyFrontRow(makeUnit({ team: 0, pos: 1 }), ctxWith(back));
+    expect(res.map((u) => u.pos).sort()).toEqual([4, 5]);
+  });
+
+  it('enemyBackRow：後排全空退位打前排', () => {
+    const front = [makeUnit({ team: 1, pos: 2 })];
+    const res = SELECTORS.enemyBackRow(makeUnit({ team: 0, pos: 1 }), ctxWith(front));
+    expect(res.map((u) => u.pos)).toEqual([2]);
+  });
+
+  it('enemyColumn：本直行全空 → 就近往小號', () => {
+    // 直行C(攻擊者 pos3)：C 空 → B → A。敵方只有直行B(pos2)
+    const enemies = [makeUnit({ team: 1, pos: 2 })];
+    const res = SELECTORS.enemyColumn(makeUnit({ team: 0, pos: 3 }), ctxWith(enemies));
+    expect(res.map((u) => u.pos)).toEqual([2]);
+  });
+
+  it('allEnemies：全部存活', () => {
+    const enemies = [makeUnit({ team: 1, pos: 1 }), makeUnit({ team: 1, pos: 2 })];
+    expect(SELECTORS.allEnemies(makeUnit({ team: 0, pos: 1 }), ctxWith(enemies)).length).toBe(2);
   });
 });
