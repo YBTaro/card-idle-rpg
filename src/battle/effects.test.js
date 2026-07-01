@@ -1,6 +1,6 @@
 // src/battle/effects.test.js
 import { describe, it, expect } from 'vitest';
-import { resolvePower, resolveScope, dealDamage, applyEffect } from './effects.js';
+import { resolvePower, resolveScope, dealDamage, applyEffect, dealDot } from './effects.js';
 import { makeUnit } from './testHelpers.js';
 import { Rng } from '../core/rng.js';
 
@@ -10,7 +10,7 @@ const ctxFor = (caster, allies, enemies, events = []) => ({
 });
 
 describe('effects', () => {
-  it('resolvePower：預設 atk 制、basis targetMaxHp 用目標 maxHp', () => {
+  it('resolvePower：預設 effAtk 制、basis targetMaxHp 用目標 maxHp', () => {
     const caster = makeUnit({ atk: 100 });
     const target = makeUnit({ hp: 500 });
     expect(resolvePower({ power: 2.0 }, caster, target)).toBe(200);
@@ -57,5 +57,22 @@ describe('effects', () => {
     // 驗證 buff 會放大 power：buff 後新的護盾 = effAtk×0.3 = 45
     applyEffect({ type: 'shield', power: 0.3, scope: 'self', key: 'sh2' }, caster, [caster], ctx);
     expect(caster.buffs.some((b) => b.kind === 'shield' && b.amount === 45)).toBe(true);
+  });
+
+  it('dealDot：直接扣血、繞過護盾、發 damage(skill:dot)/death', () => {
+    const caster = makeUnit({ team: 0, pos: 1, atk: 100 });
+    const target = makeUnit({ team: 1, pos: 1, hp: 100, class: 'tank' });
+    const events = [];
+    const ctx = ctxFor(caster, [caster], [target], events);
+    // 給 target 一個護盾，dealDot 應繞過它
+    applyEffect({ type: 'shield', power: 0.5, scope: 'target' }, caster, [target], ctx); // 護盾 50
+    dealDot(target, { damage: 30 }, ctx);
+    expect(target.hp).toBe(70); // 直接扣 30，護盾未被消耗
+    expect(target.buffs.some((b) => b.kind === 'shield' && b.amount === 50)).toBe(true);
+    expect(events.some((e) => e.event === 'damage' && e.payload.skill === 'dot')).toBe(true);
+    // 致命一跳
+    dealDot(target, { damage: 9999 }, ctx);
+    expect(target.alive).toBe(false);
+    expect(events.some((e) => e.event === 'death')).toBe(true);
   });
 });

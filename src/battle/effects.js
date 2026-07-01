@@ -14,7 +14,7 @@ export function resolveScope(scope, caster, primary, ctx) {
   const alive = (arr) => arr.filter((u) => u.alive);
   switch (scope) {
     case 'self':
-      return [caster];
+      return caster.alive ? [caster] : [];
     case 'target':
       return primary.filter((u) => u.alive);
     case 'allAllies':
@@ -43,6 +43,7 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill') {
 
 // DoT：套用預存 damage，直接扣 hp（不吃護盾、不吃暴擊）。
 export function dealDot(target, dot, ctx) {
+  if (!target.alive) return 0;
   const dealt = Math.min(target.hp, dot.damage);
   target.hp -= dealt;
   ctx.emit('damage', {
