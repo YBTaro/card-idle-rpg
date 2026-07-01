@@ -61,6 +61,15 @@ describe('嘲諷（單體選敵）', () => {
     const e2 = makeUnit({ team: 1, pos: 2, name: 'e2' });
     expect(singleEnemyByColumn(attacker, [e1, e2]).name).toBe('e1');
   });
+
+  it('多個嘲諷者：在嘲諷池中照直行/前排規則挑', () => {
+    const attacker = makeUnit({ team: 0, pos: 1 }); // 直行A → 前排偏好 1→2→3
+    const e2 = makeUnit({ team: 1, pos: 2, name: 'e2' });
+    const e3 = makeUnit({ team: 1, pos: 3, name: 'e3' });
+    applyBuff(e2, { kind: 'control', control: 'taunt', duration: 2 });
+    applyBuff(e3, { kind: 'control', control: 'taunt', duration: 2 });
+    expect(singleEnemyByColumn(attacker, [e2, e3]).name).toBe('e2'); // 偏好序 [1,2,3] → 先命中 pos2
+  });
 });
 
 describe('SELECTORS registry', () => {

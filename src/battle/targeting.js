@@ -9,10 +9,6 @@ const COLUMN_PREF = {
   3: [3, 2, 1], // 直行C
 };
 
-function aliveInRowT(enemies, row) {
-  return enemies.filter((u) => u.alive && rowOf(u.pos) === row);
-}
-
 // 普攻預設選擇器：直行對位、前排優先、缺位往小號靠、前排全空才打後排。
 export function singleEnemyByColumn(attacker, enemies) {
   const taunters = enemies.filter((u) => u.alive && hasControl(u, 'taunt'));

@@ -125,4 +125,19 @@ describe('BattleEngine（回合制）', () => {
     expect(ult).toBe(false);
     expect(me.energy).toBe(ENERGY_MAX); // 能量保留
   });
+
+  it('暈眩：滿氣也不觸發技能階段', () => {
+    const me = makeUnit({ team: 0, pos: 1, class: 'dps', atk: 100, energy: ENERGY_MAX });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 99999, def: 0 });
+    applyBuff(me, { kind: 'control', control: 'stun', duration: 5 });
+    const engine = new BattleEngine([me], [foe], { rng: new Rng(1) });
+    let ult = false;
+    let stunned = false;
+    engine.on('ultimate', () => (ult = true));
+    engine.on('stunned', () => (stunned = true));
+    engine.step(); // me 輪到 → 暈眩跳過；滿氣但 _canCast=false → 不進技能階段
+    expect(stunned).toBe(true);
+    expect(ult).toBe(false);
+    expect(me.energy).toBe(ENERGY_MAX);
+  });
 });
