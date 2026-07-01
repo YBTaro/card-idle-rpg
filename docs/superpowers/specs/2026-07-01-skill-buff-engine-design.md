@@ -38,7 +38,7 @@ buff 只有一種 `{ type:'guard', mult, rounds }`，`damage.js` 直接讀 `atta
 { kind: 'shield', amount, duration, key, stackable }
 ```
 
-- `duration`:以**行動次數**計；帶者每次出手後 −1,歸零移除（見 §5 引擎）。
+- `duration`:以**行動次數**計；**只有普攻算一次**（發動技能不算回合），帶者普攻後 −1、歸零移除（見 §5 引擎）。
 - `key`:同 key 的套用行為——
   - 預設(`stackable` 省略/false):**取代刷新**(移除同 key 舊項,推入新項)。
   - `stackable: true`:**併存**(可多層,全部生效)。
@@ -208,14 +208,17 @@ raw = afterDef × elemMult × defender.dmgTakenMult × attacker.dmgDealtMult × 
 
 ### 引擎
 
-- 移除 Spec 1 的**每輪** `_tickRoundBuffs`。改成**每次出手**在 `_act(u, isSkill)` 內處理:
-  1. **出手前**:結算 `u` 身上的 DoT(`buffs.dotEntries(u)` → `effects.dealDot`),並 `_checkEnd()`。
-  2. emit `turn`;`isSkill ? (u.energy=0, castSkill(u, skillFor(u), ctx)) : normalAttack(u, ctx)`。
-  3. **行動後**:`tickBuffs(u)`(所有 duration −1、移除到期,含 stat/dot/shield);有變動則 emit `buffchange`。
+- 移除 Spec 1 的**每輪** `_tickRoundBuffs`。改在 `_act(u, isSkill)` 內處理,**規則:發動技能不算回合,只有普攻才算**:
+  - **技能分支**(免費行動):emit `turn`;`u.energy=0`;`castSkill(u, skillFor(u), ctx)`。**不結算 DoT、不遞減 buff duration**。
+  - **普攻分支**(才算一次行動):
+    1. **出手前**:結算 `u` 身上的 DoT(`dotEntries(u)` → `dealDot`);DoT 若擊殺 `u` 則**跳過**其行動。
+    2. emit `turn`;`normalAttack(u, ctx)`。
+    3. **行動後**:`tickBuffs(u)`(所有 duration −1、移除到期,含 stat/dot/shield);有變動則 emit `buffchange`。
 - `ctx` 形狀不變:`{ allies, enemies, rng, emit }`。
-- guard 減傷不再需要特別 tick——它就是一個 `kind:'stat' stat:'dmgTaken'` buff,隨帶者行動遞減。
+- guard 減傷不需特別 tick——它就是一個 `kind:'stat' stat:'dmgTaken'` buff,隨帶者**普攻**遞減。
 
-> 註:guard buff 現在依「帶者行動次數」遞減(Spec 1 是每輪),語意更貼近 Spec 2 的行動次數模型;數值 `duration:2` 沿用。
+> 註:duration 以「行動次數」計,但**只有普攻算一次**。技能為免費行動,故施放者對自己上的 buff
+> 不會在施放當下被扣次(修正 Task 5 觀察到的自我 buff 不對稱)。DoT 的每跳與遞減同樣只在普攻回合。
 
 ---
 
