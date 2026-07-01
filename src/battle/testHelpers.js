@@ -11,7 +11,6 @@ export function makeUnit(opts = {}) {
     hp: opts.hp ?? 1000,
     atk: opts.atk ?? 100,
     def: opts.def ?? 20,
-    spd: opts.spd ?? 100,
   };
   const u = new Unit(stats, { team: opts.team ?? 0, pos: opts.pos ?? 1 });
   if (opts.energy != null) u.energy = opts.energy;

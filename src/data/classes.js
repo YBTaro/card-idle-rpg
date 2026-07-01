@@ -6,7 +6,7 @@
 export const CLASSES = {
   tank: {
     id: 'tank', label: '坦克',
-    statMods: { hp: 1.3, atk: 0.8, def: 1.4, spd: 0.85 },
+    statMods: { hp: 1.3, atk: 0.8, def: 1.4 },
     energyOnAction: 15,
     energyOnHitTaken: 20,
     energyOnAllyAction: 0,
@@ -15,7 +15,7 @@ export const CLASSES = {
   },
   dps: {
     id: 'dps', label: '輸出',
-    statMods: { hp: 0.9, atk: 1.8, def: 0.85, spd: 1.1 },
+    statMods: { hp: 0.9, atk: 1.8, def: 0.85 },
     energyOnAction: 25, // 含 +10 額外
     energyOnHitTaken: 8,
     energyOnAllyAction: 0,
@@ -24,7 +24,7 @@ export const CLASSES = {
   },
   support: {
     id: 'support', label: '輔助',
-    statMods: { hp: 1.0, atk: 0.9, def: 1.0, spd: 1.05 },
+    statMods: { hp: 1.0, atk: 0.9, def: 1.0 },
     energyOnAction: 15,
     energyOnHitTaken: 8,
     energyOnAllyAction: 12,

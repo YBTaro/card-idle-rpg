@@ -21,7 +21,6 @@ export class Unit {
     this.hp = stats.hp;
     this.atk = stats.atk;
     this.def = stats.def;
-    this.spd = stats.spd; // Task 9 移除
 
     this.energy = 0;
   }

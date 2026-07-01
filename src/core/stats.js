@@ -5,7 +5,7 @@ import { CLASSES } from '../data/classes.js';
 
 export function rawStatsAtLevel(card, level) {
   const out = {};
-  for (const key of ['hp', 'atk', 'def', 'spd']) {
+  for (const key of ['hp', 'atk', 'def']) {
     out[key] = card.base[key] + card.growth[key] * (level - 1);
   }
   return out;
@@ -26,6 +26,5 @@ export function deriveStats(cardInst) {
     hp: Math.round(raw.hp * cls.statMods.hp),
     atk: Math.round(raw.atk * cls.statMods.atk),
     def: Math.round(raw.def * cls.statMods.def),
-    spd: Math.round(raw.spd * cls.statMods.spd),
   };
 }
