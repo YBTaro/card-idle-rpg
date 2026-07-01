@@ -1,0 +1,56 @@
+import { describe, it, expect } from 'vitest';
+import { applyBuff, tickBuffs, resolve, absorbWithShields, dotEntries } from './buffs.js';
+
+const u = () => ({ buffs: [] });
+
+describe('buffs', () => {
+  it('resolve：mul 相乘、add 相加', () => {
+    const unit = u();
+    applyBuff(unit, { kind: 'stat', stat: 'atk', op: 'mul', value: 1.5 });
+    applyBuff(unit, { kind: 'stat', stat: 'atk', op: 'add', value: 10 });
+    expect(resolve(unit, 'atk', 100)).toBe(160); // 100*1.5 + 10
+    expect(resolve(unit, 'def', 50)).toBe(50); // 無相符 buff
+  });
+
+  it('applyBuff：同 key 非 stackable 取代刷新', () => {
+    const unit = u();
+    applyBuff(unit, { kind: 'stat', stat: 'atk', op: 'mul', value: 1.2, key: 'k', duration: 1 });
+    applyBuff(unit, { kind: 'stat', stat: 'atk', op: 'mul', value: 1.5, key: 'k', duration: 3 });
+    expect(unit.buffs.length).toBe(1);
+    expect(unit.buffs[0].value).toBe(1.5);
+  });
+
+  it('applyBuff：stackable 併存', () => {
+    const unit = u();
+    applyBuff(unit, { kind: 'stat', stat: 'atk', op: 'add', value: 5, key: 'k', stackable: true });
+    applyBuff(unit, { kind: 'stat', stat: 'atk', op: 'add', value: 5, key: 'k', stackable: true });
+    expect(unit.buffs.length).toBe(2);
+    expect(resolve(unit, 'atk', 0)).toBe(10);
+  });
+
+  it('tickBuffs：duration 用完移除；permanent 保留', () => {
+    const unit = u();
+    applyBuff(unit, { kind: 'stat', stat: 'atk', op: 'add', value: 5, duration: 1 });
+    applyBuff(unit, { kind: 'stat', stat: 'def', op: 'add', value: 5 }); // 無 duration
+    expect(tickBuffs(unit)).toBe(true);
+    expect(unit.buffs.length).toBe(1);
+    expect(unit.buffs[0].stat).toBe('def');
+  });
+
+  it('absorbWithShields：先扣護盾再回傳剩餘', () => {
+    const unit = u();
+    applyBuff(unit, { kind: 'shield', amount: 30 });
+    expect(absorbWithShields(unit, 10)).toBe(0); // 30 護盾吸收 10
+    expect(unit.buffs[0].amount).toBe(20);
+    expect(absorbWithShields(unit, 50)).toBe(30); // 剩 20 護盾吸收，20 耗盡移除，剩 30 到 hp
+    expect(unit.buffs.length).toBe(0);
+  });
+
+  it('dotEntries：只回傳 dot', () => {
+    const unit = u();
+    applyBuff(unit, { kind: 'stat', stat: 'atk', op: 'add', value: 1 });
+    applyBuff(unit, { kind: 'dot', damage: 20, duration: 3 });
+    expect(dotEntries(unit).length).toBe(1);
+    expect(dotEntries(unit)[0].damage).toBe(20);
+  });
+});
