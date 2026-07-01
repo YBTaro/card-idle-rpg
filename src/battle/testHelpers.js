@@ -13,5 +13,7 @@ export function makeUnit(opts = {}) {
     def: opts.def ?? 20,
     spd: opts.spd ?? 100,
   };
-  return new Unit(stats, { team: opts.team ?? 0, row: opts.row || 'front', slot: opts.slot ?? 0 });
+  const u = new Unit(stats, { team: opts.team ?? 0, pos: opts.pos ?? 1 });
+  if (opts.energy != null) u.energy = opts.energy;
+  return u;
 }

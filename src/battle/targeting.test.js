@@ -4,16 +4,16 @@ import { makeUnit } from './testHelpers.js';
 
 describe('普攻前排優先選敵', () => {
   it('有前排存活時只打前排', () => {
-    const front = makeUnit({ row: 'front', name: 'F' });
-    const back = makeUnit({ row: 'back', name: 'B' });
+    const front = makeUnit({ pos: 1, name: 'F' });
+    const back = makeUnit({ pos: 4, name: 'B' });
     for (let i = 0; i < 20; i++) {
       expect(pickMeleeTarget([front, back])).toBe(front);
     }
   });
 
   it('前排全滅才打後排', () => {
-    const front = makeUnit({ row: 'front', name: 'F', hp: 10 });
-    const back = makeUnit({ row: 'back', name: 'B' });
+    const front = makeUnit({ pos: 1, name: 'F', hp: 10 });
+    const back = makeUnit({ pos: 4, name: 'B' });
     front.takeDamage(10); // 前排陣亡
     expect(front.alive).toBe(false);
     expect(pickMeleeTarget([front, back])).toBe(back);

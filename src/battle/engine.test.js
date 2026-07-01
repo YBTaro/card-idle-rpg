@@ -75,9 +75,9 @@ describe('BattleEngine', () => {
   });
 
   it('坦克大招給全隊減傷 buff', () => {
-    const tank = makeUnit({ team: 0, class: 'tank', name: 'tank', spd: 100 });
-    const ally = makeUnit({ team: 0, class: 'dps', name: 'ally', spd: 1 });
-    const foe = makeUnit({ team: 1, spd: 1, hp: 99999 });
+    const tank = makeUnit({ team: 0, pos: 1, class: 'tank', name: 'tank', spd: 100 });
+    const ally = makeUnit({ team: 0, pos: 2, class: 'dps', name: 'ally', spd: 1 });
+    const foe = makeUnit({ team: 1, pos: 1, spd: 1, hp: 99999 });
     tank.energy = ENERGY_MAX;
     tank.atb = ATB_MAX;
     const engine = new BattleEngine([tank, ally], [foe], { rng: new Rng(5) });
