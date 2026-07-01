@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { store, createNewGame } from '../core/state.js';
 import { pull } from './gacha.js';
 import { levelUp, levelUpCost, canLevelUp } from './leveling.js';
-import { addToFormation, toggleRow, MAX_FORMATION } from './formation.js';
+import { addToFormation, setPosition, MAX_FORMATION } from './formation.js';
 import { Rng } from '../core/rng.js';
 
 beforeEach(() => {
@@ -62,10 +62,8 @@ describe('升級', () => {
 });
 
 describe('陣容', () => {
-  it('最多 5 人、同卡不可重複、可切換前後排', () => {
-    // 新遊戲已上陣 5 人
-    expect(store.state.formation.length).toBe(MAX_FORMATION);
-    // 抽一張新卡（用確定 seed 直到拿到新角色）
+  it('最多 6 人、同卡不可重複、可換位置', () => {
+    expect(store.state.formation.length).toBe(5); // 初始 5 人（6 格）
     store.state.currencies.tickets = 500;
     let newInst = null;
     const rng = new Rng(7);
@@ -74,13 +72,14 @@ describe('陣容', () => {
       if (r.type === 'card') newInst = store.state.cards.find((c) => c.cardId === r.cardId);
     }
     expect(newInst).toBeTruthy();
-    // 陣容已滿 → 加不進去
-    expect(addToFormation(newInst.instanceId).reason).toBe('full');
+    // 還有第 6 格 → 可上陣
+    expect(addToFormation(newInst.instanceId).ok).toBe(true);
+    expect(store.state.formation.length).toBe(MAX_FORMATION);
 
-    // 切換現役第一人的前後排
+    // 換位置：把第一人移到一個空位（先移走再驗證交換）
     const slot = store.state.formation[0];
-    const wasRow = slot.row;
-    toggleRow(slot.instanceId);
-    expect(slot.row).not.toBe(wasRow);
+    const target = slot.pos === 1 ? 2 : 1;
+    setPosition(slot.instanceId, target);
+    expect(slot.pos).toBe(target);
   });
 });

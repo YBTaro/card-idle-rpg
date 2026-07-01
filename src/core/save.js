@@ -15,6 +15,21 @@ function migrate(data) {
   data.inventory.materials ??= {};
   data.cards ??= [];
   data.formation ??= [];
+  // formation：舊格式 { instanceId, row } → { instanceId, pos }
+  if (Array.isArray(data.formation)) {
+    const used = new Set(data.formation.filter((e) => e && e.pos).map((e) => e.pos));
+    const front = [1, 2, 3].filter((p) => !used.has(p));
+    const back = [4, 5, 6].filter((p) => !used.has(p));
+    data.formation = data.formation
+      .filter(Boolean)
+      .map((e) => {
+        if (e.pos) return { instanceId: e.instanceId, pos: e.pos };
+        const p = e.row === 'back' ? (back.shift() ?? front.shift()) : (front.shift() ?? back.shift());
+        return p == null ? null : { instanceId: e.instanceId, pos: p };
+      })
+      .filter(Boolean)
+      .slice(0, 6);
+  }
   data.daily ??= { lastClaim: 0 };
   data.progress ??= { wins: 0, losses: 0, stage: 1 };
   data.meta ??= { createdAt: Date.now(), nextInstanceId: maxInstanceId(data) + 1 };

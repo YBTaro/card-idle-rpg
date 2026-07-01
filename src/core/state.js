@@ -1,7 +1,7 @@
 // 中央遊戲狀態：單例 store + 簡單 pub/sub。
 // 只持有資料與通知機制；存讀檔在 save.js，避免循環相依。
 import { EventEmitter } from './events.js';
-import { STARTER_CARD_IDS } from '../data/cards.js';
+import { STARTER_CARD_IDS, CARDS } from '../data/cards.js';
 
 export const SCHEMA_VERSION = 1;
 
@@ -13,23 +13,21 @@ export function createNewGame() {
     currencies: { tickets: 10, gold: 500 }, // 初始資源（佔位）
     inventory: { materials: { essence: 30 } },
     cards: [], // { instanceId, cardId, level }
-    formation: [], // [{ instanceId, row: 'front' | 'back' }] 最多 5
+    formation: [], // [{ instanceId, pos: 1..6 }] 最多 6
     daily: { lastClaim: 0 },
     progress: { wins: 0, losses: 0, stage: 1 },
   };
 
-  // 送初始 5 張角色並自動上陣（前 2 後 3 之類，依職業偏好擺放）。
+  // 送初始角色並自動上陣（support 優先後排 4/5/6，其他前排 1/2/3）。
+  const front = [1, 2, 3];
+  const back = [4, 5, 6];
   for (const cardId of STARTER_CARD_IDS) {
     const inst = addCardInstance(state, cardId);
-    state.formation.push({ instanceId: inst.instanceId, row: defaultRowFor(cardId) });
+    const cls = CARDS[cardId]?.class;
+    const pos = cls === 'support' ? (back.shift() ?? front.shift()) : (front.shift() ?? back.shift());
+    state.formation.push({ instanceId: inst.instanceId, pos });
   }
   return state;
-}
-
-import { CARDS } from '../data/cards.js';
-function defaultRowFor(cardId) {
-  const cls = CARDS[cardId]?.class;
-  return cls === 'support' ? 'back' : 'front';
 }
 
 // 在 state 上新增一張角色實例，回傳該實例。

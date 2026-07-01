@@ -1,25 +1,33 @@
-// 陣容管理：最多 5 人，每人指定前 / 後排，同卡不可重複上陣。
+// 陣容管理：最多 6 位置（前排 1-3，後排 4-6），同卡不可重複上陣。
 import { store } from '../core/state.js';
 import { saveGame } from '../core/save.js';
 
-export const MAX_FORMATION = 5;
+export const MAX_FORMATION = 6;
+const POSITIONS = [1, 2, 3, 4, 5, 6];
 
 export function isInFormation(instanceId, state = store.state) {
   return state.formation.some((e) => e.instanceId === instanceId);
 }
-
 export function formationSlot(instanceId, state = store.state) {
   return state.formation.find((e) => e.instanceId === instanceId) || null;
 }
+export function positionTaken(pos, state = store.state) {
+  return state.formation.some((e) => e.pos === pos);
+}
+export function firstFreePosition(state = store.state) {
+  return POSITIONS.find((p) => !positionTaken(p, state)) ?? null;
+}
 
-// 加入陣容（預設 row 由呼叫端決定）。回傳 { ok, reason? }
-export function addToFormation(instanceId, row = 'front', state = store.state) {
+export function addToFormation(instanceId, pos = null, state = store.state) {
   if (isInFormation(instanceId, state)) return { ok: false, reason: 'already' };
   if (state.formation.length >= MAX_FORMATION) return { ok: false, reason: 'full' };
   if (!state.cards.some((c) => c.instanceId === instanceId)) return { ok: false, reason: 'not-owned' };
-  state.formation.push({ instanceId, row });
+  const p = pos ?? firstFreePosition(state);
+  if (p == null) return { ok: false, reason: 'full' };
+  if (positionTaken(p, state)) return { ok: false, reason: 'pos-taken' };
+  state.formation.push({ instanceId, pos: p });
   persist();
-  return { ok: true };
+  return { ok: true, pos: p };
 }
 
 export function removeFromFormation(instanceId, state = store.state) {
@@ -29,20 +37,21 @@ export function removeFromFormation(instanceId, state = store.state) {
   return { ok: state.formation.length !== before };
 }
 
-// 點一下切換上陣/下陣。
-export function toggleFormation(instanceId, row = 'front', state = store.state) {
+export function toggleFormation(instanceId, pos = null, state = store.state) {
   return isInFormation(instanceId, state)
     ? removeFromFormation(instanceId, state)
-    : addToFormation(instanceId, row, state);
+    : addToFormation(instanceId, pos, state);
 }
 
-// 切換前 / 後排。
-export function toggleRow(instanceId, state = store.state) {
+// 移動到指定位置；若該位置已有人則兩者互換。
+export function setPosition(instanceId, pos, state = store.state) {
   const slot = formationSlot(instanceId, state);
   if (!slot) return { ok: false, reason: 'not-in' };
-  slot.row = slot.row === 'front' ? 'back' : 'front';
+  const occupant = state.formation.find((e) => e.pos === pos && e.instanceId !== instanceId);
+  if (occupant) occupant.pos = slot.pos;
+  slot.pos = pos;
   persist();
-  return { ok: true, row: slot.row };
+  return { ok: true, pos };
 }
 
 export function canStartBattle(state = store.state) {
