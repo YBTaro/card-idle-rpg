@@ -1,6 +1,6 @@
 // src/battle/effects.test.js
 import { describe, it, expect } from 'vitest';
-import { resolvePower, resolveScope, dealDamage, applyEffect, dealDot } from './effects.js';
+import { resolvePower, resolveScope, dealDamage, applyEffect, dealDot, matchesWhere } from './effects.js';
 import { makeUnit } from './testHelpers.js';
 import { Rng } from '../core/rng.js';
 
@@ -74,5 +74,28 @@ describe('effects', () => {
     dealDot(target, { damage: 9999 }, ctx);
     expect(target.alive).toBe(false);
     expect(events.some((e) => e.event === 'death')).toBe(true);
+  });
+});
+
+describe('where 條件過濾', () => {
+  it('matchesWhere：race 等值、series 成員、AND、無 where', () => {
+    const u = makeUnit({ race: '不死', series: ['影之眷屬', '守護者'], element: 'dark' });
+    expect(matchesWhere(u, undefined)).toBe(true);
+    expect(matchesWhere(u, { race: '不死' })).toBe(true);
+    expect(matchesWhere(u, { race: '人' })).toBe(false);
+    expect(matchesWhere(u, { series: '守護者' })).toBe(true);
+    expect(matchesWhere(u, { series: '聖歌隊' })).toBe(false);
+    expect(matchesWhere(u, { race: '不死', element: 'dark' })).toBe(true);
+    expect(matchesWhere(u, { race: '不死', element: 'fire' })).toBe(false);
+  });
+
+  it('applyEffect 用 where 只作用於符合的目標', () => {
+    const caster = makeUnit({ team: 0, pos: 1, atk: 100, element: 'fire' });
+    const undead = makeUnit({ team: 1, pos: 1, race: '不死', hp: 99999, def: 0, class: 'tank' });
+    const human = makeUnit({ team: 1, pos: 2, race: '人', hp: 99999, def: 0, class: 'tank' });
+    const ctx = ctxFor(caster, [caster], [undead, human]);
+    applyEffect({ type: 'damage', mult: 1.0, scope: 'allEnemies', where: { race: '不死' } }, caster, [undead, human], ctx);
+    expect(undead.hp).toBeLessThan(99999); // 受擊
+    expect(human.hp).toBe(99999); // 不受影響
   });
 });

@@ -54,8 +54,22 @@ export function dealDot(target, dot, ctx) {
   return dealt;
 }
 
+// where 條件過濾：series 成員判斷、其餘等值；多鍵 AND；無 where → true。
+export function matchesWhere(unit, where) {
+  if (!where) return true;
+  for (const [key, val] of Object.entries(where)) {
+    if (key === 'series') {
+      if (!unit.series || !unit.series.includes(val)) return false;
+    } else if (unit[key] !== val) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
-  for (const u of units) {
+  const targets = effect.where ? units.filter((u) => matchesWhere(u, effect.where)) : units;
+  for (const u of targets) {
     switch (effect.type) {
       case 'damage':
         dealDamage(caster, u, effect.mult, ctx, skillId);
