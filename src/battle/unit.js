@@ -25,8 +25,8 @@ export class Unit {
     this.hp = stats.hp;
     this.atk = stats.atk;
     this.def = stats.def;
-    this.race = stats.race;
-    this.series = stats.series || [];
+    this.race = stats.race ?? '人';
+    this.series = Array.isArray(stats.series) ? [...stats.series] : [];
 
     this.energy = 0;
   }

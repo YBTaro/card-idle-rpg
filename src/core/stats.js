@@ -23,7 +23,7 @@ export function deriveStats(cardInst) {
     element: card.element,
     class: card.class,
     race: card.race,
-    series: card.series,
+    series: card.series ? [...card.series] : [],
     level: cardInst.level,
     hp: Math.round(raw.hp * cls.statMods.hp),
     atk: Math.round(raw.atk * cls.statMods.atk),

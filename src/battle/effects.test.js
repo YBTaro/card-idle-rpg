@@ -87,6 +87,7 @@ describe('where 條件過濾', () => {
     expect(matchesWhere(u, { series: '聖歌隊' })).toBe(false);
     expect(matchesWhere(u, { race: '不死', element: 'dark' })).toBe(true);
     expect(matchesWhere(u, { race: '不死', element: 'fire' })).toBe(false);
+    expect(matchesWhere(u, {})).toBe(true);
   });
 
   it('applyEffect 用 where 只作用於符合的目標', () => {
