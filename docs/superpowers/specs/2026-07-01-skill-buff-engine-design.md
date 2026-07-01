@@ -274,4 +274,12 @@ raw = afterDef × elemMult × defender.dmgTakenMult × attacker.dmgDealtMult × 
 
 - 每卡專屬主動技(cardId → skillId)與技能內容庫。
 - 控制類效果:嘲諷(選擇器前插入 taunt 覆蓋層)、暈眩(跳過出手)、沉默(禁技能)。
+- **種族 (race)**:卡片/單位新增 `race` 標籤(如 人/妖/龍/機械…)。**種族之間無相剋**
+  (純分類標籤,不像 element 有循環剋制),僅供條件過濾與種族專屬效果使用。
+- **通用條件過濾 `where`**(關鍵擴充點):效果與選擇器可帶可選 `where` 條件,依單位屬性
+  過濾目標集合——支援 `race` / `element` / `row`(前後排) / `class` 等,可組合。範例:
+  - 對種族加傷:`{ type:'damage', mult:1.3, scope:'target', where:{ race:'undead' } }`
+  - 種族限定 buff/debuff:`{ type:'buff', stat:'atk', op:'mul', value:1.2, scope:'allAllies', where:{ race:'dragon' } }`
+  - 條件不限種族:`where:{ element:'fire' }`、`where:{ row:'back' }` 等各種變化皆走同一機制。
+- **被動 / 光環類技能**:如「場上每有一位同族,全隊 +攻」等統計/常駐效果(需引擎支援被動掛勾)。
 - 更多選擇器與效果類型按需擴充。
