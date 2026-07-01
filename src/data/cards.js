@@ -4,7 +4,7 @@
 
 export const CARDS = {
   // ---- 火 ----
-  ifrit: { id: 'ifrit', name: '炎獄魔將', element: 'fire', class: 'dps', race: '妖', series: ['炎之眷屬'], base: { hp: 520, atk: 95, def: 40 }, growth: { hp: 58, atk: 11, def: 4 } },
+  ifrit: { id: 'ifrit', name: '炎獄魔將', element: 'fire', class: 'dps', race: '妖', series: ['炎之眷屬'], base: { hp: 520, atk: 95, def: 40 }, growth: { hp: 58, atk: 11, def: 4 }, passives: [{ when: { selfHpBelow: 0.5 }, target: 'self', effects: [{ stat: 'atk', op: 'mul', value: 1.3 }] }] },
   emberguard: { id: 'emberguard', name: '熔岩守衛', element: 'fire', class: 'tank', race: '機械', series: ['炎之眷屬', '守護者'], base: { hp: 700, atk: 60, def: 70 }, growth: { hp: 80, atk: 6, def: 7 } },
 
   // ---- 風 ----
@@ -13,14 +13,14 @@ export const CARDS = {
 
   // ---- 水 ----
   tidecaller: { id: 'tidecaller', name: '潮汐術士', element: 'water', class: 'dps', race: '人', series: ['潮汐'], base: { hp: 500, atk: 90, def: 40 }, growth: { hp: 55, atk: 10, def: 4 } },
-  aegis: { id: 'aegis', name: '深海壁壘', element: 'water', class: 'tank', race: '龍', series: ['潮汐', '守護者'], base: { hp: 740, atk: 58, def: 74 }, growth: { hp: 84, atk: 6, def: 8 } },
+  aegis: { id: 'aegis', name: '深海壁壘', element: 'water', class: 'tank', race: '龍', series: ['潮汐', '守護者'], base: { hp: 740, atk: 58, def: 74 }, growth: { hp: 84, atk: 6, def: 8 }, passives: [{ target: 'allAllies', effects: [{ stat: 'def', op: 'mul', value: 1.1 }] }] },
 
   // ---- 光 ----
   seraph: { id: 'seraph', name: '聖光天使', element: 'light', class: 'support', race: '神', series: ['聖歌隊', '光輝'], base: { hp: 520, atk: 74, def: 46 }, growth: { hp: 58, atk: 8, def: 5 } },
   dawnblade: { id: 'dawnblade', name: '曙光劍士', element: 'light', class: 'dps', race: '人', series: ['光輝'], base: { hp: 510, atk: 94, def: 42 }, growth: { hp: 56, atk: 11, def: 4 } },
 
   // ---- 暗 ----
-  nightreaper: { id: 'nightreaper', name: '暗影收割者', element: 'dark', class: 'dps', race: '不死', series: ['影之眷屬'], base: { hp: 500, atk: 98, def: 38 }, growth: { hp: 54, atk: 12, def: 3 } },
+  nightreaper: { id: 'nightreaper', name: '暗影收割者', element: 'dark', class: 'dps', race: '不死', series: ['影之眷屬'], base: { hp: 500, atk: 98, def: 38 }, growth: { hp: 54, atk: 12, def: 3 }, passives: [{ target: 'self', effects: [{ stat: 'atk', op: 'mul', basePct: 0.05, perCountOf: { side: 'allies', where: { race: '不死' } } }] }] },
   gravewarden: { id: 'gravewarden', name: '幽冥守墓人', element: 'dark', class: 'tank', race: '不死', series: ['影之眷屬', '守護者'], base: { hp: 720, atk: 62, def: 72 }, growth: { hp: 82, atk: 6, def: 7 } },
 };
 

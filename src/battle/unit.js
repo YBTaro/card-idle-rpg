@@ -27,6 +27,7 @@ export class Unit {
     this.def = stats.def;
     this.race = stats.race ?? '人';
     this.series = Array.isArray(stats.series) ? [...stats.series] : [];
+    this.passives = stats.passives || [];
 
     this.energy = 0;
   }
