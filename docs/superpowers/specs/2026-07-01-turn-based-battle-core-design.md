@@ -260,5 +260,8 @@ allEnemies / self / allAllies / oneAlly …` 等選擇器，並在其前插入**
 - **技能即資料**：`{ name, target, effects:[...] }`；每張卡 `cardId → skillId`。
 - **豐富目標選擇器**：`singleEnemyByColumn / enemyFrontRow / enemyBackRow / enemyColumn /
   allEnemies / self / allAllies / lowestHpAlly / oneAlly …`（例：對全體後排 100% 傷害）。
+  - **列型退位規則**：`enemyFrontRow` / `enemyBackRow` 等指定某一排的選擇器，
+    若指定排「完全沒人（全空/全滅）」→ 自動轉移到另一排。
+    （例：「對敵方全體後排」技能，敵方後排無人時改打全體前排。）
 - **嘲諷/控場**：選擇器前的嘲諷覆蓋層；控場狀態（暈眩/沉默）。
 - **集氣速度 buff**：即「速度」語意，套用於 `energyGainMult`。
