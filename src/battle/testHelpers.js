@@ -5,6 +5,7 @@ let seq = 0;
 export function makeUnit(opts = {}) {
   const stats = {
     name: opts.name || `U${seq++}`,
+    cardId: opts.cardId,
     element: opts.element || 'fire',
     class: opts.class || 'dps',
     level: opts.level || 1,

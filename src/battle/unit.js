@@ -14,6 +14,7 @@ export class Unit {
   constructor(stats, { team, pos }) {
     this.uid = _uidSeq++;
     this.name = stats.name;
+    this.cardId = stats.cardId;
     this.element = stats.element;
     this.class = stats.class;
     this.level = stats.level;

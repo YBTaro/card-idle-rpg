@@ -1,6 +1,6 @@
 // src/battle/skills.test.js
 import { describe, it, expect } from 'vitest';
-import { normalAttack, castSkill } from './skills.js';
+import { normalAttack, castSkill, skillFor } from './skills.js';
 import { makeUnit } from './testHelpers.js';
 import { Rng } from '../core/rng.js';
 
@@ -18,6 +18,14 @@ describe('普攻集氣', () => {
     expect(dps.energy).toBe(25);
     expect(support.energy).toBe(12);
     expect(foeTank.energy).toBe(20);
+  });
+});
+
+describe('skillFor 歸屬', () => {
+  it('無 cardId → 退回職業大招', () => {
+    expect(skillFor(makeUnit({ class: 'dps' }))).toBe('burst');
+    expect(skillFor(makeUnit({ class: 'tank' }))).toBe('guard');
+    expect(skillFor(makeUnit({ class: 'support' }))).toBe('heal');
   });
 });
 

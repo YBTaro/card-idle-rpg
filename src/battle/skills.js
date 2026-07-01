@@ -27,8 +27,11 @@ export const SKILLS = {
   },
 };
 
+// cardId → skillId（Task 2 填入 10 招）
+export const CARD_SKILLS = {};
+
 export function skillFor(unit) {
-  return unit.classDef.ultimate;
+  return CARD_SKILLS[unit.cardId] ?? unit.classDef.ultimate;
 }
 
 // 施放技能：解析主目標 → 逐效果依 scope 套用。
