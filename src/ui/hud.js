@@ -13,11 +13,12 @@ function fmtCountdown(ms) {
 }
 
 export class Hud {
-  constructor(root, { onSpeedChange, getSpeed, onReset } = {}) {
+  constructor(root, { onSpeedChange, getSpeed, onReset, onSkip } = {}) {
     this.root = root;
     this.onSpeedChange = onSpeedChange;
     this.getSpeed = getSpeed || (() => 2);
     this.onReset = onReset;
+    this.onSkip = onSkip;
     this.render();
     // 每秒更新倒數
     setInterval(() => this._updateDaily(), 1000);
@@ -60,6 +61,14 @@ export class Hud {
       speedWrap.appendChild(b);
     });
     this.root.appendChild(speedWrap);
+
+    // 跳過（快轉當前戰鬥到結果）
+    this.root.appendChild(
+      el('button', {
+        text: '⏩ 跳過',
+        onClick: () => this.onSkip?.(),
+      })
+    );
 
     // 清檔
     this.root.appendChild(

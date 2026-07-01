@@ -19,6 +19,7 @@ async function main() {
   const hud = new Hud(document.getElementById('hud'), {
     onSpeedChange: (x) => battle.setSpeed(x),
     getSpeed: () => battle.speed,
+    onSkip: () => battle.skip(),
     onReset: () => {
       battle.restart();
       roster.render();
