@@ -274,10 +274,13 @@ raw = afterDef × elemMult × defender.dmgTakenMult × attacker.dmgDealtMult × 
 
 - 每卡專屬主動技(cardId → skillId)與技能內容庫。
 - 控制類效果:嘲諷(選擇器前插入 taunt 覆蓋層)、暈眩(跳過出手)、沉默(禁技能)。
-- **種族 (race)**:卡片/單位新增 `race` 標籤(如 人/妖/龍/機械…)。**種族之間無相剋**
+- **種族 (race)**:卡片/單位新增 `race` **單值**標籤(如 人/妖/龍/機械…)。**種族之間無相剋**
   (純分類標籤,不像 element 有循環剋制),僅供條件過濾與種族專屬效果使用。
+- **系列 (series)**:卡片/單位新增 `series` **多值**標籤(`series: string[]`,一張卡可屬多個系列),
+  同樣無相剋;有些技能作用在系列上。與 race 的差別在於**比對用成員判斷**(見下)。
 - **通用條件過濾 `where`**(關鍵擴充點):效果與選擇器可帶可選 `where` 條件,依單位屬性
-  過濾目標集合——支援 `race` / `element` / `row`(前後排) / `class` 等,可組合。範例:
+  過濾目標集合——支援 `race` / `element` / `row`(前後排) / `class`(單值,等值比對)與 `series`
+  (多值,**成員判斷**:`where:{ series:'X' }` 於 `unit.series` 含 `'X'` 時成立),可組合。範例:
   - 對種族加傷:`{ type:'damage', mult:1.3, scope:'target', where:{ race:'undead' } }`
   - 種族限定 buff/debuff:`{ type:'buff', stat:'atk', op:'mul', value:1.2, scope:'allAllies', where:{ race:'dragon' } }`
   - 條件不限種族:`where:{ element:'fire' }`、`where:{ row:'back' }` 等各種變化皆走同一機制。
