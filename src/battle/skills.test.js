@@ -1,7 +1,8 @@
 // src/battle/skills.test.js
 import { describe, it, expect } from 'vitest';
-import { normalAttack, castSkill } from './skills.js';
+import { normalAttack, castSkill, skillFor, SKILLS, CARD_SKILLS } from './skills.js';
 import { makeUnit } from './testHelpers.js';
+import { hasControl } from './buffs.js';
 import { Rng } from '../core/rng.js';
 
 const ctxFor = (caster, allies, enemies, events = []) => ({
@@ -18,6 +19,14 @@ describe('普攻集氣', () => {
     expect(dps.energy).toBe(25);
     expect(support.energy).toBe(12);
     expect(foeTank.energy).toBe(20);
+  });
+});
+
+describe('skillFor 歸屬', () => {
+  it('無 cardId → 退回職業大招', () => {
+    expect(skillFor(makeUnit({ class: 'dps' }))).toBe('burst');
+    expect(skillFor(makeUnit({ class: 'tank' }))).toBe('guard');
+    expect(skillFor(makeUnit({ class: 'support' }))).toBe('heal');
   });
 });
 
@@ -39,5 +48,41 @@ describe('castSkill 資料驗證', () => {
     castSkill(sup, 'heal', ctxFor(sup, [sup, hurt, other], []));
     expect(hurt.hp).toBe(100 + Math.round(sup.effAtk * 3.0)); // 主目標 = 血最低者
     expect(other.hp).toBe(900 + Math.round(sup.effAtk * 1.2));
+  });
+});
+
+describe('每卡專屬技', () => {
+  it('每張卡的專屬技都存在於 SKILLS', () => {
+    const ids = Object.values(CARD_SKILLS);
+    expect(ids.length).toBe(10);
+    for (const id of ids) expect(SKILLS[id]).toBeTruthy();
+  });
+
+  it('shadowExecute（nightreaper）：目標受傷 + 被 stun', () => {
+    const caster = makeUnit({ team: 0, pos: 1, cardId: 'nightreaper', atk: 100 });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 99999, def: 0 });
+    const ctx = ctxFor(caster, [caster], [foe]);
+    castSkill(caster, skillFor(caster), ctx);
+    expect(foe.hp).toBeLessThan(99999);
+    expect(hasControl(foe, 'stun')).toBe(true);
+  });
+
+  it('tidalPrison（tidecaller）：直排目標受傷 + 被 silence', () => {
+    const caster = makeUnit({ team: 0, pos: 1, cardId: 'tidecaller', atk: 100 });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 99999, def: 0 });
+    const ctx = ctxFor(caster, [caster], [foe]);
+    castSkill(caster, skillFor(caster), ctx);
+    expect(foe.hp).toBeLessThan(99999);
+    expect(hasControl(foe, 'silence')).toBe(true);
+  });
+
+  it('windsong（galewind）：全隊 energyGain buff + 回血', () => {
+    const caster = makeUnit({ team: 0, pos: 1, cardId: 'galewind', atk: 100 });
+    const ally = makeUnit({ team: 0, pos: 2, hp: 1000 });
+    ally.hp = 500;
+    const ctx = ctxFor(caster, [caster, ally], []);
+    castSkill(caster, skillFor(caster), ctx);
+    expect(ally.buffs.some((b) => b.stat === 'energyGain')).toBe(true);
+    expect(ally.hp).toBeGreaterThan(500);
   });
 });
