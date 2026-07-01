@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { resolvePower, resolveScope, dealDamage, applyEffect, dealDot, matchesWhere } from './effects.js';
 import { makeUnit } from './testHelpers.js';
 import { Rng } from '../core/rng.js';
+import { hasControl } from './buffs.js';
 
 const ctxFor = (caster, allies, enemies, events = []) => ({
   allies, enemies, rng: new Rng(1),
@@ -98,5 +99,17 @@ describe('where 條件過濾', () => {
     applyEffect({ type: 'damage', mult: 1.0, scope: 'allEnemies', where: { race: '不死' } }, caster, [undead, human], ctx);
     expect(undead.hp).toBeLessThan(99999); // 受擊
     expect(human.hp).toBe(99999); // 不受影響
+  });
+});
+
+describe('control 效果', () => {
+  it('套用對應 control buff（吃 where）', () => {
+    const caster = makeUnit({ team: 0, pos: 1 });
+    const foe = makeUnit({ team: 1, pos: 1, class: 'support' });
+    const other = makeUnit({ team: 1, pos: 2, class: 'dps' });
+    const ctx = ctxFor(caster, [caster], [foe, other]);
+    applyEffect({ type: 'control', control: 'silence', duration: 2, scope: 'allEnemies', where: { class: 'support' } }, caster, [foe, other], ctx);
+    expect(hasControl(foe, 'silence')).toBe(true);
+    expect(hasControl(other, 'silence')).toBe(false);
   });
 });

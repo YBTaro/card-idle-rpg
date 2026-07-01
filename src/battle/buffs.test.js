@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { applyBuff, tickBuffs, resolve, absorbWithShields, dotEntries } from './buffs.js';
+import { hasControl } from './buffs.js';
 
 const u = () => ({ buffs: [] });
 
@@ -52,5 +53,15 @@ describe('buffs', () => {
     applyBuff(unit, { kind: 'dot', damage: 20, duration: 3 });
     expect(dotEntries(unit).length).toBe(1);
     expect(dotEntries(unit)[0].damage).toBe(20);
+  });
+});
+
+describe('control buff', () => {
+  it('hasControl 判定', () => {
+    const u = { buffs: [] };
+    applyBuff(u, { kind: 'control', control: 'stun', duration: 1 });
+    expect(hasControl(u, 'stun')).toBe(true);
+    expect(hasControl(u, 'silence')).toBe(false);
+    expect(hasControl({}, 'stun')).toBe(false);
   });
 });
