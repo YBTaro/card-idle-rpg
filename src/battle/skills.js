@@ -1,7 +1,7 @@
 // 普攻與大招定義。每個技能 (caster, ctx) 直接套用效果並透過 ctx.emit 發事件。
 // ctx = { allies, enemies, rng, emit }
 import { computeDamage } from './damage.js';
-import { pickMeleeTarget, aliveEnemies, lowestHpAlly } from './targeting.js';
+import { singleEnemyByColumn, lowestHpAlly } from './targeting.js';
 
 // 大招倍率與數值（佔位平衡常數）
 export const ULT = {
@@ -27,6 +27,7 @@ function applyDamage(attacker, target, mult, ctx, skill) {
     skill,
     isAdvantage: res.isAdvantage,
     isDisadvantage: res.isDisadvantage,
+    isCrit: res.isCrit,
   });
   if (!target.alive) ctx.emit('death', { unit: target });
 }
@@ -37,20 +38,25 @@ function activeGuardMult(unit) {
   return g ? g.mult : 1;
 }
 
-// ---- 普攻：前排優先單體 ----
+// ---- 普攻：直行對位選敵、施放者集氣、其餘存活隊友各獲 energyOnAllyAction ----
 export function normalAttack(caster, ctx) {
-  const target = pickMeleeTarget(ctx.enemies, ctx.rng);
+  const target = singleEnemyByColumn(caster, ctx.enemies);
   if (!target) return;
   ctx.emit('attack', { attacker: caster, target, skill: 'normal' });
   applyDamage(caster, target, 1.0, ctx, 'normal');
   caster.gainEnergy(caster.classDef.energyOnAction);
+  for (const ally of ctx.allies) {
+    if (ally === caster || !ally.alive) continue;
+    const gain = ally.classDef.energyOnAllyAction || 0;
+    if (gain) ally.gainEnergy(gain);
+  }
 }
 
 // ---- 大招 ----
 export const ULTIMATES = {
-  // 輸出：對前排優先目標造成高倍率爆發
+  // 輸出：對直行對位目標造成高倍率爆發
   burst(caster, ctx) {
-    const target = pickMeleeTarget(ctx.enemies, ctx.rng);
+    const target = singleEnemyByColumn(caster, ctx.enemies);
     if (!target) return;
     ctx.emit('ultimate', { caster, skill: 'burst', target });
     applyDamage(caster, target, ULT.burstMult, ctx, 'burst');
@@ -90,5 +96,3 @@ export const ULTIMATES = {
 export function ultimateFor(unit) {
   return ULTIMATES[unit.classDef.ultimate] || ULTIMATES.burst;
 }
-
-export { aliveEnemies };
