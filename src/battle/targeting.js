@@ -39,3 +39,47 @@ export function lowestHpAlly(allies) {
   if (alive.length === 0) return null;
   return alive.reduce((best, u) => (u.hpRatio < best.hpRatio ? u : best));
 }
+
+// 目標選擇器 registry
+const COLUMN_FALLBACK = { 1: [1, 2, 3], 2: [2, 1, 3], 3: [3, 2, 1] };
+
+function aliveIn(list) {
+  return list.filter((u) => u.alive);
+}
+
+function enemiesInColumn(attacker, enemies) {
+  const alive = aliveIn(enemies);
+  for (const col of COLUMN_FALLBACK[columnOf(attacker.pos)]) {
+    const inCol = alive.filter((u) => columnOf(u.pos) === col);
+    if (inCol.length) return inCol;
+  }
+  return [];
+}
+
+export const SELECTORS = {
+  self: (caster) => [caster],
+  singleEnemyByColumn: (caster, ctx) => {
+    const t = singleEnemyByColumn(caster, ctx.enemies);
+    return t ? [t] : [];
+  },
+  enemyFrontRow: (caster, ctx) => {
+    const front = ctx.enemies.filter((u) => u.alive && rowOf(u.pos) === 'front');
+    return front.length ? front : ctx.enemies.filter((u) => u.alive && rowOf(u.pos) === 'back');
+  },
+  enemyBackRow: (caster, ctx) => {
+    const back = ctx.enemies.filter((u) => u.alive && rowOf(u.pos) === 'back');
+    return back.length ? back : ctx.enemies.filter((u) => u.alive && rowOf(u.pos) === 'front');
+  },
+  enemyColumn: (caster, ctx) => enemiesInColumn(caster, ctx.enemies),
+  allEnemies: (caster, ctx) => aliveIn(ctx.enemies),
+  allAllies: (caster, ctx) => aliveIn(ctx.allies),
+  lowestHpAlly: (caster, ctx) => {
+    const t = lowestHpAlly(ctx.allies);
+    return t ? [t] : [];
+  },
+  oneAlly: (caster, ctx) => {
+    const a = aliveIn(ctx.allies);
+    if (!a.length) return [];
+    return [ctx.rng ? ctx.rng.pick(a) : a[0]];
+  },
+};
