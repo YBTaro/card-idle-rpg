@@ -17,3 +17,14 @@ describe('deriveStats 帶出種族/系列', () => {
     expect(b.series).not.toContain('X'); // 不互相污染
   });
 });
+
+describe('deriveStats 帶出被動', () => {
+  it('aegis 有 def 光環被動；無被動卡為空陣列', () => {
+    const s = deriveStats({ cardId: 'aegis', level: 1 });
+    expect(Array.isArray(s.passives)).toBe(true);
+    expect(s.passives.length).toBeGreaterThan(0);
+    expect(s.passives[0].effects[0].stat).toBe('def');
+    const z = deriveStats({ cardId: 'zephyr', level: 1 });
+    expect(z.passives).toEqual([]);
+  });
+});
