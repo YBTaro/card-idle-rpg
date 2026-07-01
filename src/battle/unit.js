@@ -1,6 +1,10 @@
 // 戰鬥單位：封裝 hp / energy 與衍生數值。純資料 + 小方法，不碰渲染。
 import { CLASSES } from '../data/classes.js';
 import { rowOf, columnOf } from './positions.js';
+import { CRIT_CHANCE, CRIT_MULT } from './damage.js';
+import { resolve, absorbWithShields } from './buffs.js';
+
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
 
 export const ENERGY_MAX = 100;
 
@@ -49,13 +53,24 @@ export class Unit {
     return Math.max(0, this.hp / this.maxHp);
   }
 
+  get effAtk() { return Math.round(resolve(this, 'atk', this.atk)); }
+  get effDef() { return Math.round(resolve(this, 'def', this.def)); }
+  get critChance() { return clamp01(resolve(this, 'critChance', CRIT_CHANCE)); }
+  get critMult() { return resolve(this, 'critMult', CRIT_MULT); }
+  get dmgTakenMult() { return resolve(this, 'dmgTaken', 1); }
+  get dmgDealtMult() { return resolve(this, 'dmgDealt', 1); }
+  get energyGainMult() { return resolve(this, 'energyGain', 1); }
+
   gainEnergy(amount) {
-    this.energy = Math.min(ENERGY_MAX, this.energy + amount);
+    const gained = Math.round(amount * this.energyGainMult);
+    this.energy = Math.max(0, Math.min(ENERGY_MAX, this.energy + gained));
   }
 
   // 套用傷害，回傳實際扣血量。
   takeDamage(amount) {
-    const dealt = Math.min(this.hp, Math.max(0, Math.round(amount)));
+    const incoming = Math.max(0, Math.round(amount));
+    const toHp = absorbWithShields(this, incoming);
+    const dealt = Math.min(this.hp, toHp);
     this.hp -= dealt;
     return dealt;
   }
