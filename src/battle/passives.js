@@ -44,6 +44,7 @@ export function recomputePassives(teams) {
     if (!owner.alive || !owner.passives || owner.passives.length === 0) continue;
     for (const p of owner.passives) {
       if (!conditionHolds(p.when, owner, teams)) continue;
+      if (!p.effects || p.effects.length === 0) continue;
       const targets = passiveScope(p.target, owner, teams);
       for (const t of targets) {
         for (const e of p.effects) {

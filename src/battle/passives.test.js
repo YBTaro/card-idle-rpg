@@ -33,6 +33,20 @@ describe('recomputePassives', () => {
     expect(a.effAtk).toBe(110); // 2 不死 → 1+0.05*2=1.1
   });
 
+  it('條件 alliesAtLeast：符合數達標才生效', () => {
+    const p = [{ when: { alliesAtLeast: { count: 2, where: { race: '龍' } } }, target: 'self', effects: [{ stat: 'atk', op: 'mul', value: 1.5 }] }];
+    const owner = makeUnit({ team: 0, pos: 1, atk: 100, race: '龍', passives: p });
+    const dragon2 = makeUnit({ team: 0, pos: 2, race: '龍' });
+    const human = makeUnit({ team: 0, pos: 3, race: '人' });
+    const foe = makeUnit({ team: 1, pos: 1 });
+    // 只有 1 條龍(owner) → 未達 2 → 無效
+    recomputePassives([[owner, human], [foe]]);
+    expect(owner.effAtk).toBe(100);
+    // 2 條龍(owner + dragon2) → 達標 → +50%
+    recomputePassives([[owner, dragon2, human], [foe]]);
+    expect(owner.effAtk).toBe(150);
+  });
+
   it('重算不累積、非光環 buff 保留', () => {
     const tank = makeUnit({ team: 0, pos: 1, def: 100, passives: [{ target: 'self', effects: [{ stat: 'def', op: 'mul', value: 1.2 }] }] });
     const foe = makeUnit({ team: 1, pos: 1 });

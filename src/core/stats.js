@@ -28,6 +28,6 @@ export function deriveStats(cardInst) {
     hp: Math.round(raw.hp * cls.statMods.hp),
     atk: Math.round(raw.atk * cls.statMods.atk),
     def: Math.round(raw.def * cls.statMods.def),
-    passives: card.passives || [],
+    passives: card.passives ? [...card.passives] : [],
   };
 }
