@@ -1,0 +1,22 @@
+{
+  "name": "card-idle-rpg",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "卡牌每日養成全自動戰鬥 — card daily-cultivation auto-battle web game",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "gsap": "^3.12.5",
+    "pixi.js": "^8.6.6"
+  },
+  "devDependencies": {
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}
