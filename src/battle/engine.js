@@ -7,6 +7,7 @@ import { TURN_SEQUENCE } from './positions.js';
 import { normalAttack, castSkill, skillFor } from './skills.js';
 import { tickBuffs, dotEntries, hasControl } from './buffs.js';
 import { dealDot } from './effects.js';
+import { recomputePassives } from './passives.js';
 
 export const MAX_ROUNDS = 100; // 回合上限，防打不完
 export const MAX_SKILL_PASSES = 50; // 技能階段掃描上限，防死迴圈
@@ -60,6 +61,7 @@ export class BattleEngine {
   // 推進一個動作。回傳動作紀錄或 null（戰鬥已結束）。
   step() {
     if (this.over) return null;
+    recomputePassives(this.teams);
     return this.phase === 'normal' ? this._stepNormal() : this._stepSkill();
   }
 

@@ -126,6 +126,15 @@ describe('BattleEngine（回合制）', () => {
     expect(me.energy).toBe(ENERGY_MAX); // 能量保留
   });
 
+  it('被動：開打時光環反映在 effDef', () => {
+    const tank = makeUnit({ team: 0, pos: 1, def: 100, passives: [{ target: 'allAllies', effects: [{ stat: 'def', op: 'mul', value: 1.1 }] }] });
+    const ally = makeUnit({ team: 0, pos: 2, def: 100 });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 99999 });
+    const engine = new BattleEngine([tank, ally], [foe], { rng: new Rng(1) });
+    engine.step(); // step 內先 recompute
+    expect(ally.effDef).toBe(110);
+  });
+
   it('暈眩：滿氣也不觸發技能階段', () => {
     const me = makeUnit({ team: 0, pos: 1, class: 'dps', atk: 100, energy: ENERGY_MAX });
     const foe = makeUnit({ team: 1, pos: 1, hp: 99999, def: 0 });
