@@ -1,7 +1,35 @@
 // 選敵邏輯。普攻前排優先：先打存活前排，前排全滅才打後排。
+import { columnOf, rowOf } from './positions.js';
 
 function aliveInRow(units, row) {
   return units.filter((u) => u.alive && u.row === row);
+}
+
+// 直行偏好序：本行 → 往小號 → 往大號（值為前排位置號，後排 +3）
+const COLUMN_PREF = {
+  1: [1, 2, 3], // 直行A
+  2: [2, 1, 3], // 直行B
+  3: [3, 2, 1], // 直行C
+};
+
+function aliveInRowT(enemies, row) {
+  return enemies.filter((u) => u.alive && rowOf(u.pos) === row);
+}
+
+// 普攻預設選擇器：直行對位、前排優先、缺位往小號靠、前排全空才打後排。
+export function singleEnemyByColumn(attacker, enemies) {
+  const col = columnOf(attacker.pos);
+  for (const row of ['front', 'back']) {
+    const pool = aliveInRowT(enemies, row);
+    if (pool.length === 0) continue; // 該排全空 → 換下一排
+    const offset = row === 'front' ? 0 : 3;
+    for (const c of COLUMN_PREF[col]) {
+      const hit = pool.find((u) => u.pos === c + offset);
+      if (hit) return hit;
+    }
+    return pool[0]; // 保險（理論上不會走到）
+  }
+  return null;
 }
 
 // 從 enemies 中選一個普攻目標（前排優先）。回傳 Unit 或 null。
