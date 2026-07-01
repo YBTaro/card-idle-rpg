@@ -4,9 +4,9 @@ import { computeDamage } from './damage.js';
 import { elementMultiplier } from '../data/elements.js';
 import { applyBuff } from './buffs.js';
 
-// power 的基準：預設 caster.atk（基礎值）；basis:'targetMaxHp' 用目標 maxHp。
+// power 的基準：預設 caster.effAtk（含 buff 加成）；basis:'targetMaxHp' 用目標 maxHp。
 export function resolvePower(effect, caster, target) {
-  const base = effect.basis === 'targetMaxHp' ? target.maxHp : caster.atk;
+  const base = effect.basis === 'targetMaxHp' ? target.maxHp : caster.effAtk;
   return base * effect.power;
 }
 

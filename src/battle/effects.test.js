@@ -42,17 +42,20 @@ describe('effects', () => {
     const ally = makeUnit({ team: 0, pos: 2, hp: 100 });
     ally.hp = 40;
     const ctx = ctxFor(caster, [caster, ally], []);
-    // heal = effAtk×0.5 = 50
+    // heal = effAtk×0.5 = 50（尚未 buff）
     applyEffect({ type: 'heal', power: 0.5, scope: 'target' }, caster, [ally], ctx);
     expect(ally.hp).toBe(90);
-    // buff atk ×1.5
-    applyEffect({ type: 'buff', stat: 'atk', op: 'mul', value: 1.5, duration: 2, scope: 'self' }, caster, [caster], ctx);
-    expect(caster.effAtk).toBe(150);
-    // shield = effAtk×0.3 = 30
+    // shield = effAtk×0.3 = 30（尚未 buff）
     applyEffect({ type: 'shield', power: 0.3, scope: 'self' }, caster, [caster], ctx);
     expect(caster.buffs.some((b) => b.kind === 'shield' && b.amount === 30)).toBe(true);
-    // dot：預存每跳傷害（atk×0.2=20，無屬性）
+    // dot：預存每跳傷害（effAtk×0.2=20，無屬性）
     applyEffect({ type: 'dot', power: 0.2, duration: 3, scope: 'self' }, caster, [caster], ctx);
     expect(caster.buffs.some((b) => b.kind === 'dot' && b.damage === 20)).toBe(true);
+    // buff atk ×1.5（最後套用）→ effAtk 提升
+    applyEffect({ type: 'buff', stat: 'atk', op: 'mul', value: 1.5, duration: 2, scope: 'self' }, caster, [caster], ctx);
+    expect(caster.effAtk).toBe(150);
+    // 驗證 buff 會放大 power：buff 後新的護盾 = effAtk×0.3 = 45
+    applyEffect({ type: 'shield', power: 0.3, scope: 'self', key: 'sh2' }, caster, [caster], ctx);
+    expect(caster.buffs.some((b) => b.kind === 'shield' && b.amount === 45)).toBe(true);
   });
 });
