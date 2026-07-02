@@ -5,6 +5,7 @@ import { deriveStats } from '../core/stats.js';
 import { CARDS } from '../data/cards.js';
 import { ELEMENT_LABEL } from '../data/elements.js';
 import { CLASSES } from '../data/classes.js';
+import { cardFrame } from './cardFrame.js';
 import { levelUp, levelUpCost, canLevelUp, MAX_LEVEL } from '../systems/leveling.js';
 import {
   isInFormation,
@@ -55,7 +56,8 @@ export class RosterUI {
             toggleFormation(entry.instanceId);
             this._changed();
           } }, [
-            el('span', { class: 'slot-name', text: card ? card.name : '?' }),
+            card ? cardFrame(card, { size: 'mini' }) : el('span', { class: 'slot-name', text: '?' }),
+            el('span', { class: 'slot-name', text: card ? card.name : '' }),
             el('span', { class: 'slot-sub', text: card ? `${pos}・Lv${inst.level}・${CLASSES[card.class].label}` : '' }),
           ])
         );
@@ -88,10 +90,7 @@ export class RosterUI {
     const maxed = inst.level >= MAX_LEVEL;
 
     const node = el('div', { class: `card${inForm ? ' in-formation' : ''}` }, [
-      el('div', { class: 'card-head' }, [
-        el('span', { class: 'card-name', text: card.name }),
-        el('span', { class: 'lvl', text: maxed ? 'MAX' : `Lv${inst.level}` }),
-      ]),
+      cardFrame(card, { level: maxed ? 'MAX' : inst.level, size: 'full' }),
       el('div', {}, [
         el('span', { class: `badge element ${card.element}`, text: ELEMENT_LABEL[card.element] }),
         el('span', { class: 'badge class', text: CLASSES[card.class].label }),
