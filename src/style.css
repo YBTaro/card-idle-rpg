@@ -201,6 +201,124 @@ button.daily-ready { animation: pulse 1.4s ease-in-out infinite; }
 .gacha-result .big { font-size: 18px; font-weight: 800; }
 .gacha-result.rare { border-color: var(--accent); box-shadow: 0 0 24px rgba(245,196,81,.25); }
 
+/* ---------- Card frame（卡面元件：manifest 圖 / 程序化佔位） ---------- */
+.cardframe {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-panel-2);
+}
+/* mini：編隊格頭像，固定約 48px 方形 */
+.cardframe.mini {
+  width: 48px;
+  height: 48px;
+  aspect-ratio: 1 / 1;
+  flex: none;
+  border-radius: 8px;
+}
+
+/* art 區撐滿卡面 */
+.cardframe-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 有圖時 cover 撐滿，object-position 對焦點 */
+}
+.cardframe-art.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.cardframe-glyph {
+  font-size: 48px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .35));
+}
+.cardframe.mini .cardframe-glyph { font-size: 26px; }
+.cardframe-el {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, .9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+}
+.cardframe.mini .cardframe-el { display: none; }
+
+/* 底部名牌：漸層遮罩上疊名字 */
+.cardframe-name {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 6px 5px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(to top, rgba(0, 0, 0, .82) 0%, rgba(0, 0, 0, 0) 100%);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 右上等級章 */
+.cardframe-lvl {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: #1a1400;
+  background: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+}
+.cardframe.mini .cardframe-lvl { font-size: 9px; padding: 0 4px; top: 2px; right: 2px; }
+
+/* 抽到卡：彈入 + 斜向光帶掃一次 */
+.cardframe.pop { animation: cardPop .4s cubic-bezier(.2, .9, .3, 1.3) both; }
+.cardframe.shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, .55) 50%, transparent 100%);
+  transform: skewX(-18deg);
+  animation: cardShine 1s ease-in-out .25s 1 both;
+  pointer-events: none;
+}
+@keyframes cardPop {
+  0% { transform: scale(.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes cardShine {
+  0% { left: -70%; }
+  100% { left: 130%; }
+}
+
+/* roster 卡格：卡面在頂，與其下徽章間留白 */
+.card .cardframe { margin-bottom: 8px; }
+
+/* gacha 單抽卡面容器 */
+.gacha-card1 { width: 150px; margin: 4px auto 8px; }
+/* gacha 十連卡結果小格排列 */
+.gacha-card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.gacha-card-grid .cardframe { width: 64px; }
+
 .toast {
   position: fixed;
   bottom: 20px;

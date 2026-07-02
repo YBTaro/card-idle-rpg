@@ -3,6 +3,8 @@ import { el, clear, toast } from './dom.js';
 import { store } from '../core/state.js';
 import { pull, canPull } from '../systems/gacha.js';
 import { GACHA_COST_TICKETS } from '../data/gachaTable.js';
+import { CARDS } from '../data/cards.js';
+import { cardFrame } from './cardFrame.js';
 
 export class GachaUI {
   constructor(root) {
@@ -63,9 +65,27 @@ export class GachaUI {
     const wrap = el('div', { class: `gacha-result${rare ? ' rare' : ''}` });
     if (this.lastResult.length === 1) {
       const r = this.lastResult[0];
-      wrap.appendChild(el('div', { class: 'big', text: r.label }));
+      // 抽到新角色 → full 卡面（彈入 + 光帶）；素材/重複維持文字。
+      if (r.type === 'card' && CARDS[r.cardId]) {
+        const fr = cardFrame(CARDS[r.cardId], { size: 'full' });
+        fr.classList.add('pop', 'shine');
+        const holder = el('div', { class: 'gacha-card1' }, [fr]);
+        wrap.appendChild(holder);
+        wrap.appendChild(el('div', { class: 'big', text: r.label }));
+      } else {
+        wrap.appendChild(el('div', { class: 'big', text: r.label }));
+      }
     } else {
       wrap.appendChild(el('div', { class: 'big', text: `${this.lastResult.length} 連抽結果` }));
+      // 卡結果排成小格（縮小 full 卡面）；素材結果維持文字列。
+      const cardResults = this.lastResult.filter((r) => r.type === 'card' && CARDS[r.cardId]);
+      if (cardResults.length) {
+        const cardGrid = el('div', { class: 'gacha-card-grid' });
+        for (const r of cardResults) {
+          cardGrid.appendChild(cardFrame(CARDS[r.cardId], { size: 'full' }));
+        }
+        wrap.appendChild(cardGrid);
+      }
       const list = el('div', { style: 'font-size:13px;color:var(--text-dim);line-height:1.7' });
       for (const r of this.lastResult) {
         list.appendChild(el('div', { text: (r.type === 'card' ? '★ ' : '・') + r.label }));
