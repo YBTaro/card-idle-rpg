@@ -103,9 +103,10 @@ export function normalAttack(caster, ctx) {
   ctx.emit('attack', { attacker: caster, target, skill: 'normal' });
   dealDamage(caster, target, 1.0, ctx, 'normal');
   caster.gainEnergy(caster.classDef.energyOnAction);
+  ctx.emit('energy', { unit: caster, value: caster.energy });
   for (const ally of ctx.allies) {
     if (ally === caster || !ally.alive) continue;
     const gain = ally.classDef.energyOnAllyAction || 0;
-    if (gain) ally.gainEnergy(gain);
+    if (gain) { ally.gainEnergy(gain); ctx.emit('energy', { unit: ally, value: ally.energy }); }
   }
 }

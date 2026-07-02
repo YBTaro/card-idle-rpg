@@ -33,3 +33,45 @@ describe('battleLog', () => {
     expect(last.winner).toBe(winner);
   });
 });
+
+function run(seed = 7) {
+  const [a, b] = build();
+  return simulateBattle(a, b, { rng: new Rng(seed) });
+}
+
+describe('log v2：energy / round / level', () => {
+  it('setup 快照含 level', () => {
+    const { setup } = run();
+    for (const s of setup) expect(typeof s.level).toBe('number');
+  });
+
+  it('普攻後施放者收到 energy 條目（value 上升）', () => {
+    const { log } = run();
+    const e = log.find((x) => x.type === 'energy');
+    expect(e).toBeTruthy();
+    expect(typeof e.uid).toBe('number');
+    expect(typeof e.value).toBe('number');
+  });
+
+  it('大招施放後緊接 value 0 的 energy 條目（集氣歸零）', () => {
+    const { log } = run();
+    const i = log.findIndex((x) => x.type === 'ultimate');
+    expect(i).toBeGreaterThan(-1);
+    const zero = log.find((x) => x.type === 'energy' && x.value === 0);
+    expect(zero).toBeTruthy();
+  });
+
+  it('round 條目存在且遞增', () => {
+    const { log } = run();
+    const rounds = log.filter((x) => x.type === 'round').map((x) => x.round);
+    expect(rounds.length).toBeGreaterThan(0);
+    for (let i = 1; i < rounds.length; i++) expect(rounds[i]).toBe(rounds[i - 1] + 1);
+  });
+
+  it('同 seed 確定性（含新條目）', () => {
+    const r1 = run(42);
+    const r2 = run(42);
+    expect(r1.log).toEqual(r2.log);
+    expect(r1.winner).toBe(r2.winner);
+  });
+});

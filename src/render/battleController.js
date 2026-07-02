@@ -1,5 +1,7 @@
-// 戰鬥流程控制：建立 engine + scene，驅動 ticker，掛機自動重開下一場。
-import { BattleEngine } from '../battle/engine.js';
+// 戰鬥流程控制：每場用 simulateBattle 產 log，交給 Replayer/Director 播放到 BattleScene，掛機自動重開下一場。
+import { simulateBattle } from '../battle/battleLog.js';
+import { Replayer } from '../battle/replayer.js';
+import { AnimationDirector } from './animationDirector.js';
 import { BattleScene } from './battleScene.js';
 import { buildPlayerUnits, buildEnemyUnits } from '../systems/battleSetup.js';
 import { store } from '../core/state.js';
@@ -8,18 +10,18 @@ import { Rng } from '../core/rng.js';
 
 export const WIN_GOLD = 60; // 勝利掛機獎勵（佔位）
 const RESTART_DELAY = 1.4; // 秒
-const STEP_INTERVAL = 0.35; // 每個動作間隔（秒），再除以速度
 
 export class BattleController {
   constructor(app, statusEl) {
     this.app = app;
     this.statusEl = statusEl;
     this.speed = 2; // 戰鬥速度倍率
-    this.engine = null;
+    this.replayer = null;
+    this.director = null;
     this.scene = null;
+    this._setup = null;
     this._cooldown = 0;
     this._lastResult = '';
-    this._stepAccum = 0;
 
     this.app.ticker.add(this._tick, this);
     this.start();
@@ -30,16 +32,21 @@ export class BattleController {
     const player = buildPlayerUnits(store.state);
     if (player.length === 0) {
       this._setStatus('⚠ 尚未編排陣容，請到「角色」分頁上陣');
-      this.engine = null;
+      this.replayer = null;
+      this.director = null;
+      this._setup = null;
       return;
     }
     const stage = store.state.progress.stage || 1;
     const enemy = buildEnemyUnits(stage, new Rng());
-    this.engine = new BattleEngine(player, enemy);
-    this.scene = new BattleScene(this.app, this.engine);
-    this.engine.on('battleEnd', ({ winner }) => this._onEnd(winner));
+    const sim = simulateBattle(player, enemy, { rng: new Rng() });
+    this._setup = sim.setup;
+    this.replayer = new Replayer(sim.setup, sim.log);
+    this.scene = new BattleScene(this.app, sim.setup, this.replayer);
+    this.director = new AnimationDirector(this.replayer);
+    this.director.speed = this.speed;
+    this.replayer.on('battleEnd', ({ winner }) => this._onEnd(winner));
     this._cooldown = 0;
-    this._stepAccum = 0;
   }
 
   // 陣容/等級變更後呼叫，重啟當前戰鬥。
@@ -49,16 +56,14 @@ export class BattleController {
 
   setSpeed(x) {
     this.speed = x;
+    if (this.director) this.director.speed = x;
   }
 
-  // 快轉當前戰鬥到結束（不逐格動畫），再刷新一次畫面。battleEnd 事件照常觸發結算。
+  // 快轉當前戰鬥到結束（瞬間結算 log），再刷新一次畫面。battleEnd 事件照常觸發結算。
   skip() {
-    if (!this.engine || this.engine.over) return;
-    let guard = 0;
-    while (!this.engine.over && guard < 100000) {
-      this.engine.step();
-      guard += 1;
-    }
+    if (!this.replayer || this.replayer.done) return;
+    this.scene?.setInstant(true);
+    this.replayer.skipToEnd();
     this.scene?.renderTick();
   }
 
@@ -82,9 +87,9 @@ export class BattleController {
 
   _tick(ticker) {
     const dt = Math.min(0.05, ticker.deltaMS / 1000); // 夾住避免分頁切回時暴衝
-    if (!this.engine) return;
+    if (!this.replayer) return;
 
-    if (this.engine.over) {
+    if (this.replayer.done) {
       this.scene?.renderTick();
       this._cooldown -= dt;
       this._setStatus(`${this._lastResult}　下一場 ${Math.max(0, this._cooldown).toFixed(1)}s…`);
@@ -92,23 +97,17 @@ export class BattleController {
       return;
     }
 
-    this._stepAccum += dt * this.speed;
-    let guard = 0;
-    while (this._stepAccum >= STEP_INTERVAL && this.engine && !this.engine.over && guard < 50) {
-      this._stepAccum -= STEP_INTERVAL;
-      this.engine.step();
-      guard += 1;
-    }
+    this.director.update(dt);
     this.scene?.renderTick();
     this._renderStatus();
   }
 
   _renderStatus() {
-    const e = this.engine;
-    const a = e.teams[0].filter((u) => u.alive).length;
-    const b = e.teams[1].filter((u) => u.alive).length;
+    const setup = this._setup;
+    const a = setup.filter((u) => u.team === 0 && this.replayer.aliveOf(u.uid)).length;
+    const b = setup.filter((u) => u.team === 1 && this.replayer.aliveOf(u.uid)).length;
     const stage = store.state.progress.stage || 1;
-    this._setStatus(`關卡 ${stage}　我方 ${a} vs 敵方 ${b}　|　回合 ${e.round}`);
+    this._setStatus(`關卡 ${stage}　我方 ${a} vs 敵方 ${b}　|　回合 ${this.replayer.round}`);
   }
 
   _setStatus(text) {

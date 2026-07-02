@@ -72,6 +72,7 @@ export class BattleEngine {
 
     if (idx <= this._lastActedIdx) {
       this.round += 1;
+      this.emit('round', { round: this.round });
       if (this.round >= MAX_ROUNDS) { this._endByHp(); return { type: 'timeout', unit }; }
     }
     this._lastActedIdx = idx;
@@ -127,6 +128,7 @@ export class BattleEngine {
       // 技能不算回合：免費行動，不結算 DoT、不遞減 buff duration
       this.emit('turn', { unit: u });
       u.energy = 0;
+      this.emit('energy', { unit: u, value: 0 });
       castSkill(u, skillFor(u), ctx);
       return;
     }

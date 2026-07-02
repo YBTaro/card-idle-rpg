@@ -8,9 +8,10 @@ export class Replayer {
     this.log = log;
     this.cursor = 0;
     this.winner = null;
+    this.round = 0;
     this.emitter = new EventEmitter();
     this.state = new Map();
-    for (const u of setup) this.state.set(u.uid, { hp: u.maxHp, maxHp: u.maxHp, alive: true });
+    for (const u of setup) this.state.set(u.uid, { hp: u.maxHp, maxHp: u.maxHp, alive: true, energy: 0 });
   }
 
   on(event, fn) { return this.emitter.on(event, fn); }
@@ -26,6 +27,11 @@ export class Replayer {
     } else if (entry.type === 'death') {
       const s = this.state.get(entry.uid);
       if (s) s.alive = false;
+    } else if (entry.type === 'energy') {
+      const s = this.state.get(entry.uid);
+      if (s) s.energy = entry.value;
+    } else if (entry.type === 'round') {
+      this.round = entry.round;
     } else if (entry.type === 'battleEnd') {
       this.winner = entry.winner;
     }
@@ -44,5 +50,6 @@ export class Replayer {
   skipToEnd() { this.playAll(); }
 
   hpOf(uid) { return this.state.get(uid)?.hp ?? 0; }
+  energyOf(uid) { return this.state.get(uid)?.energy ?? 0; }
   aliveOf(uid) { return this.state.get(uid)?.alive ?? false; }
 }
