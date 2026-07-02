@@ -80,7 +80,8 @@ export function cutIn(layer, stageW, { name, skillName, color, glyph }) {
   // 半透明深藍紫底帶（圓潤細邊，兩端輕微圓角）+ 上下柔和元素色邊線。
   const band = new Graphics();
   const top = -BAND_H / 2;
-  band.roundRect(0, top, stageW, BAND_H, 6).fill({ color: 0x1a1f33, alpha: 0.82 });
+  // 底帶要明顯比天幕深（天幕 ~0x1e2438 系），否則整條帶只剩上下邊線看得見。
+  band.roundRect(0, top, stageW, BAND_H, 6).fill({ color: 0x0a0d1a, alpha: 0.88 });
   band.rect(0, top, stageW, 2).fill({ color, alpha: 0.55 });
   band.rect(0, top + BAND_H - 2, stageW, 2).fill({ color, alpha: 0.55 });
   cont.addChild(band);

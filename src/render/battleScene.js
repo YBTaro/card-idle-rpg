@@ -83,9 +83,20 @@ export class BattleScene {
       bg.rect(0, Math.floor((i * STAGE_H) / bands), STAGE_W, h).fill(color);
     }
 
-    // 地平帶：y ~55% 起，暖棕綠地面色。
+    // 地平帶：y ~55% 起，同樣用漸層帶（硬邊平塗會出現生硬接縫），
+    // 地平線處比天幕底稍亮、往下收暗，交界再壓一條極淡暖金光當地平線。
     const groundY = STAGE_H * 0.55;
-    bg.rect(0, groundY, STAGE_W, STAGE_H - groundY).fill(0x2c2e26);
+    const groundTop = 0x3b3454;
+    const groundBottom = 0x232032;
+    const gBands = 12;
+    const gH = STAGE_H - groundY;
+    for (let i = 0; i < gBands; i += 1) {
+      const t = i / (gBands - 1);
+      const color = lerpColor(groundTop, groundBottom, t);
+      const h = Math.ceil(gH / gBands) + 1;
+      bg.rect(0, Math.floor(groundY + (i * gH) / gBands), STAGE_W, h).fill(color);
+    }
+    bg.rect(0, groundY - 1, STAGE_W, 2).fill({ color: 0xf5c451, alpha: 0.08 });
 
     // 2~3 條淡透視地面線（愈往下愈寬，模擬透視）。
     const lines = [0.66, 0.78, 0.92];
@@ -95,7 +106,7 @@ export class BattleScene {
       bg
         .moveTo(inset, y)
         .lineTo(STAGE_W - inset, y)
-        .stroke({ color: 0x4a4030, width: 1, alpha: 0.2 });
+        .stroke({ color: 0x8a80a8, width: 1, alpha: 0.08 });
     }
 
     this.root.addChild(bg);
@@ -106,12 +117,19 @@ export class BattleScene {
       return (u && ELEMENT_COLOR[u.element]) || (team === 0 ? 0xff7d5c : 0x6cb2ff);
     };
     const glowSpecs = [
-      { x: STAGE_W * 0.28, y: STAGE_H * 0.42, r: 220, color: teamColorOf(0) },
-      { x: STAGE_W * 0.72, y: STAGE_H * 0.48, r: 240, color: teamColorOf(1) },
+      { x: STAGE_W * 0.26, y: STAGE_H * 0.32, color: teamColorOf(0) },
+      { x: STAGE_W * 0.74, y: STAGE_H * 0.32, color: teamColorOf(1) },
     ];
     for (const spec of glowSpecs) {
       const glow = new Graphics();
-      glow.circle(0, 0, spec.r).fill({ color: spec.color, alpha: 0.08 });
+      // 多圈同心圓疊出徑向衰減——單一平塗大圓沒有衰減，看起來是一塊色盤而非柔光。
+      const rings = [
+        [55, 0.045],
+        [90, 0.03],
+        [125, 0.02],
+        [160, 0.012],
+      ];
+      for (const [r, a] of rings) glow.circle(0, 0, r).fill({ color: spec.color, alpha: a });
       glow.x = spec.x;
       glow.y = spec.y;
       glow.zIndex = -999;
@@ -134,7 +152,7 @@ export class BattleScene {
     const indexInRow = row === 'front' ? pos - 1 : pos - 4; // 0..2
     // 斜隊形：沿排水平錯位（上小下大、team0 向右、team1 向左）。
     const x = cols[row] + (indexInRow - 1) * 14 * (team === 0 ? 1 : -1);
-    const spacing = 92;
+    const spacing = 116; // 需大於單位視覺高度（名字頂到條底約 106px），否則上下排疊字
     const rowCount = 3;
     const totalH = (rowCount - 1) * spacing;
     const y = STAGE_H / 2 - totalH / 2 + indexInRow * spacing;
@@ -163,9 +181,9 @@ export class BattleScene {
     const c = new Container();
     c._info = info;
 
-    // 腳底橢圓影（最底層，index 0）。條 bars 稍後才 add，會蓋在影之上。
+    // 腳底橢圓影（最底層，index 0）。緊貼圓底、比條窄，避免和血條疊成「重影」。
     const shadow = new Graphics();
-    shadow.ellipse(0, R + 4, R * 1.6 * 0.5, R * 0.45 * 0.5).fill({ color: 0x000000, alpha: 0.26 });
+    shadow.ellipse(0, R + 3, 22, 5.5).fill({ color: 0x000000, alpha: 0.22 });
     c.addChild(shadow);
 
     const color = ELEMENT_COLOR[info.element] || 0xffffff;
@@ -188,14 +206,19 @@ export class BattleScene {
 
     const name = new Text({
       text: `${info.name} Lv${info.level}`,
-      style: { fontSize: 12, fill: 0xc9d2e6, fontWeight: '600' },
+      style: {
+        fontSize: 11,
+        fill: 0xdfe4f2,
+        fontWeight: '600',
+        stroke: { color: 0x10131f, width: 3 },
+      },
     });
     name.anchor.set(0.5);
-    name.y = -R - 26;
+    name.y = -R - 16;
     c.addChild(name);
 
     const bars = new Graphics();
-    bars.y = R + 8;
+    bars.y = R + 12; // 與腳底影錯開，否則影從條後緣露出像重影
     c.addChild(bars);
     c._bars = bars;
 
