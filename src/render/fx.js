@@ -61,6 +61,47 @@ export function floatText(layer, x, y, textObj) {
     .to(textObj, { alpha: 0, duration: 0.7, ease: 'power1.in' }, 0.25);
 }
 
+// 大招技能名橫幅：置中（呼叫端先設 x/y），放大進場→停留→淡出後銷毀。
+export function banner(layer, textObj) {
+  textObj.anchor?.set?.(0.5);
+  textObj.scale.set(0.6);
+  layer.addChild(textObj);
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    gsap.killTweensOf(textObj);
+    gsap.killTweensOf(textObj.scale);
+    if (!textObj.destroyed) textObj.destroy();
+  };
+  gsap
+    .timeline({ onComplete: finish })
+    .to(textObj.scale, { x: 1, y: 1, duration: 0.25, ease: 'back.out(2)' }, 0)
+    .to(textObj, { alpha: 0, duration: 0.3, ease: 'power1.in' }, 0.25 + 0.6);
+}
+
+// 震屏：記 home 座標，快速抖 4~5 下後回原位。作用於整體容器（root）。
+export function screenShake(container, strength = 6) {
+  const homeX = container._homeX ?? container.x;
+  const homeY = container._homeY ?? container.y;
+  container._homeX = homeX;
+  container._homeY = homeY;
+  gsap.killTweensOf(container);
+  const shakes = 4 + Math.floor(Math.random() * 2); // 4~5 下
+  const tl = gsap.timeline({
+    onComplete: () => {
+      container.x = homeX;
+      container.y = homeY;
+    },
+  });
+  for (let i = 0; i < shakes; i += 1) {
+    const dx = (Math.random() * 2 - 1) * strength;
+    const dy = (Math.random() * 2 - 1) * strength;
+    tl.to(container, { x: homeX + dx, y: homeY + dy, duration: 0.04 });
+  }
+  tl.to(container, { x: homeX, y: homeY, duration: 0.04 });
+}
+
 // 強制停止並清掉某容器下所有子物件的進行中 tween（場景拆除前呼叫）。
 export function killFx(container) {
   for (const child of container.children) gsap.killTweensOf(child);

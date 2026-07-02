@@ -36,7 +36,9 @@ export class BattleController {
     const stage = store.state.progress.stage || 1;
     const enemy = buildEnemyUnits(stage, new Rng());
     this.engine = new BattleEngine(player, enemy);
-    this.scene = new BattleScene(this.app, this.engine);
+    // TODO(Task 5): 改用 simulateBattle 產 log → new BattleScene(this.app, setup, replayer) 接線。
+    // BattleScene 建構子已改為 (app, setup, replayer)，此處暫停用場景避免以舊簽名建構出錯。
+    this.scene = null;
     this.engine.on('battleEnd', ({ winner }) => this._onEnd(winner));
     this._cooldown = 0;
     this._stepAccum = 0;
