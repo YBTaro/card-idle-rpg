@@ -18,12 +18,13 @@ import {
   killFx,
 } from './fx.js';
 
+// 與 style.css 的 --fire/--wind/--water/--light/--dark 同色值（療癒手遊風暖調）。
 const ELEMENT_COLOR = {
-  fire: 0xff6b4a,
-  wind: 0x74e08c,
-  water: 0x5aa9ff,
-  light: 0xffe27a,
-  dark: 0xb07bff,
+  fire: 0xff7d5c,
+  wind: 0x7fe497,
+  water: 0x6cb2ff,
+  light: 0xffe789,
+  dark: 0xbb8cff,
 };
 const CLASS_GLYPH = { tank: '🛡', dps: '⚔', support: '✚' };
 
@@ -71,9 +72,9 @@ export class BattleScene {
     const bg = new Graphics();
     bg.zIndex = -1000; // 背景永遠在最底層
 
-    // 垂直漸層天幕：多段 rect 由上（深）到下（稍亮）疊出漸層。
-    const skyTop = 0x090b12;
-    const skyBottom = 0x161d2c;
+    // 垂直漸層天幕：多段 rect 由上（暮藍）到下（暖紫）疊出療癒暖調漸層。
+    const skyTop = 0x141a2b;
+    const skyBottom = 0x2d2542;
     const bands = 16;
     for (let i = 0; i < bands; i += 1) {
       const t = i / (bands - 1);
@@ -82,9 +83,9 @@ export class BattleScene {
       bg.rect(0, Math.floor((i * STAGE_H) / bands), STAGE_W, h).fill(color);
     }
 
-    // 地平帶：y ~55% 起，稍亮地面色。
+    // 地平帶：y ~55% 起，暖棕綠地面色。
     const groundY = STAGE_H * 0.55;
-    bg.rect(0, groundY, STAGE_W, STAGE_H - groundY).fill(0x1a2233);
+    bg.rect(0, groundY, STAGE_W, STAGE_H - groundY).fill(0x2c2e26);
 
     // 2~3 條淡透視地面線（愈往下愈寬，模擬透視）。
     const lines = [0.66, 0.78, 0.92];
@@ -94,7 +95,7 @@ export class BattleScene {
       bg
         .moveTo(inset, y)
         .lineTo(STAGE_W - inset, y)
-        .stroke({ color: 0x2c3a52, width: 1, alpha: 0.35 });
+        .stroke({ color: 0x4a4030, width: 1, alpha: 0.2 });
     }
 
     this.root.addChild(bg);
@@ -102,7 +103,7 @@ export class BattleScene {
     // 2 個柔光暈（元素色大圓 alpha ~0.06），GSAP 慢速漂移 yoyo。
     const teamColorOf = (team) => {
       const u = this.setup.find((s) => s.team === team);
-      return (u && ELEMENT_COLOR[u.element]) || (team === 0 ? 0xff6b4a : 0x5aa9ff);
+      return (u && ELEMENT_COLOR[u.element]) || (team === 0 ? 0xff7d5c : 0x6cb2ff);
     };
     const glowSpecs = [
       { x: STAGE_W * 0.28, y: STAGE_H * 0.42, r: 220, color: teamColorOf(0) },
@@ -110,7 +111,7 @@ export class BattleScene {
     ];
     for (const spec of glowSpecs) {
       const glow = new Graphics();
-      glow.circle(0, 0, spec.r).fill({ color: spec.color, alpha: 0.06 });
+      glow.circle(0, 0, spec.r).fill({ color: spec.color, alpha: 0.08 });
       glow.x = spec.x;
       glow.y = spec.y;
       glow.zIndex = -999;
@@ -164,7 +165,7 @@ export class BattleScene {
 
     // 腳底橢圓影（最底層，index 0）。條 bars 稍後才 add，會蓋在影之上。
     const shadow = new Graphics();
-    shadow.ellipse(0, R + 4, R * 1.6 * 0.5, R * 0.45 * 0.5).fill({ color: 0x000000, alpha: 0.35 });
+    shadow.ellipse(0, R + 4, R * 1.6 * 0.5, R * 0.45 * 0.5).fill({ color: 0x000000, alpha: 0.26 });
     c.addChild(shadow);
 
     const color = ELEMENT_COLOR[info.element] || 0xffffff;
