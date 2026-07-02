@@ -39,4 +39,19 @@ describe('Replayer', () => {
     expect(r.done).toBe(true);
     expect(r.winner).toBe(winner);
   });
+
+  it('energy 條目更新 energyOf', () => {
+    const setup = [{ uid: 1, team: 0, pos: 1, maxHp: 100 }];
+    const r = new Replayer(setup, [{ type: 'energy', uid: 1, value: 25 }]);
+    expect(r.energyOf(1)).toBe(0);
+    r.step();
+    expect(r.energyOf(1)).toBe(25);
+  });
+
+  it('round 條目更新 round', () => {
+    const r = new Replayer([], [{ type: 'round', round: 3 }]);
+    expect(r.round).toBe(0);
+    r.step();
+    expect(r.round).toBe(3);
+  });
 });
