@@ -5,7 +5,7 @@ import { Rng } from '../core/rng.js';
 import { ENERGY_MAX } from './unit.js';
 import { TURN_SEQUENCE } from './positions.js';
 import { normalAttack, castSkill, skillFor } from './skills.js';
-import { tickBuffs, dotEntries, hasControl } from './buffs.js';
+import { tickBuffs, dotEntries, hasControl, summarizeBuffs } from './buffs.js';
 import { dealDot } from './effects.js';
 import { recomputePassives } from './passives.js';
 
@@ -141,7 +141,7 @@ export class BattleEngine {
     } else {
       normalAttack(u, ctx);
     }
-    if (tickBuffs(u)) this.emit('buffchange', { unit: u });
+    if (tickBuffs(u)) this.emit('buffchange', { unit: u, buffs: summarizeBuffs(u) });
   }
 
   _checkEnd() {

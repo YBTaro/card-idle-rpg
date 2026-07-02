@@ -78,3 +78,36 @@ describe('clearAuras', () => {
     expect(u.buffs[0].aura).toBeUndefined();
   });
 });
+
+import { summarizeBuffs } from './buffs.js';
+
+describe('summarizeBuffs（前端小圖示摘要）', () => {
+  it('正負判定：增益 neg=false、減益 neg=true', () => {
+    const unit = u();
+    applyBuff(unit, { kind: 'stat', stat: 'atk', op: 'mul', value: 1.2, duration: 2 });
+    applyBuff(unit, { kind: 'stat', stat: 'atk', op: 'mul', value: 0.7, duration: 2, key: 'down', stackable: true });
+    applyBuff(unit, { kind: 'stat', stat: 'dmgTaken', op: 'mul', value: 0.6, duration: 2, key: 'guard' });
+    applyBuff(unit, { kind: 'dot', damage: 10, duration: 2 });
+    applyBuff(unit, { kind: 'shield', amount: 50, duration: 2 });
+    applyBuff(unit, { kind: 'control', control: 'stun', duration: 1 });
+    applyBuff(unit, { kind: 'control', control: 'taunt', duration: 2, key: 't' });
+    const s = summarizeBuffs(unit);
+    const find = (pred) => s.find(pred);
+    expect(find((b) => b.stat === 'atk' && !b.neg)).toBeTruthy();
+    expect(find((b) => b.stat === 'atk' && b.neg)).toBeTruthy();
+    expect(find((b) => b.stat === 'dmgTaken').neg).toBe(false); // 承傷降低是增益
+    expect(find((b) => b.kind === 'dot').neg).toBe(true);
+    expect(find((b) => b.kind === 'shield').neg).toBe(false);
+    expect(find((b) => b.control === 'stun').neg).toBe(true);
+    expect(find((b) => b.control === 'taunt').neg).toBe(false); // 嘲諷是自己開的戰術狀態
+  });
+
+  it('排除光環；輸出可序列化欄位', () => {
+    const unit = u();
+    applyBuff(unit, { kind: 'stat', stat: 'def', op: 'mul', value: 1.1, duration: null, aura: true, key: 'aura' });
+    applyBuff(unit, { kind: 'stat', stat: 'def', op: 'mul', value: 1.3, duration: 2 });
+    const s = summarizeBuffs(unit);
+    expect(s.length).toBe(1);
+    expect(JSON.parse(JSON.stringify(s))).toEqual(s);
+  });
+});

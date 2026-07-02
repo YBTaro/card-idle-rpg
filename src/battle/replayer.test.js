@@ -55,3 +55,12 @@ describe('Replayer', () => {
     expect(r.round).toBe(3);
   });
 });
+
+it('buffchange 條目更新 buffsOf', () => {
+  const setup = [{ uid: 1, team: 0, pos: 1, maxHp: 100 }];
+  const buffs = [{ kind: 'stat', stat: 'atk', neg: false }];
+  const r = new Replayer(setup, [{ type: 'buffchange', uid: 1, buffs }]);
+  expect(r.buffsOf(1)).toEqual([]);
+  r.step();
+  expect(r.buffsOf(1)).toEqual(buffs);
+});

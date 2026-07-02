@@ -2,7 +2,7 @@
 // 效果原語：技能由多個 effect 組成，每個 effect 依 type 套用到 scope 解析出的目標。
 import { computeDamage } from './damage.js';
 import { elementMultiplier } from '../data/elements.js';
-import { applyBuff } from './buffs.js';
+import { applyBuff, summarizeBuffs } from './buffs.js';
 
 // power 的基準：預設 caster.effAtk（含 buff 加成）；basis:'targetMaxHp' 用目標 maxHp。
 export function resolvePower(effect, caster, target) {
@@ -70,6 +70,8 @@ export function matchesWhere(unit, where) {
 
 export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
   const targets = effect.where ? units.filter((u) => matchesWhere(u, effect.where)) : units;
+  // buff 類效果套用後發布狀態摘要（戰鬥 log / 前端小圖示用）。
+  const emitBuffs = (u) => ctx.emit('buffchange', { unit: u, buffs: summarizeBuffs(u) });
   for (const u of targets) {
     switch (effect.type) {
       case 'damage':
@@ -85,6 +87,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
           kind: 'stat', stat: effect.stat, op: effect.op, value: effect.value,
           duration: effect.duration, key: effect.key, stackable: effect.stackable,
         });
+        emitBuffs(u);
         break;
       case 'dot': {
         const elem = effect.element ? elementMultiplier(caster.element, u.element) : 1;
@@ -93,6 +96,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
           kind: 'dot', damage, element: effect.element,
           duration: effect.duration, key: effect.key, stackable: effect.stackable,
         });
+        emitBuffs(u);
         break;
       }
       case 'shield':
@@ -100,6 +104,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
           kind: 'shield', amount: Math.round(resolvePower(effect, caster, u)),
           duration: effect.duration, key: effect.key, stackable: effect.stackable,
         });
+        emitBuffs(u);
         break;
       case 'energy':
         u.gainEnergy(effect.amount);
@@ -110,6 +115,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
           kind: 'control', control: effect.control,
           duration: effect.duration, key: effect.key, stackable: effect.stackable,
         });
+        emitBuffs(u);
         break;
     }
   }

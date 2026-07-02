@@ -57,3 +57,29 @@ export function hasControl(unit, name) {
 export function clearAuras(unit) {
   if (unit.buffs) unit.buffs = unit.buffs.filter((b) => !b.aura);
 }
+
+// 把單位當前 buff 狀態摘要成可序列化列表（供戰鬥 log / 前端小圖示）。
+// 排除光環（被動每步重算，屬常駐屬性非狀態）；neg = 對持有者不利。
+export function summarizeBuffs(unit) {
+  return (unit.buffs || [])
+    .filter((b) => !b.aura)
+    .map((b) => ({
+      kind: b.kind,
+      stat: b.stat,
+      control: b.control,
+      element: b.element,
+      neg: isNegative(b),
+    }));
+}
+
+function isNegative(b) {
+  if (b.kind === 'dot') return true;
+  if (b.kind === 'shield') return false;
+  if (b.kind === 'control') return b.control !== 'taunt'; // 嘲諷是自己開的戰術狀態
+  if (b.kind === 'stat') {
+    const lowerIsGood = b.stat === 'dmgTaken'; // 承傷越低越好
+    const up = b.op === 'mul' ? b.value > 1 : b.value > 0;
+    return lowerIsGood ? up : !up;
+  }
+  return false;
+}

@@ -3,15 +3,18 @@
 import { EventEmitter } from './events.js';
 import { STARTER_CARD_IDS, CARDS } from '../data/cards.js';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
+
+// 開發期測試資源水準（新檔直接給；舊檔由 save.js 的 v2 遷移一次性補到至少此值）。
+export const DEV_RESOURCES = { tickets: 300, gold: 100000, essence: 10000 };
 
 // 建立全新存檔（首次遊玩）。
 export function createNewGame() {
   const state = {
     version: SCHEMA_VERSION,
     meta: { createdAt: Date.now(), nextInstanceId: 1 },
-    currencies: { tickets: 10, gold: 500 }, // 初始資源（佔位）
-    inventory: { materials: { essence: 30 } },
+    currencies: { tickets: DEV_RESOURCES.tickets, gold: DEV_RESOURCES.gold }, // 初始資源（開發期加量）
+    inventory: { materials: { essence: DEV_RESOURCES.essence } },
     cards: [], // { instanceId, cardId, level }
     formation: [], // [{ instanceId, pos: 1..6 }] 最多 6
     daily: { lastClaim: 0 },

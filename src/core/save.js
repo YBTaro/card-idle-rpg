@@ -1,11 +1,11 @@
 // localStorage 存讀檔。含 schema version 與 migrate；防抖寫入。
-import { store, createNewGame, SCHEMA_VERSION } from './state.js';
+import { store, createNewGame, SCHEMA_VERSION, DEV_RESOURCES } from './state.js';
 
 const SAVE_KEY = 'card-idle-rpg:save';
 
 // ---- migrate：把舊版存檔升級到當前版本 ----
 function migrate(data) {
-  // 目前只有 v1。未來在此依 data.version 逐步升級欄位。
+  const fromVersion = data.version || 0; // 進場版本（欄位補齊後再依此跑一次性升級）
   if (!data.version || data.version < 1) {
     data.version = 1;
   }
@@ -32,6 +32,12 @@ function migrate(data) {
   }
   data.daily ??= { lastClaim: 0 };
   data.progress ??= { wins: 0, losses: 0, stage: 1 };
+  // v2：開發期資源補給——舊檔一次性把資源補到至少 DEV_RESOURCES 水準（保留進度，不用清檔）。
+  if (fromVersion < 2) {
+    data.currencies.tickets = Math.max(data.currencies.tickets || 0, DEV_RESOURCES.tickets);
+    data.currencies.gold = Math.max(data.currencies.gold || 0, DEV_RESOURCES.gold);
+    data.inventory.materials.essence = Math.max(data.inventory.materials.essence || 0, DEV_RESOURCES.essence);
+  }
   data.meta ??= { createdAt: Date.now(), nextInstanceId: maxInstanceId(data) + 1 };
   data.version = SCHEMA_VERSION;
   return data;

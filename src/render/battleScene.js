@@ -340,7 +340,46 @@ export class BattleScene {
     c.addChild(bars);
     c._bars = bars;
 
+    // buff/debuff 小圖示列（血條下方；renderTick 依 replayer 狀態變更時重建）。
+    const icons = new Container();
+    icons.y = R + 30;
+    c.addChild(icons);
+    c._buffIcons = icons;
+    c._buffKey = '';
+
     return c;
+  }
+
+  // buff 摘要 → 顯示字符。
+  _buffGlyph(b) {
+    if (b.kind === 'dot') return b.element === 'fire' ? '🔥' : '☠';
+    if (b.kind === 'shield') return '🔰';
+    if (b.kind === 'control') {
+      return b.control === 'stun' ? '💫' : b.control === 'silence' ? '🤫' : '🎯';
+    }
+    const map = { atk: '⚔', def: '🛡', dmgTaken: '🛡', critChance: '✨', critMult: '✨', dmgDealt: '💥', energyGain: '⚡' };
+    return map[b.stat] || '◆';
+  }
+
+  _rebuildBuffIcons(sprite, buffs) {
+    const icons = sprite._buffIcons;
+    if (!icons || icons.destroyed) return;
+    for (const child of [...icons.children]) child.destroy({ children: true });
+    const shown = buffs.slice(0, 6);
+    const SIZE = 15;
+    const GAP = 3;
+    const totalW = shown.length * SIZE + (shown.length - 1) * GAP;
+    shown.forEach((b, i) => {
+      const x = -totalW / 2 + i * (SIZE + GAP) + SIZE / 2;
+      const pill = new Graphics();
+      pill.roundRect(x - SIZE / 2, -SIZE / 2, SIZE, SIZE, 5).fill({ color: b.neg ? 0x5a2530 : 0x24503a, alpha: 0.95 });
+      pill.roundRect(x - SIZE / 2, -SIZE / 2, SIZE, SIZE, 5).stroke({ color: b.neg ? 0xff8a8a : 0x8ef2ae, width: 1, alpha: 0.8 });
+      icons.addChild(pill);
+      const t = new Text({ text: this._buffGlyph(b), style: { fontSize: 9 } });
+      t.anchor.set(0.5);
+      t.x = x;
+      icons.addChild(t);
+    });
   }
 
   // 依 manifest 載入卡圖並換掉程序化圓 body。無素材則 artFor 回 null，直接跳過。
@@ -412,6 +451,14 @@ export class BattleScene {
       g.clear();
       this._bar(g, 0, hpRatio, hpColor, 0x232d26); // HP（低血變色）
       this._bar(g, 9, Math.min(1, energy / ENERGY_MAX), 0xf5c451, 0x2e2a1c, full ? this._pulse.v : 0); // 能量（滿格脈衝）
+
+      // buff/debuff 圖示：狀態變更時才重建（key 比對，避免每幀重繪）。
+      const buffs = this.replayer.buffsOf(uid);
+      const buffKey = buffs.map((b) => `${b.kind}:${b.stat || b.control || b.element || ''}:${b.neg ? 1 : 0}`).join(',');
+      if (buffKey !== sprite._buffKey) {
+        sprite._buffKey = buffKey;
+        this._rebuildBuffIcons(sprite, buffs);
+      }
 
       // 跳過 / 瞬時模式下沒有 death 事件動畫，這裡補套終局視覺（與 death 共用 _dead 去重）。
       // 正常播放時死亡淡出交給 death 事件的 deathFade；此處只在瞬時模式生效，
