@@ -104,7 +104,10 @@ export function screenShake(container, strength = 6) {
 
 // 強制停止並清掉某容器下所有子物件的進行中 tween（場景拆除前呼叫）。
 export function killFx(container) {
-  for (const child of container.children) gsap.killTweensOf(child);
+  for (const child of container.children) {
+    gsap.killTweensOf(child);
+    if (child.scale) gsap.killTweensOf(child.scale);
+  }
 }
 
 // 死亡淡出。

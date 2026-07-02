@@ -1,5 +1,6 @@
 // 戰鬥場景：6 固定位置(前3後3)，由 setup 建場並訂閱 Replayer 事件播放 GSAP 特效，
 // 每幀依 replayer 狀態刷新 HP / 能量條。不依賴 engine/Unit，僅吃可序列化 log 資料。
+import { gsap } from 'gsap';
 import { Container, Graphics, Text } from 'pixi.js';
 import { STAGE_W, STAGE_H } from './pixiApp.js';
 import { ENERGY_MAX } from '../battle/unit.js';
@@ -132,7 +133,9 @@ export class BattleScene {
       this._bar(g, 9, Math.min(1, energy / ENERGY_MAX), 0xf5c451, 0x33301f); // 能量
 
       // 跳過 / 瞬時模式下沒有 death 事件動畫，這裡補套終局視覺（與 death 共用 _dead 去重）。
-      if (!this.replayer.aliveOf(uid) && !this._dead.has(uid)) {
+      // 正常播放時死亡淡出交給 death 事件的 deathFade；此處只在瞬時模式生效，
+      // 否則 renderTick 會在致死 damage 當幀（alive 已 false）搶先套終局視覺，淡出永遠不會播。
+      if (this._instant && !this.replayer.aliveOf(uid) && !this._dead.has(uid)) {
         this._dead.add(uid);
         sprite.alpha = 0.25;
         sprite.scale.set(0.85);
@@ -236,6 +239,9 @@ export class BattleScene {
       killFx(s); // 殺掉子物件（_body 等）的 tint/位移 tween
     }
     killFx(this.fxLayer);
+    // screenShake 直接動 root 的 x/y（非子物件），需另外殺掉飛行中 tween，
+    // 避免在 root 銷毀後仍寫入座標。
+    gsap.killTweensOf(this.root);
     this.root.destroy({ children: true });
     this.fxLayer.destroy({ children: true });
   }
