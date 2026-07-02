@@ -30,13 +30,14 @@ export function hitFlash(sprite, body) {
     .to(sprite, { y: baseY, duration: 0.18, ease: 'elastic.out(1,0.4)' });
 }
 
-// 大招放大脈衝 + 發光。
+// 大招放大脈衝 + 發光。脈衝相對於景深基準 _baseScale 計算，避免壓掉 2.5D 縮放。
 export function ultPulse(sprite, body, color) {
+  const base = sprite._baseScale ?? 1;
   gsap.killTweensOf(sprite.scale);
   gsap
     .timeline()
-    .to(sprite.scale, { x: 1.3, y: 1.3, duration: 0.16, ease: 'back.out(2)' })
-    .to(sprite.scale, { x: 1, y: 1, duration: 0.4, ease: 'power2.out' });
+    .to(sprite.scale, { x: base * 1.3, y: base * 1.3, duration: 0.16, ease: 'back.out(2)' })
+    .to(sprite.scale, { x: base, y: base, duration: 0.4, ease: 'power2.out' });
   if (body && color != null) {
     gsap
       .timeline()
@@ -110,16 +111,18 @@ export function killFx(container) {
   }
 }
 
-// 死亡淡出。
+// 死亡淡出。目標縮放相對景深基準 _baseScale。
 export function deathFade(sprite) {
+  const base = sprite._baseScale ?? 1;
   gsap.to(sprite, { alpha: 0.25, duration: 0.4 });
-  gsap.to(sprite.scale, { x: 0.85, y: 0.85, duration: 0.4 });
+  gsap.to(sprite.scale, { x: base * 0.85, y: base * 0.85, duration: 0.4 });
 }
 
-// 復活/重置時還原視覺。
+// 復活/重置時還原視覺，還原到景深基準 _baseScale。
 export function resetVisual(sprite) {
+  const base = sprite._baseScale ?? 1;
   gsap.killTweensOf(sprite);
   gsap.killTweensOf(sprite.scale);
   sprite.alpha = 1;
-  sprite.scale.set(1);
+  sprite.scale.set(base);
 }

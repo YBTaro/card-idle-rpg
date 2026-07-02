@@ -1,10 +1,11 @@
 // 戰鬥場景：6 固定位置(前3後3)，由 setup 建場並訂閱 Replayer 事件播放 GSAP 特效，
 // 每幀依 replayer 狀態刷新 HP / 能量條。不依賴 engine/Unit，僅吃可序列化 log 資料。
 import { gsap } from 'gsap';
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Sprite, Assets, Text } from 'pixi.js';
 import { STAGE_W, STAGE_H } from './pixiApp.js';
 import { ENERGY_MAX } from '../battle/unit.js';
 import { SKILLS } from '../battle/skills.js';
+import { artFor } from '../data/assets.js';
 import {
   lunge,
   hitFlash,
@@ -29,17 +30,34 @@ const CLASS_GLYPH = { tank: '🛡', dps: '⚔', support: '✚' };
 const R = 30; // 角色圓半徑
 const BAR_W = 70;
 
+// 兩個 0xRRGGBB 顏色間線性插值（t 0..1），用於天幕漸層。
+function lerpColor(a, b, t) {
+  const ar = (a >> 16) & 0xff;
+  const ag = (a >> 8) & 0xff;
+  const ab = a & 0xff;
+  const br = (b >> 16) & 0xff;
+  const bg = (b >> 8) & 0xff;
+  const bb = b & 0xff;
+  const r = Math.round(ar + (br - ar) * t);
+  const g = Math.round(ag + (bg - ag) * t);
+  const bl = Math.round(ab + (bb - ab) * t);
+  return (r << 16) | (g << 8) | bl;
+}
+
 export class BattleScene {
   constructor(app, setup, replayer) {
     this.app = app;
     this.setup = setup;
     this.replayer = replayer;
     this._instant = false;
+    this._destroyed = false;
     this.root = new Container();
+    this.root.sortableChildren = true; // 依 zIndex 做前後遮擋排序
     this.fxLayer = new Container();
     this.sprites = new Map(); // uid -> sprite container
     this._unsubs = [];
     this._dead = new Set();
+    this._glows = []; // 背景柔光暈（destroy 時需 killTweensOf）
 
     app.stage.addChild(this.root);
     app.stage.addChild(this.fxLayer);
@@ -51,31 +69,90 @@ export class BattleScene {
 
   _drawBackground() {
     const bg = new Graphics();
-    bg.rect(0, 0, STAGE_W, STAGE_H).fill(0x0c0e14);
-    bg.moveTo(STAGE_W / 2, 20).lineTo(STAGE_W / 2, STAGE_H - 20).stroke({ color: 0x222838, width: 2 });
+    bg.zIndex = -1000; // 背景永遠在最底層
+
+    // 垂直漸層天幕：多段 rect 由上（深）到下（稍亮）疊出漸層。
+    const skyTop = 0x090b12;
+    const skyBottom = 0x161d2c;
+    const bands = 16;
+    for (let i = 0; i < bands; i += 1) {
+      const t = i / (bands - 1);
+      const color = lerpColor(skyTop, skyBottom, t);
+      const h = Math.ceil(STAGE_H / bands) + 1;
+      bg.rect(0, Math.floor((i * STAGE_H) / bands), STAGE_W, h).fill(color);
+    }
+
+    // 地平帶：y ~55% 起，稍亮地面色。
+    const groundY = STAGE_H * 0.55;
+    bg.rect(0, groundY, STAGE_W, STAGE_H - groundY).fill(0x1a2233);
+
+    // 2~3 條淡透視地面線（愈往下愈寬，模擬透視）。
+    const lines = [0.66, 0.78, 0.92];
+    for (const ly of lines) {
+      const y = STAGE_H * ly;
+      const inset = (1 - ly) * STAGE_W * 0.35;
+      bg
+        .moveTo(inset, y)
+        .lineTo(STAGE_W - inset, y)
+        .stroke({ color: 0x2c3a52, width: 1, alpha: 0.35 });
+    }
+
     this.root.addChild(bg);
+
+    // 2 個柔光暈（元素色大圓 alpha ~0.06），GSAP 慢速漂移 yoyo。
+    const teamColorOf = (team) => {
+      const u = this.setup.find((s) => s.team === team);
+      return (u && ELEMENT_COLOR[u.element]) || (team === 0 ? 0xff6b4a : 0x5aa9ff);
+    };
+    const glowSpecs = [
+      { x: STAGE_W * 0.28, y: STAGE_H * 0.42, r: 220, color: teamColorOf(0) },
+      { x: STAGE_W * 0.72, y: STAGE_H * 0.48, r: 240, color: teamColorOf(1) },
+    ];
+    for (const spec of glowSpecs) {
+      const glow = new Graphics();
+      glow.circle(0, 0, spec.r).fill({ color: spec.color, alpha: 0.06 });
+      glow.x = spec.x;
+      glow.y = spec.y;
+      glow.zIndex = -999;
+      this.root.addChild(glow);
+      this._glows.push(glow);
+      gsap.to(glow, {
+        x: spec.x + (Math.random() * 60 - 30),
+        y: spec.y + (Math.random() * 40 - 20),
+        duration: 7 + Math.random() * 4,
+        ease: 'sine.inOut',
+        yoyo: true,
+        repeat: -1,
+      });
+    }
   }
 
   _layoutFor(team, pos) {
     const row = pos <= 3 ? 'front' : 'back';
     const cols = team === 0 ? { back: 150, front: 330 } : { front: STAGE_W - 330, back: STAGE_W - 150 };
-    const x = cols[row];
     const indexInRow = row === 'front' ? pos - 1 : pos - 4; // 0..2
+    // 斜隊形：沿排水平錯位（上小下大、team0 向右、team1 向左）。
+    const x = cols[row] + (indexInRow - 1) * 14 * (team === 0 ? 1 : -1);
     const spacing = 92;
     const rowCount = 3;
     const totalH = (rowCount - 1) * spacing;
     const y = STAGE_H / 2 - totalH / 2 + indexInRow * spacing;
-    return { x, y };
+    return { x, y, indexInRow };
   }
 
   _buildUnits() {
+    const DEPTH_SCALE = [0.92, 1.0, 1.08]; // 同排由上而下 → 由遠而近
     for (const info of this.setup) {
-      const { x, y } = this._layoutFor(info.team, info.pos);
+      const { x, y, indexInRow } = this._layoutFor(info.team, info.pos);
       const sprite = this._makeSprite(info);
       sprite.x = x;
       sprite.y = y;
       sprite._homeX = x;
       sprite._homeY = y;
+      const base = DEPTH_SCALE[indexInRow] ?? 1;
+      sprite._baseScale = base; // fx 的比例動畫以此為基準
+      sprite.scale.set(base);
+      sprite.zIndex = y; // 愈下（近）愈後畫 → 遮擋上方單位
       this.root.addChild(sprite);
       this.sprites.set(info.uid, sprite);
     }
@@ -84,6 +161,11 @@ export class BattleScene {
   _makeSprite(info) {
     const c = new Container();
     c._info = info;
+
+    // 腳底橢圓影（最底層，index 0）。條 bars 稍後才 add，會蓋在影之上。
+    const shadow = new Graphics();
+    shadow.ellipse(0, R + 4, R * 1.6 * 0.5, R * 0.45 * 0.5).fill({ color: 0x000000, alpha: 0.35 });
+    c.addChild(shadow);
 
     const color = ELEMENT_COLOR[info.element] || 0xffffff;
     const body = new Graphics();
@@ -98,6 +180,10 @@ export class BattleScene {
     });
     glyph.anchor.set(0.5);
     c.addChild(glyph);
+    c._glyph = glyph;
+
+    // 有卡圖 → async 載入後以圓形遮罩 Sprite 換掉程序化圓的填色部分。
+    this._loadArt(c, info);
 
     const name = new Text({
       text: `${info.name} Lv${info.level}`,
@@ -113,6 +199,44 @@ export class BattleScene {
     c._bars = bars;
 
     return c;
+  }
+
+  // 依 manifest 載入卡圖並換掉程序化圓 body。無素材則 artFor 回 null，直接跳過。
+  _loadArt(c, info) {
+    const path = artFor(info.cardId);
+    if (!path) return;
+    Assets.load(path)
+      .then((tex) => {
+        // async 防護：場景已拆或此 sprite 已 destroy 就不動它。
+        if (this._destroyed || c.destroyed || !tex) return;
+
+        const img = new Sprite(tex);
+        img.anchor.set(0.5);
+        // cover 縮放：短邊填滿直徑 2R，置中。
+        const short = Math.min(tex.width, tex.height) || 2 * R;
+        img.scale.set((2 * R) / short);
+
+        // 圓形遮罩（需掛進顯示樹才生效）。
+        const mask = new Graphics().circle(0, 0, R).fill(0xffffff);
+        c.addChild(mask);
+        img.mask = mask;
+
+        // 影(0) 之上、body 之下插入圖，讓 body 的外圈 stroke 仍框住圖。
+        const bodyIdx = c.getChildIndex(c._body);
+        c.addChildAt(img, bodyIdx);
+
+        // body 只留外圈 stroke（清掉填色圓）；符號隱藏。
+        c._body.clear();
+        c._body.circle(0, 0, R).stroke({ color: 0x0c0e14, width: 3 });
+        if (c._glyph) c._glyph.visible = false;
+
+        // hitFlash / ultPulse tint 對象改為圖（Sprite 支援 tint）。
+        c._body = img;
+        c._artMask = mask;
+      })
+      .catch(() => {
+        // 載入失敗：silently 留程序化圓。
+      });
   }
 
   _bar(g, y, ratio, color, bgColor) {
@@ -138,7 +262,7 @@ export class BattleScene {
       if (this._instant && !this.replayer.aliveOf(uid) && !this._dead.has(uid)) {
         this._dead.add(uid);
         sprite.alpha = 0.25;
-        sprite.scale.set(0.85);
+        sprite.scale.set((sprite._baseScale ?? 1) * 0.85);
       }
     }
   }
@@ -231,8 +355,12 @@ export class BattleScene {
   }
 
   destroy() {
+    this._destroyed = true; // 阻擋仍在飛行的 async 載圖回填已拆場景
     this._unsubs.forEach((fn) => fn());
     this._unsubs = [];
+    // 停掉背景柔光暈的漂移 tween（作用於 root 子物件，需在 root 銷毀前殺）。
+    for (const glow of this._glows) gsap.killTweensOf(glow);
+    this._glows = [];
     // 先停掉所有進行中的 GSAP tween，避免在物件已銷毀後仍寫入屬性。
     for (const s of this.sprites.values()) {
       resetVisual(s);
