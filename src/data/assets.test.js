@@ -3,8 +3,8 @@ import { CARD_ART, artFor, portraitFor, elementGradient } from './assets.js';
 
 describe('asset manifest', () => {
   it('無素材 → null', () => {
-    expect(artFor('ifrit')).toBe(null);
-    expect(portraitFor('ifrit')).toBe(null);
+    expect(artFor('no_such_card')).toBe(null);
+    expect(portraitFor('no_such_card')).toBe(null);
     expect(artFor(undefined)).toBe(null);
   });
 

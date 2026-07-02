@@ -9,8 +9,20 @@
 //
 // cardId → 素材描述。art 相對於 /public；portrait 用同一張圖 + 裁切參數
 // （CSS object-position / pixi 位移），未指定時套用下方 DEFAULT_PORTRAIT。
+// 目前為程式生成的佔位 SVG 立繪（640×880，人物頭部約在 y 0.34）。
+// AI 生圖到位時：換檔案 + 改這裡的路徑即可全遊戲換皮。
+const P = { x: 0.5, y: 0.34, zoom: 2.0 };
 export const CARD_ART = {
-  // ifrit: { art: 'assets/cards/ifrit.png', portrait: { x: 0.5, y: 0.22, zoom: 2.2 } },
+  ifrit: { art: 'assets/cards/ifrit.svg', portrait: P },
+  emberguard: { art: 'assets/cards/emberguard.svg', portrait: P },
+  zephyr: { art: 'assets/cards/zephyr.svg', portrait: P },
+  galewind: { art: 'assets/cards/galewind.svg', portrait: P },
+  tidecaller: { art: 'assets/cards/tidecaller.svg', portrait: P },
+  aegis: { art: 'assets/cards/aegis.svg', portrait: P },
+  seraph: { art: 'assets/cards/seraph.svg', portrait: P },
+  dawnblade: { art: 'assets/cards/dawnblade.svg', portrait: P },
+  nightreaper: { art: 'assets/cards/nightreaper.svg', portrait: P },
+  gravewarden: { art: 'assets/cards/gravewarden.svg', portrait: P },
 };
 
 // portrait 焦點 x/y 為 0..1，zoom 為倍率。

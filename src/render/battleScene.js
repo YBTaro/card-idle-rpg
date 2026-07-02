@@ -5,7 +5,7 @@ import { Container, Graphics, Sprite, Assets, Text } from 'pixi.js';
 import { STAGE_W, STAGE_H } from './pixiApp.js';
 import { ENERGY_MAX } from '../battle/unit.js';
 import { SKILLS } from '../battle/skills.js';
-import { artFor } from '../data/assets.js';
+import { artFor, portraitFor } from '../data/assets.js';
 import {
   lunge,
   hitFlash,
@@ -236,9 +236,15 @@ export class BattleScene {
 
         const img = new Sprite(tex);
         img.anchor.set(0.5);
-        // cover 縮放：短邊填滿直徑 2R，置中。
+        // 棋子很小（直徑 2R），整張立繪塞進來人物會太小 →
+        // 以 portrait 焦點（頭部）為中心額外放大，呈現頭像式棋子。
+        const p = portraitFor(info.cardId);
+        const TOKEN_ZOOM = 3.2;
         const short = Math.min(tex.width, tex.height) || 2 * R;
-        img.scale.set((2 * R) / short);
+        const scale = ((2 * R) / short) * TOKEN_ZOOM;
+        img.scale.set(scale);
+        img.x = (0.5 - (p?.x ?? 0.5)) * tex.width * scale;
+        img.y = (0.5 - (p?.y ?? 0.3)) * tex.height * scale;
 
         // 圓形遮罩（需掛進顯示樹才生效）。
         const mask = new Graphics().circle(0, 0, R).fill(0xffffff);
