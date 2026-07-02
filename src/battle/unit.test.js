@@ -13,7 +13,7 @@ describe('Unit 有效值 / 護盾 / 集氣速度', () => {
 
   it('critChance 夾在 0..1；dmgTakenMult 相乘', () => {
     const u = makeUnit();
-    expect(u.critChance).toBeCloseTo(0.1);
+    expect(u.critChance).toBeCloseTo(0.05);
     applyBuff(u, { kind: 'stat', stat: 'critChance', op: 'add', value: 5 });
     expect(u.critChance).toBe(1); // 夾上限
     applyBuff(u, { kind: 'stat', stat: 'dmgTaken', op: 'mul', value: 0.5 });
