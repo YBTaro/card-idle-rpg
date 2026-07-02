@@ -57,6 +57,7 @@ export class RosterUI {
             this._changed();
           } }, [
             card ? cardFrame(card, { size: 'mini' }) : el('span', { class: 'slot-name', text: '?' }),
+            el('span', { class: 'slot-name', text: card ? card.name : '' }),
             el('span', { class: 'slot-sub', text: card ? `${pos}・Lv${inst.level}・${CLASSES[card.class].label}` : '' }),
           ])
         );

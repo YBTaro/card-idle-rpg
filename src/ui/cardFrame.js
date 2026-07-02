@@ -3,7 +3,6 @@
 //   （元素漸層底 + 大職業符號 + 元素字 + 底部名牌）。
 // 只負責「卡面」本身，不含按鈕/數值——那是外層（roster / gacha）的事。
 import { el } from './dom.js';
-import { CLASSES } from '../data/classes.js';
 import { ELEMENT_LABEL } from '../data/elements.js';
 import { artFor, portraitFor, elementGradient } from '../data/assets.js';
 
