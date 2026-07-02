@@ -18,7 +18,7 @@ describe('Replayer', () => {
     const { setup, log } = sim();
     const r = new Replayer(setup, log);
     const seen = [];
-    ['turn', 'attack', 'ultimate', 'damage', 'heal', 'death', 'stunned', 'buffchange', 'battleEnd'].forEach((t) => r.on(t, (e) => seen.push(e.type)));
+    ['turn', 'round', 'energy', 'attack', 'ultimate', 'damage', 'heal', 'death', 'stunned', 'buffchange', 'battleEnd'].forEach((t) => r.on(t, (e) => seen.push(e.type)));
     while (!r.done) r.step();
     expect(seen).toEqual(log.map((e) => e.type));
   });

@@ -33,6 +33,7 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill') {
   const res = computeDamage(caster, target, mult, ctx.rng);
   const dealt = target.takeDamage(res.amount);
   target.gainEnergy(target.classDef.energyOnHitTaken);
+  ctx.emit('energy', { unit: target, value: target.energy });
   ctx.emit('damage', {
     source: caster, target, amount: dealt, skill,
     isAdvantage: res.isAdvantage, isDisadvantage: res.isDisadvantage, isCrit: res.isCrit,
@@ -102,6 +103,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         break;
       case 'energy':
         u.gainEnergy(effect.amount);
+        ctx.emit('energy', { unit: u, value: u.energy });
         break;
       case 'control':
         applyBuff(u, {
