@@ -16,13 +16,13 @@ export const CARD_ART = {
 // portrait 焦點 x/y 為 0..1，zoom 為倍率。
 const DEFAULT_PORTRAIT = { x: 0.5, y: 0.25, zoom: 2.0 };
 
-// 元素色值與 style.css 的 CSS 變數同步（hex 寫死，因 pixi 端吃不到 CSS 變數）。
+// 元素色值與 style.css 的 CSS 變數同步（新暖色票；hex 寫死，因 pixi 端吃不到 CSS 變數）。
 const ELEMENT_COLORS = {
-  fire: '#ff6b4a',
-  wind: '#74e08c',
-  water: '#5aa9ff',
-  light: '#ffe27a',
-  dark: '#b07bff',
+  fire: '#ff7d5c',
+  wind: '#7fe497',
+  water: '#6cb2ff',
+  light: '#ffe789',
+  dark: '#bb8cff',
 };
 const NEUTRAL_COLOR = '#8a8f99'; // 未知元素退中性灰
 
