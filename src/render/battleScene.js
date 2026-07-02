@@ -12,7 +12,7 @@ import {
   ultPulse,
   floatText,
   deathFade,
-  banner,
+  cutIn,
   screenShake,
   resetVisual,
   killFx,
@@ -279,21 +279,16 @@ export class BattleScene {
         if (this._instant) return;
         const s = this.sprites.get(casterUid);
         if (!s) return;
-        const color = ELEMENT_COLOR[s._info.element] ?? 0xffffff;
+        const info = s._info;
+        const color = ELEMENT_COLOR[info.element] ?? 0xffffff;
         ultPulse(s, s._body, color);
         screenShake(this.root);
-        const txt = new Text({
-          text: SKILLS[skill]?.name ?? skill,
-          style: {
-            fontSize: 34,
-            fill: color,
-            fontWeight: '800',
-            stroke: { color: 0x000000, width: 5 },
-          },
+        cutIn(this.fxLayer, STAGE_W, {
+          name: info.name,
+          skillName: SKILLS[skill]?.name ?? skill,
+          color,
+          glyph: CLASS_GLYPH[info.class] || '?',
         });
-        txt.x = STAGE_W / 2;
-        txt.y = STAGE_H / 2;
-        banner(this.fxLayer, txt);
       }),
       rp.on('damage', ({ targetUid, amount, isCrit, isAdvantage, isDisadvantage }) => {
         if (this._instant) return;

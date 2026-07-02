@@ -121,6 +121,29 @@ describe('asset manifest', () => {
 
 ---
 
+## Task 5: 療癒手遊風主題換裝（AFK Arena 風,使用者 2026-07-02 定調）
+
+**Files:**
+- Modify: `src/style.css`、`src/render/battleScene.js`（背景/棋子配色微調）
+
+**Interfaces:**
+- 純視覺,不改任何行為/結構/測試。
+
+**風格基準（劍與遠征療癒手遊風）：**
+- 底色從冷黑navy → 深藍偏暖（如 #1a2032 系）,面板帶一點紫暖調;金色 accent 保留並加強存在感。
+- 圓角加大（按鈕/卡面/面板 10→14px 級）,按鈕加軟陰影與上亮下暗漸層（立體糖果感）,hover 微浮起。
+- 卡面名牌/等級章用暖金框;元素漸層飽和但柔（避免螢光）。
+- Tabs 改圓潤膠囊感;HUD 貨幣列加小圓底。
+- 戰場：天幕漸層調暖（暮藍→暖紫調）,地面帶暖棕綠,柔光暈色調偏暖;透視線更淡。
+- 動效原則已符合（back/elastic ease 保留）。
+
+- [ ] **Step 1: style.css 主題變數與元件全面調整**（:root 色票、按鈕、tabs、卡面、slot、gacha 結果框）
+- [ ] **Step 2: battleScene 背景/影/光暈配色調暖**
+- [ ] **Step 3: 驗證** — `npm test` 全綠、`npm run build` 成功。
+- [ ] **Step 4: Commit** — `style: 全域換裝療癒手遊風（暖色票/大圓角/軟陰影/金點綴）`
+
+---
+
 ## Self-Review
 - Spec §1→T1、§2→T2、§3→T3、§4→T4;檔案清單吻合。
 - 佔位優先:manifest 全空下每條路徑皆程序化成立;T3 Step 4 的 async 載圖有拆場/失敗防護。
