@@ -11,11 +11,6 @@ export function rawStatsAtLevel(card, level) {
   return out;
 }
 
-// 戰力（單一角色）：綜合三圍的展示用指標（佔位權重；UI 用，不影響戰鬥）。
-export function computePower(stats) {
-  return Math.round(stats.hp / 2 + stats.atk * 4 + stats.def * 3);
-}
-
 // 回傳含名稱/屬性/職業的完整戰鬥數值（整數）。
 export function deriveStats(cardInst) {
   const card = CARDS[cardInst.cardId];

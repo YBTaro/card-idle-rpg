@@ -16,7 +16,7 @@ import {
 } from '../systems/quests.js';
 import { SIGNIN_TABLE, signinDayIndex, canSignin, claimSignin } from '../systems/signin.js';
 import { idlePending, canClaimIdle, claimIdle, idleRates } from '../systems/idle.js';
-import { playerLevel, teamPower, stageLabel, featuredHero } from '../systems/profile.js';
+import { stageLabel, featuredHero } from '../systems/profile.js';
 import { artFor, portraitFor } from '../data/assets.js';
 import { CARDS } from '../data/cards.js';
 
@@ -211,14 +211,10 @@ export function openProfileSheet() {
       box.appendChild(
         el('div', { class: 'profile-head' }, [
           el('div', { class: 'pa' }, [avatarEl()]),
-          el('div', {}, [
-            el('div', { class: 'pn', text: s.player?.name || '指揮官' }),
-            el('div', { class: 'pl', text: `Lv ${playerLevel()}（每 3 勝升 1 級）` }),
-          ]),
+          el('div', {}, [el('div', { class: 'pn', text: s.player?.name || '指揮官' })]),
         ])
       );
       const stats = [
-        ['隊伍總戰力', fmt(teamPower())],
         ['目前關卡', stageLabel(s.progress.stage || 1)],
         ['累計勝場', fmt(s.progress.wins || 0)],
         ['累計敗場', fmt(s.progress.losses || 0)],

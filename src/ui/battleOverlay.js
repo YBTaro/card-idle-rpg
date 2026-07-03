@@ -2,10 +2,10 @@
 // 左上我方頭像+隊伍血量匯總、右上敵方鏡像、上中關卡菱標、左下回合圓章、
 // 右下戰速/跳過菱形鈕、底部戰報 ticker、勝敗橫幅（勝利金幣飛入 / 戰敗導流調整陣容）。
 import { gsap } from 'gsap';
-import { el, clear, toast, fmt } from './dom.js';
+import { el, clear } from './dom.js';
 import { store } from '../core/state.js';
 import { nav } from './router.js';
-import { stageLabel, teamPower } from '../systems/profile.js';
+import { stageLabel } from '../systems/profile.js';
 import { avatarEl } from './metaSheets.js';
 
 const COIN_FLY_S = 0.6;
@@ -26,7 +26,7 @@ export class BattleOverlay {
   _build() {
     clear(this.root);
 
-    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '‹ 主城', onClick: () => nav.go('home') }));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '🏠', title: '回主城', onClick: () => nav.go('home') }));
 
     // 左上：我方
     this.avaLeft = el('div', { class: 'ava' });
@@ -84,7 +84,7 @@ export class BattleOverlay {
   setBattle({ stage }) {
     const label = stageLabel(stage);
     this.waveText.textContent = label;
-    this.nmLeft.textContent = `我方 · ⚔${fmt(teamPower())}`;
+    this.nmLeft.textContent = '我方';
     this.nmRight.textContent = `西境軍 ${label}`;
     clear(this.avaLeft);
     this.avaLeft.appendChild(avatarEl());

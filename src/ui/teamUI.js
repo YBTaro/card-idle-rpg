@@ -1,19 +1,16 @@
 // 隊伍頁：出戰 6 人以直式全身大卡一字排開（左＝後衛 4-6、右＝前衛 1-3，金線分隔）。
 // 互動合約（P3/P5/P6）：
+//   拖曳卡片 → 調整站位（拖到有人＝互換、拖到空格＝移動）
 //   點大卡 / 長按 → 角色詳情（單擊永遠安全，下陣收在詳情頁）
-//   點空格＋ / 「英雄替換」 → 底部滑出英雄選擇抽屜
-//   「隊列調整」 → 換位模式：點兩張卡互換位置（含跨前後衛）
+//   點空格＋ / 「英雄替換」 → 底部滑出英雄選擇抽屜（隊滿→點選被替換者）
 import { gsap } from 'gsap';
-import { el, clear, toast, fmt } from './dom.js';
+import { el, clear, toast } from './dom.js';
 import { store } from '../core/state.js';
 import { nav } from './router.js';
 import { CARDS } from '../data/cards.js';
 import { ELEMENT_LABEL } from '../data/elements.js';
 import { artFor } from '../data/assets.js';
-import { deriveStats, computePower } from '../core/stats.js';
-import { teamPower } from '../systems/profile.js';
 import {
-  formationSlot,
   addToFormation,
   removeFromFormation,
   setPosition,
@@ -27,19 +24,16 @@ const CLASS_GLYPH = { tank: '🛡', dps: '⚔', support: '✚' };
 // 版面順序：左群後衛（4,5,6）、右群前衛（1,2,3）——同參考原型
 const BACK_POSITIONS = [4, 5, 6];
 const FRONT_POSITIONS = [1, 2, 3];
+const DRAG_START_PX = 12; // 位移超過即進入拖曳（低於此值仍視為點擊/長按）
 
 export class TeamUI {
   constructor(root) {
     this.root = root;
-    this.mode = null; // null | 'reorder'
-    this.selectedPos = null; // reorder 模式選中的來源位置
     this.pendingReplace = null; // 抽屜選了人但隊伍已滿 → 待點選被替換者
     this.render();
   }
 
   onShow() {
-    this.mode = null;
-    this.selectedPos = null;
     this.pendingReplace = null;
     this.render();
   }
@@ -48,14 +42,15 @@ export class TeamUI {
     const s = store.state;
     clear(this.root);
 
-    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '‹ 主城', onClick: () => nav.go('home') }));
-    this.root.appendChild(el('div', { class: 'page-title', text: '隊伍' }));
-    this.root.appendChild(el('div', { class: 'tp-power', text: `總戰力 ${fmt(teamPower(s))} · ${s.formation.length}/6 上陣` }));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '🏠', title: '回主城', onClick: () => nav.go('home') }));
+    this.root.appendChild(el('div', { class: 'page-title left', text: '隊伍' }));
+    this.root.appendChild(
+      el('div', { class: 'tp-power' }, [
+        el('span', { class: 'tp-count', text: `${s.formation.length}/6 上陣` }),
+      ])
+    );
 
-    // 模式提示
-    if (this.mode === 'reorder') {
-      this.root.appendChild(el('div', { class: 'tp-mode-tip', text: this.selectedPos ? '再點一格：互換位置（點自己取消）' : '點選要移動的英雄' }));
-    } else if (this.pendingReplace) {
+    if (this.pendingReplace) {
       this.root.appendChild(el('div', { class: 'tp-mode-tip', text: '隊伍已滿：點選要被替換的出戰英雄' }));
     }
 
@@ -66,22 +61,11 @@ export class TeamUI {
     row.appendChild(this._group('前　衛', FRONT_POSITIONS));
     this.root.appendChild(row);
 
-    // 底部操作列
-    const reorderBtn = el('button', {
-      class: this.mode === 'reorder' ? 'btn-gold' : '',
-      text: this.mode === 'reorder' ? '完成調整' : '隊列調整',
-      onClick: () => {
-        this.mode = this.mode === 'reorder' ? null : 'reorder';
-        this.selectedPos = null;
-        this.pendingReplace = null;
-        this.render();
-      },
-    });
+    // 底部操作列（單一入口：英雄替換；站位靠拖曳）
     this.root.appendChild(
       el('div', { class: 'tp-bottom' }, [
-        el('div', { class: 'hint', text: '點英雄卡查看詳細數值與技能；替換英雄不會影響已投入的養成' }),
-        el('button', { text: '英雄替換', onClick: () => this._openDrawer(null) }),
-        reorderBtn,
+        el('div', { class: 'hint', text: '拖曳卡片調整站位；點卡查看詳細數值與技能' }),
+        el('button', { class: 'btn-gold', text: '英雄替換', onClick: () => this._openDrawer(null) }),
       ])
     );
   }
@@ -98,37 +82,26 @@ export class TeamUI {
     const s = store.state;
     const entry = s.formation.find((e) => e.pos === pos);
     if (!entry) {
-      return el('div', {
+      const node = el('div', {
         class: 'tcard empty pressable',
-        onClick: () => {
-          if (this.mode === 'reorder' && this.selectedPos != null) {
-            // 移動到空格（先清選取再寫入，notify 重繪時才不殘留金框）
-            const src = store.state.formation.find((e) => e.pos === this.selectedPos);
-            this.selectedPos = null;
-            if (src) setPosition(src.instanceId, pos);
-            else this.render();
-            return;
-          }
-          this._openDrawer(pos);
-        },
+        onClick: () => this._openDrawer(pos),
       }, [el('span', { class: 'plus', text: '＋' }), el('span', { class: 'et', text: '點擊上陣' })]);
+      node.dataset.pos = String(pos);
+      return node;
     }
 
     const inst = store.getCard(entry.instanceId);
     const card = inst ? CARDS[inst.cardId] : null;
     if (!card) return el('div', { class: 'tcard empty' });
-    const st = deriveStats(inst);
-    const power = computePower(st);
 
-    const picked = this.mode === 'reorder' && this.selectedPos === pos;
-    const node = el('div', { class: `tcard bd-${card.element}${picked ? ' picked' : ''}` });
+    const node = el('div', { class: `tcard bd-${card.element}` });
+    node.dataset.pos = String(pos);
 
     const art = el('div', { class: 'art' });
     const src = artFor(card.id);
-    if (src) art.appendChild(el('img', { src, alt: card.name }));
+    if (src) art.appendChild(el('img', { src, alt: card.name, draggable: 'false' }));
     art.appendChild(el('span', { class: `elb el-${card.element}`, text: ELEMENT_LABEL[card.element] }));
     art.appendChild(el('span', { class: 'nm', text: card.name }));
-    art.appendChild(el('span', { class: 'pw', text: `⚔ ${fmt(power)}` }));
     node.appendChild(art);
     node.appendChild(
       el('div', { class: 'lvpanel' }, [
@@ -148,24 +121,69 @@ export class TeamUI {
           toast(`${CARDS[store.getCard(newId).cardId].name} 上陣！`, { icon: '⚔' });
           return;
         }
-        if (this.mode === 'reorder') {
-          if (this.selectedPos == null) {
-            this.selectedPos = pos;
-            this.render();
-          } else if (this.selectedPos === pos) {
-            this.selectedPos = null;
-            this.render();
-          } else {
-            const target = this.selectedPos;
-            this.selectedPos = null;
-            setPosition(entry.instanceId, target); // 互換（setPosition 內建交換）
-          }
-          return;
-        }
         this._openSheet(entry.instanceId);
       },
     });
+    this._bindDrag(node, pos, entry.instanceId);
     return node;
+  }
+
+  // 拖曳調整站位：拖到有人＝互換、拖到空格＝移動。
+  _bindDrag(node, pos, instanceId) {
+    node.addEventListener('pointerdown', (e) => {
+      if (e.button != null && e.button !== 0) return;
+      const sx = e.clientX;
+      const sy = e.clientY;
+      let ghost = null;
+
+      const setDropHint = (target) => {
+        this.root.querySelectorAll('.tcard.drop-hint').forEach((n) => n.classList.remove('drop-hint'));
+        if (target && target !== node) target.classList.add('drop-hint');
+      };
+
+      const onMove = (ev) => {
+        if (!ghost && Math.hypot(ev.clientX - sx, ev.clientY - sy) > DRAG_START_PX) {
+          // 進入拖曳：建幽靈卡、壓暗來源、吃掉後續 click（避免放開時開詳情）
+          ghost = node.cloneNode(true);
+          ghost.classList.add('drag-ghost');
+          const r = node.getBoundingClientRect();
+          ghost.style.width = `${r.width}px`;
+          ghost.style.height = `${r.height}px`;
+          document.body.appendChild(ghost);
+          node.classList.add('drag-src');
+          const eatClick = (ce) => {
+            ce.stopImmediatePropagation();
+            ce.preventDefault();
+          };
+          node.addEventListener('click', eatClick, { capture: true, once: true });
+          setTimeout(() => node.removeEventListener('click', eatClick, { capture: true }), 350);
+        }
+        if (ghost) {
+          ghost.style.left = `${ev.clientX}px`;
+          ghost.style.top = `${ev.clientY}px`;
+          setDropHint(document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.tcard'));
+        }
+      };
+
+      const onUp = (ev) => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+        if (!ghost) return;
+        ghost.remove();
+        node.classList.remove('drag-src');
+        setDropHint(null);
+        const target = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.tcard');
+        const targetPos = target?.dataset.pos ? Number(target.dataset.pos) : null;
+        if (targetPos && targetPos !== pos) {
+          setPosition(instanceId, targetPos); // 互換/移動（setPosition 內建交換）
+        }
+      };
+
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
+    });
   }
 
   _openSheet(instanceId) {
@@ -190,7 +208,7 @@ export class TeamUI {
     drawer.appendChild(title);
 
     const list = el('div', { class: 'sd-list' });
-    const sorted = [...bench].sort((a, b) => computePower(deriveStats(b)) - computePower(deriveStats(a)));
+    const sorted = [...bench].sort((a, b) => b.level - a.level);
     for (const inst of sorted) {
       const card = CARDS[inst.cardId];
       const item = el('div', { class: 'swap-item pressable' }, [cardFrame(card, { level: inst.level, size: 'full' })]);

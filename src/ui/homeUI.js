@@ -15,7 +15,7 @@ import {
 } from './metaSheets.js';
 import { queuePopup } from './modal.js';
 import { runTutorial } from './tutorial.js';
-import { playerLevel, teamPower, stageLabel, featuredHero } from '../systems/profile.js';
+import { stageLabel, featuredHero } from '../systems/profile.js';
 import { canSignin } from '../systems/signin.js';
 import { idlePending, canClaimIdle } from '../systems/idle.js';
 import { cutoutFor, portraitFor } from '../data/assets.js';
@@ -82,11 +82,10 @@ export class HomeUI {
     ]);
     this.root.appendChild(this._say);
 
-    // 左上：檔案 + 貨幣 + 總戰力
+    // 左上：檔案 + 貨幣
     const ava = el('div', { class: 'hub-ava pressable', onClick: () => openProfileSheet() });
     const p = hero ? portraitFor(hero.cardId) : null;
     if (p) ava.appendChild(el('img', { src: p.src, alt: '', style: `object-position:${p.x * 100}% ${p.y * 100}%` }));
-    ava.appendChild(el('span', { class: 'plv', text: `Lv ${playerLevel(s)}` }));
     this.root.appendChild(
       el('div', { class: 'hub-tl' }, [
         ava,
@@ -96,7 +95,6 @@ export class HomeUI {
             currencyPill('🎟️', s.currencies.tickets),
             currencyPill('🔹', s.inventory.materials.essence || 0),
           ]),
-          el('span', { class: 'hub-power', text: `⚔ 總戰力 ${fmt(teamPower(s))}` }),
         ]),
       ])
     );

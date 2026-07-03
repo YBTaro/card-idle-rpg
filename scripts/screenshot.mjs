@@ -1,10 +1,12 @@
 // 全畫面截圖自驗：Edge headless + puppeteer-core
-// 用法：node scripts/screenshot.mjs [輸出資料夾]（預設 ./shots/）
+// 用法：node scripts/screenshot.mjs [輸出資料夾] [寬] [高]（預設 ./shots/ 1280 720）
 import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const OUT = path.resolve(process.argv[2] || './shots') + path.sep;
+const VIEW_W = Number(process.argv[3]) || 1280;
+const VIEW_H = Number(process.argv[4]) || 720;
 fs.mkdirSync(OUT, { recursive: true });
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -15,7 +17,7 @@ const browser = await puppeteer.launch({
   args: ['--no-sandbox', '--disable-gpu-sandbox', '--window-size=1280,760'],
 });
 const page = await browser.newPage();
-await page.setViewport({ width: 1280, height: 720 });
+await page.setViewport({ width: VIEW_W, height: VIEW_H, deviceScaleFactor: 2 });
 page.on('console', (m) => {
   if (m.type() === 'error') console.log('[console.error]', m.text());
 });
@@ -98,9 +100,9 @@ await sleep(300);
 await click('.tcard:not(.empty)');
 await sleep(700);
 await shot('07-hero-sheet');
-await clickText('.hero-sheet .back-btn', '返回');
+await click('.hero-sheet .back-btn');
 await sleep(500);
-await clickText('#screen-team .back-btn', '主城');
+await click('#screen-team .back-btn');
 await sleep(500);
 
 // 4) 英雄頁 + 圖鑑
@@ -110,7 +112,7 @@ await shot('08-heroes');
 await clickText('.hx-tab', '圖鑑');
 await sleep(500);
 await shot('09-codex');
-await clickText('#screen-heroes .back-btn', '主城');
+await click('#screen-heroes .back-btn');
 await sleep(400);
 
 // 5) 召喚頁 + 十連揭曉
@@ -131,7 +133,7 @@ await sleep(400);
 await shot('13-summon-result');
 await clickText('.summon-actions button', '確定');
 await sleep(500);
-await clickText('#screen-gacha .back-btn', '主城');
+await click('#screen-gacha .back-btn');
 await sleep(400);
 
 // 6) 戰役

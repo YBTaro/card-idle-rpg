@@ -8,7 +8,7 @@ import { CARDS } from '../data/cards.js';
 import { CLASSES } from '../data/classes.js';
 import { ELEMENT_LABEL } from '../data/elements.js';
 import { artFor } from '../data/assets.js';
-import { deriveStats, computePower } from '../core/stats.js';
+import { deriveStats } from '../core/stats.js';
 import { levelUp, levelUpCost, canLevelUp, MAX_LEVEL } from '../systems/leveling.js';
 import { isInFormation, toggleFormation, MAX_FORMATION } from '../systems/formation.js';
 import { skillInfoForCard, passiveInfoForCard } from '../battle/skillText.js';
@@ -96,7 +96,7 @@ class HeroSheet {
     clear(this.node);
 
     // 返回
-    this.node.appendChild(el('div', { class: 'back-btn pressable', text: '‹ 返回', onClick: () => this.close() }));
+    this.node.appendChild(el('div', { class: 'back-btn pressable', text: '‹', title: '返回', onClick: () => this.close() }));
     this.node.appendChild(el('div', { class: 'page-title', text: '英雄強化' }));
 
     // 左：滿版立繪（待機呼吸）
@@ -135,19 +135,16 @@ class HeroSheet {
     if (!inst || !this.panel) return;
     const card = CARDS[inst.cardId];
     const st = deriveStats(inst);
-    const power = computePower(st);
     const maxed = inst.level >= MAX_LEVEL;
     const next = maxed ? null : deriveStats({ ...inst, level: inst.level + 1 });
-    const nextPower = next ? computePower(next) : power;
     const cost = levelUpCost(inst.level);
     const affordable = canLevelUp(inst);
     const inForm = isInFormation(inst.instanceId);
 
-    // 身分名牌同步（屬性徽章 + 名字 + 戰力）
+    // 身分名牌同步（屬性徽章 + 名字）
     clear(this.idBar);
     this.idBar.appendChild(el('span', { class: `el el-${card.element}`, text: ELEMENT_LABEL[card.element] }));
     this.idBar.appendChild(el('span', { class: 'nm', text: card.name }));
-    this.idBar.appendChild(el('span', { class: 'pw', text: `⚔ ${fmt(power)}` }));
 
     const p = this.panel;
     clear(p);
@@ -171,7 +168,6 @@ class HeroSheet {
       ['❤ 生命', st.hp, next ? next.hp - st.hp : 0],
       ['⚔ 攻擊', st.atk, next ? next.atk - st.atk : 0],
       ['🛡 防禦', st.def, next ? next.def - st.def : 0],
-      ['⚡ 戰力', power, nextPower - power],
     ];
     for (const [k, v, d] of rows) {
       stats.appendChild(

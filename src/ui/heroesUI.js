@@ -6,22 +6,15 @@ import { store } from '../core/state.js';
 import { nav } from './router.js';
 import { CARDS, CARD_LIST } from '../data/cards.js';
 import { ELEMENTS, ELEMENT_LABEL } from '../data/elements.js';
-import { deriveStats, computePower } from '../core/stats.js';
 import { isInFormation } from '../systems/formation.js';
 import { openHeroSheet } from './heroSheet.js';
 import { longPress } from './gestures.js';
 import { cardFrame } from './cardFrame.js';
 
-const SORTS = [
-  { id: 'power', label: '戰力 ↓', value: (inst) => computePower(deriveStats(inst)) },
-  { id: 'level', label: '等級 ↓', value: (inst) => inst.level },
-];
-
 export class HeroesUI {
   constructor(root) {
     this.root = root;
     this.tab = 'roster'; // roster | codex
-    this.sort = 'power';
     this.element = null; // null = 全部
     this.render();
   }
@@ -32,7 +25,7 @@ export class HeroesUI {
 
   render() {
     clear(this.root);
-    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '‹ 主城', onClick: () => nav.go('home') }));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '🏠', title: '回主城', onClick: () => nav.go('home') }));
     this.root.appendChild(el('div', { class: 'page-title', text: this.tab === 'roster' ? '英雄' : '圖鑑' }));
 
     // 頁簽
@@ -51,21 +44,9 @@ export class HeroesUI {
     }
     this.root.appendChild(tabs);
 
-    // 篩選列（卡冊限定）
+    // 篩選列（卡冊限定；固定排序＝出戰中優先、等級降冪）
     if (this.tab === 'roster') {
       const filters = el('div', { class: 'hx-filters' });
-      for (const s of SORTS) {
-        filters.appendChild(
-          el('div', {
-            class: `fchip pressable${this.sort === s.id ? ' on' : ''}`,
-            text: s.label,
-            onClick: () => {
-              this.sort = s.id;
-              this.render();
-            },
-          })
-        );
-      }
       filters.appendChild(
         el('div', {
           class: `fchip pressable${this.element == null ? ' on' : ''}`,
@@ -98,14 +79,13 @@ export class HeroesUI {
 
   _sortedOwned() {
     const s = store.state;
-    const sortDef = SORTS.find((x) => x.id === this.sort) || SORTS[0];
     let list = [...s.cards];
     if (this.element) list = list.filter((inst) => CARDS[inst.cardId]?.element === this.element);
-    // 出戰中永遠排前，再按選定指標降冪
+    // 出戰中永遠排前，再按等級降冪
     list.sort((a, b) => {
       const fa = Number(isInFormation(b.instanceId)) - Number(isInFormation(a.instanceId));
       if (fa !== 0) return fa;
-      return sortDef.value(b) - sortDef.value(a);
+      return b.level - a.level;
     });
     return list;
   }
