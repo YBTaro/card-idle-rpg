@@ -367,3 +367,25 @@ button.daily-ready { animation: pulse 1.4s ease-in-out infinite; }
   pointer-events: none;
   z-index: 50;
 }
+
+/* 角色卡技能描述 */
+.card .card-skill {
+  margin: 6px 0 2px;
+  padding: 7px 9px;
+  background: rgba(245, 196, 81, 0.06);
+  border: 1px solid rgba(245, 196, 81, 0.22);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.card .card-skill-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.card .card-skill-desc {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}

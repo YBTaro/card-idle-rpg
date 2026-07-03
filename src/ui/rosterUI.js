@@ -7,6 +7,7 @@ import { ELEMENT_LABEL } from '../data/elements.js';
 import { CLASSES } from '../data/classes.js';
 import { cardFrame } from './cardFrame.js';
 import { levelUp, levelUpCost, canLevelUp, MAX_LEVEL } from '../systems/leveling.js';
+import { skillInfoForCard } from '../battle/skillText.js';
 import {
   isInFormation,
   toggleFormation,
@@ -97,6 +98,17 @@ export class RosterUI {
       ]),
       el('div', { class: 'stats', html: `❤ <b>${st.hp}</b>　⚔ <b>${st.atk}</b>　🛡 <b>${st.def}</b>` }),
     ]);
+
+    // 技能描述（由技能資料自動生成，數值改了描述跟著變）。
+    const skill = skillInfoForCard(inst.cardId, card.class);
+    if (skill) {
+      node.appendChild(
+        el('div', { class: 'card-skill' }, [
+          el('span', { class: 'card-skill-name', text: `絕技・${skill.name}` }),
+          el('span', { class: 'card-skill-desc', text: skill.desc }),
+        ])
+      );
+    }
 
     const actions = el('div', { class: 'card-actions' });
 
