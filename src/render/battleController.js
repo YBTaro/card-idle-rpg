@@ -1,4 +1,5 @@
-// 戰鬥流程控制：每場用 simulateBattle 產 log，交給 Replayer/Director 播放到 BattleScene，掛機自動重開下一場。
+// 戰鬥流程控制：每場用 simulateBattle 產 log，交給 Replayer/Director 播放到 BattleScene，
+// 掛機自動重開下一場。資訊層（頭像/血量匯總/回合/勝敗橫幅）由 BattleOverlay 呈現。
 import { simulateBattle } from '../battle/battleLog.js';
 import { Replayer } from '../battle/replayer.js';
 import { AnimationDirector } from './animationDirector.js';
@@ -7,22 +8,25 @@ import { buildPlayerUnits, buildEnemyUnits } from '../systems/battleSetup.js';
 import { store } from '../core/state.js';
 import { saveGame } from '../core/save.js';
 import { Rng } from '../core/rng.js';
+import { trackQuest } from '../systems/quests.js';
 
 export const WIN_GOLD = 60; // 勝利掛機獎勵（佔位）
-const RESTART_DELAY = 1.4; // 秒
+const RESTART_DELAY_WIN = 1.8; // 勝利橫幅停留
+const RESTART_DELAY_LOSE = 3.4; // 戰敗要留時間給「調整陣容」CTA
+const RESTART_DELAY_DRAW = 2.0;
 
 export class BattleController {
-  constructor(app, statusEl) {
+  constructor(app, overlay = null) {
     this.app = app;
-    this.statusEl = statusEl;
-    this.speed = 2; // 戰鬥速度倍率
+    this.overlay = overlay;
+    this.speed = 2;
     this.replayer = null;
     this.director = null;
     this.scene = null;
     this._setup = null;
     this._cooldown = 0;
-    this._lastResult = '';
 
+    overlay?.bind?.(this);
     this.app.ticker.add(this._tick, this);
     this.start();
   }
@@ -31,7 +35,7 @@ export class BattleController {
     this._teardownScene();
     const player = buildPlayerUnits(store.state);
     if (player.length === 0) {
-      this._setStatus('⚠ 尚未編排陣容，請到「角色」分頁上陣');
+      this.overlay?.setNotice('⚠ 尚未編排陣容——到「隊伍」上陣後自動開戰');
       this.replayer = null;
       this.director = null;
       this._setup = null;
@@ -47,6 +51,7 @@ export class BattleController {
     this.director.speed = this.speed;
     this.replayer.on('battleEnd', ({ winner }) => this._onEnd(winner));
     this._cooldown = 0;
+    this.overlay?.setBattle({ stage });
   }
 
   // 陣容/等級變更後呼叫，重啟當前戰鬥。
@@ -59,7 +64,7 @@ export class BattleController {
     if (this.director) this.director.speed = x;
   }
 
-  // 快轉當前戰鬥到結束（瞬間結算 log），再刷新一次畫面。battleEnd 事件照常觸發結算。
+  // 快轉當前戰鬥到結束（瞬間結算 log）。battleEnd 事件照常觸發結算。
   skip() {
     if (!this.replayer || this.replayer.done) return;
     this.scene?.setInstant(true);
@@ -73,16 +78,19 @@ export class BattleController {
       s.progress.wins = (s.progress.wins || 0) + 1;
       s.progress.stage = (s.progress.stage || 1) + 1;
       s.currencies.gold += WIN_GOLD;
-      this._lastResult = `✅ 勝利！+${WIN_GOLD} 金幣，前進關卡 ${s.progress.stage}`;
+      trackQuest('win');
+      this.overlay?.showResult({ win: true, gold: WIN_GOLD, nextStage: s.progress.stage });
+      this._cooldown = RESTART_DELAY_WIN;
     } else if (winner === 1) {
       s.progress.losses = (s.progress.losses || 0) + 1;
-      this._lastResult = '❌ 戰敗，整隊休整後再戰';
+      this.overlay?.showResult({ win: false });
+      this._cooldown = RESTART_DELAY_LOSE;
     } else {
-      this._lastResult = '⚖ 同歸於盡';
+      this.overlay?.showResult({ win: false, draw: true });
+      this._cooldown = RESTART_DELAY_DRAW;
     }
     saveGame();
     store.notify();
-    this._cooldown = RESTART_DELAY;
   }
 
   _tick(ticker) {
@@ -92,26 +100,42 @@ export class BattleController {
     if (this.replayer.done) {
       this.scene?.renderTick();
       this._cooldown -= dt;
-      this._setStatus(`${this._lastResult}　下一場 ${Math.max(0, this._cooldown).toFixed(1)}s…`);
       if (this._cooldown <= 0) this.start();
       return;
     }
 
     this.director.update(dt);
     this.scene?.renderTick();
-    this._renderStatus();
+    this._pushOverlay();
   }
 
-  _renderStatus() {
-    const setup = this._setup;
-    const a = setup.filter((u) => u.team === 0 && this.replayer.aliveOf(u.uid)).length;
-    const b = setup.filter((u) => u.team === 1 && this.replayer.aliveOf(u.uid)).length;
-    const stage = store.state.progress.stage || 1;
-    this._setStatus(`關卡 ${stage}　我方 ${a} vs 敵方 ${b}　|　回合 ${this.replayer.round}`);
-  }
-
-  _setStatus(text) {
-    if (this.statusEl) this.statusEl.textContent = text;
+  _pushOverlay() {
+    if (!this.overlay || !this._setup) return;
+    let hp0 = 0;
+    let max0 = 0;
+    let hp1 = 0;
+    let max1 = 0;
+    let aliveA = 0;
+    let aliveB = 0;
+    for (const u of this._setup) {
+      const hp = this.replayer.hpOf(u.uid);
+      if (u.team === 0) {
+        hp0 += hp;
+        max0 += u.maxHp;
+        if (this.replayer.aliveOf(u.uid)) aliveA += 1;
+      } else {
+        hp1 += hp;
+        max1 += u.maxHp;
+        if (this.replayer.aliveOf(u.uid)) aliveB += 1;
+      }
+    }
+    this.overlay.update({
+      round: this.replayer.round,
+      hpRatio0: max0 > 0 ? hp0 / max0 : 0,
+      hpRatio1: max1 > 0 ? hp1 / max1 : 0,
+      aliveA,
+      aliveB,
+    });
   }
 
   _teardownScene() {

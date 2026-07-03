@@ -2,6 +2,7 @@
 // 純模組——資料改了描述自動跟上，不用手維護文案。
 import { SKILLS, CARD_SKILLS } from './skills.js';
 import { CLASSES } from '../data/classes.js';
+import { CARDS } from '../data/cards.js';
 
 const TARGET_LABEL = {
   singleEnemyByColumn: '對位敵人',
@@ -85,4 +86,47 @@ export function skillInfoForCard(cardId, cls) {
   const def = SKILLS[id];
   if (!def) return null;
   return { id, name: def.name, desc: describeSkill(id) };
+}
+
+// ---- 被動描述（passives 資料 → 人話），同 describeSkill 的資料驅動原則 ----
+
+const PASSIVE_TARGET_LABEL = { self: '自身', allAllies: '我方全體', allEnemies: '敵方全體' };
+
+function describeWhere(where) {
+  if (!where) return '';
+  if (where.race) return `「${where.race}」`;
+  if (where.element) return `「${where.element}」屬性`;
+  if (where.class) return `「${where.class}」`;
+  return '';
+}
+
+// 單條被動 → 描述字串。未知結構回空字串。
+export function describePassive(p) {
+  if (!p || !p.effects || p.effects.length === 0) return '';
+  const who = PASSIVE_TARGET_LABEL[p.target] ?? '自身';
+  let cond = '';
+  if (p.when?.selfHpBelow != null) cond = `生命低於 ${pct(p.when.selfHpBelow)} 時，`;
+  else if (p.when?.alliesAtLeast) {
+    cond = `我方${describeWhere(p.when.alliesAtLeast.where)}隊友達 ${p.when.alliesAtLeast.count} 名時，`;
+  }
+  const effs = p.effects
+    .map((e) => {
+      const statLabel = STAT_LABEL[e.stat] ?? e.stat;
+      if (e.perCountOf) {
+        const side = e.perCountOf.side === 'enemies' ? '敵方' : '我方';
+        const unitDesc = describeWhere(e.perCountOf.where) || '';
+        const per = e.op === 'mul' ? `+${pct(e.basePct || 0)}` : `+${e.valuePer || 0}`;
+        return `${side}每有一名${unitDesc}單位，${who}${statLabel} ${per}`;
+      }
+      return `${who}${statLabel} ${buffDelta(e.op, e.value)}`;
+    })
+    .filter(Boolean);
+  return cond + effs.join('；');
+}
+
+// cardId → 被動描述陣列（無被動回空陣列）。
+export function passiveInfoForCard(cardId) {
+  const card = CARDS[cardId];
+  if (!card || !card.passives) return [];
+  return card.passives.map(describePassive).filter(Boolean);
 }

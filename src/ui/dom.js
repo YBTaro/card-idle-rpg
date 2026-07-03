@@ -19,17 +19,35 @@ export function clear(node) {
   node.replaceChildren();
 }
 
+// toast(msg) / toast(msg, { icon })：底部置中、上滑進場、自動淡出。
 let _toastTimer = null;
-export function toast(msg) {
+export function toast(msg, { icon = '' } = {}) {
   let t = document.querySelector('.toast');
   if (!t) {
     t = el('div', { class: 'toast' });
     document.body.appendChild(t);
   }
-  t.textContent = msg;
-  t.style.opacity = '1';
+  t.textContent = icon ? `${icon} ${msg}` : msg;
+  t.classList.add('show');
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => {
-    t.style.opacity = '0';
-  }, 1600);
+    t.classList.remove('show');
+  }, 1800);
+}
+
+// 數字滾動（貨幣/數值變化的 COUNT_ROLL）。
+export function rollNumber(node, from, to, { duration = 400, format = (n) => String(n) } = {}) {
+  const start = performance.now();
+  const tick = (now) => {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - (1 - t) * (1 - t);
+    node.textContent = format(Math.round(from + (to - from) * eased));
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+// 千分位（HUD 貨幣顯示）。
+export function fmt(n) {
+  return Number(n || 0).toLocaleString('en-US');
 }

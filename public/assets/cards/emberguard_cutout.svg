@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="566" viewBox="110 110 420 566">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a1424"/>
+      <stop offset="0.55" stop-color="#87343c"/>
+      <stop offset="1" stop-color="#3a1424"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.42" r="0.55">
+      <stop offset="0" stop-color="#ff9a66" stop-opacity="0.55"/>
+      <stop offset="0.55" stop-color="#ff9a66" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ff9a66" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="blade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.5" stop-color="#ff9a66"/>
+      <stop offset="1" stop-color="#87343c"/>
+    </linearGradient>
+    <linearGradient id="cloak" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#221a3c"/>
+      <stop offset="1" stop-color="#120e22"/>
+    </linearGradient>
+    <radialGradient id="vig" cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0.6" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.55"/>
+    </radialGradient>
+    <filter id="glowF" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowS" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+  <g>
+    <path d="M320 268 C246 284 210 356 200 470 C190 588 206 648 228 672 L412 672 C434 648 450 588 440 470 C430 356 394 284 320 268 Z"
+          fill="url(#cloak)"/>
+    <path d="M376 262 C416 310 442 386 440 470 C438 520 432 560 424 592"
+          stroke="#ff9a66" stroke-width="7" fill="none" opacity="0.5" filter="url(#glowS)" stroke-linecap="round"/>
+    <circle cx="320" cy="298" r="60" fill="url(#cloak)"/>
+    <ellipse cx="320" cy="312" rx="42" ry="47" fill="#0c0918"/>
+    <circle cx="301" cy="314" r="8" fill="#ff9a66" filter="url(#glowF)"/>
+    <circle cx="339" cy="314" r="8" fill="#ff9a66" filter="url(#glowF)"/>
+    
+      <circle cx="320" cy="196" r="10" fill="#ff9a66" filter="url(#glowF)"/>
+      <rect x="316" y="206" width="8" height="34" rx="4" fill="#241b3d"/>
+      <path d="M243 300 L228 268 L258 276 Z" fill="#241b3d"/>
+      <path d="M397 300 L412 268 L382 276 Z" fill="#241b3d"/>
+  </g>
+    <g>
+      <path d="M320 470 L408 505 L408 600 C408 665 370 706 320 726 C270 706 232 665 232 600 L232 505 Z"
+            fill="#87343c" stroke="#ffd27a" stroke-width="8"/>
+      <path d="M320 492 L390 520 L390 598 C390 650 360 684 320 700 C280 684 250 650 250 598 L250 520 Z"
+            fill="#141024" opacity="0.55"/>
+      <circle cx="320" cy="588" r="30" fill="#ff9a66" opacity="0.9" filter="url(#glowF)"/>
+      <circle cx="320" cy="588" r="14" fill="#ffd27a"/>
+    </g>
+</svg>

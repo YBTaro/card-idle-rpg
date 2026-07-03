@@ -1,7 +1,7 @@
-// 戰鬥場景：6 固定位置(前3後3)，由 setup 建場並訂閱 Replayer 事件播放 GSAP 特效，
-// 每幀依 replayer 狀態刷新 HP / 能量條。不依賴 engine/Unit，僅吃可序列化 log 資料。
-// 視覺：FillGradient 天幕/地面、additive 柔光與微塵粒子、cacheAsTexture 靜態背景、
-// 棋子 = 卡圖頭像 + 金環 + 元素底光 + 待機呼吸。
+// 戰鬥場景 3.0：單位＝去背全身立繪木偶（進場/呼吸/突進/受擊/死亡），
+// 血條+能量條浮在頭頂（元素小圖示靠左）、前後排斜向錯位＋景深縮放、
+// 由 setup 建場並訂閱 Replayer 事件播 GSAP 特效，每幀刷新條。
+// 不依賴 engine/Unit，僅吃可序列化 log 資料。
 import { gsap } from 'gsap';
 import {
   Container,
@@ -18,7 +18,7 @@ import {
 import { STAGE_W, STAGE_H } from './pixiApp.js';
 import { ENERGY_MAX } from '../battle/unit.js';
 import { SKILLS } from '../battle/skills.js';
-import { artFor, portraitFor } from '../data/assets.js';
+import { cutoutFor } from '../data/assets.js';
 import {
   lunge,
   hitFlash,
@@ -33,7 +33,7 @@ import {
   killFx,
 } from './fx.js';
 
-// 與 style.css 的 --fire/--wind/--water/--light/--dark 同色值（療癒手遊風暖調）。
+// 與 style.css 的 --fire/--wind/--water/--light/--dark 同色值。
 const ELEMENT_COLOR = {
   fire: 0xff7d5c,
   wind: 0x7fe497,
@@ -43,9 +43,14 @@ const ELEMENT_COLOR = {
 };
 const CLASS_GLYPH = { tank: '🛡', dps: '⚔', support: '✚' };
 
-const R = 30; // 角色圓半徑
-const BAR_W = 70;
 const GOLD = 0xf5e6b0;
+const BODY_H = 165; // 立繪基準高（縮放前）
+const BAR_W = 44; // 頭頂血條寬
+const GROUND_Y = STAGE_H * 0.55;
+// 縱深：排內由上（遠）而下（近）
+const DEPTH_SCALE = [0.8, 0.92, 1.04];
+const ENTRANCE_S = 0.4; // 進場滑入
+const ENTRANCE_STAGGER_S = 0.08;
 
 export class BattleScene {
   constructor(app, setup, replayer) {
@@ -55,16 +60,15 @@ export class BattleScene {
     this._instant = false;
     this._destroyed = false;
     this.root = new Container();
-    this.root.sortableChildren = true; // 依 zIndex 做前後遮擋排序
+    this.root.sortableChildren = true;
     this.fxLayer = new Container();
-    this.sprites = new Map(); // uid -> sprite container
+    this.sprites = new Map();
     this._unsubs = [];
     this._dead = new Set();
-    this._glows = []; // 背景柔光（destroy 時需 killTweensOf）
-    this._ambient = []; // 微塵粒子（destroy 時需 killTweensOf）
+    this._glows = [];
+    this._ambient = [];
     this._greyFilter = new ColorMatrixFilter();
     this._greyFilter.desaturate(false);
-    // 能量滿格的呼吸脈衝值（renderTick 讀取；單一 tween 供全場共用）
     this._pulse = { v: 0 };
     this._pulseTween = gsap.to(this._pulse, {
       v: 1,
@@ -83,8 +87,10 @@ export class BattleScene {
     this._bindEvents();
   }
 
-  // 柔邊白色光點材質（粒子 / 光暈共用）：同心圓疊出徑向衰減，烘成一張貼圖。
+  // 柔邊光點材質：app 層級共享（每場重建場景不重做、也不銷毀——
+  // 銷毀會和仍在飛行的特效 sprite 產生 render 競態）。
   _makeDotTexture() {
+    if (this.app._sharedDotTex) return this.app._sharedDotTex;
     const g = new Graphics();
     const rings = 14;
     for (let i = rings; i >= 1; i -= 1) {
@@ -93,18 +99,16 @@ export class BattleScene {
     }
     const tex = this.app.renderer.generateTexture(g);
     g.destroy();
+    this.app._sharedDotTex = tex;
     return tex;
   }
 
   _drawBackground() {
-    // ---- 靜態層（cacheAsTexture：天幕/地面漸層、遠山、地平線、透視線）----
+    // ---- 靜態層（cacheAsTexture）：天幕 / 遠山兩層 / 地面 / 地平線微光 ----
     const bgStatic = new Container();
     bgStatic.zIndex = -1000;
-
-    const groundY = STAGE_H * 0.55;
     const bg = new Graphics();
 
-    // 天幕：暮藍 → 暖紫 的垂直漸層。
     const sky = new FillGradient({
       end: { x: 0, y: 1 },
       colorStops: [
@@ -113,35 +117,33 @@ export class BattleScene {
         { offset: 1, color: 0x352c4e },
       ],
     });
-    bg.rect(0, 0, STAGE_W, groundY).fill(sky);
+    bg.rect(0, 0, STAGE_W, GROUND_Y).fill(sky);
 
-    // 遠山剪影兩層（低對比，只給輪廓感）。
-    bg.moveTo(0, groundY)
-      .lineTo(0, groundY - 52)
-      .lineTo(90, groundY - 88)
-      .lineTo(200, groundY - 46)
-      .lineTo(330, groundY - 96)
-      .lineTo(470, groundY - 40)
-      .lineTo(600, groundY - 78)
-      .lineTo(740, groundY - 34)
-      .lineTo(870, goldenPeak(groundY))
-      .lineTo(STAGE_W, groundY - 60)
-      .lineTo(STAGE_W, groundY)
+    bg.moveTo(0, GROUND_Y)
+      .lineTo(0, GROUND_Y - 52)
+      .lineTo(90, GROUND_Y - 88)
+      .lineTo(200, GROUND_Y - 46)
+      .lineTo(330, GROUND_Y - 96)
+      .lineTo(470, GROUND_Y - 40)
+      .lineTo(600, GROUND_Y - 78)
+      .lineTo(740, GROUND_Y - 34)
+      .lineTo(870, GROUND_Y - 110)
+      .lineTo(STAGE_W, GROUND_Y - 60)
+      .lineTo(STAGE_W, GROUND_Y)
       .closePath()
       .fill({ color: 0x1b1832, alpha: 0.85 });
-    bg.moveTo(0, groundY)
-      .lineTo(0, groundY - 26)
-      .lineTo(140, groundY - 52)
-      .lineTo(300, groundY - 20)
-      .lineTo(460, groundY - 58)
-      .lineTo(620, groundY - 24)
-      .lineTo(800, groundY - 48)
-      .lineTo(STAGE_W, groundY - 18)
-      .lineTo(STAGE_W, groundY)
+    bg.moveTo(0, GROUND_Y)
+      .lineTo(0, GROUND_Y - 26)
+      .lineTo(140, GROUND_Y - 52)
+      .lineTo(300, GROUND_Y - 20)
+      .lineTo(460, GROUND_Y - 58)
+      .lineTo(620, GROUND_Y - 24)
+      .lineTo(800, GROUND_Y - 48)
+      .lineTo(STAGE_W, GROUND_Y - 18)
+      .lineTo(STAGE_W, GROUND_Y)
       .closePath()
       .fill({ color: 0x241f3d, alpha: 0.95 });
 
-    // 地面：地平線稍亮 → 底部收暗。
     const ground = new FillGradient({
       end: { x: 0, y: 1 },
       colorStops: [
@@ -149,10 +151,9 @@ export class BattleScene {
         { offset: 1, color: 0x232032 },
       ],
     });
-    bg.rect(0, groundY, STAGE_W, STAGE_H - groundY).fill(ground);
+    bg.rect(0, GROUND_Y, STAGE_W, STAGE_H - GROUND_Y).fill(ground);
 
-    // 地平線暖金微光 + 淡透視地面線。
-    bg.rect(0, groundY - 1, STAGE_W, 2).fill({ color: 0xf5c451, alpha: 0.12 });
+    bg.rect(0, GROUND_Y - 1, STAGE_W, 2).fill({ color: 0xf5c451, alpha: 0.12 });
     for (const ly of [0.66, 0.78, 0.92]) {
       const y = STAGE_H * ly;
       const inset = (1 - ly) * STAGE_W * 0.35;
@@ -166,7 +167,7 @@ export class BattleScene {
     this.root.addChild(bgStatic);
     this._bgStatic = bgStatic;
 
-    // ---- 動態層：additive 柔光（雙方元素色）+ 微塵粒子 ----
+    // ---- 動態層：雙方元素色柔光 + 微塵粒子 ----
     const teamColorOf = (team) => {
       const u = this.setup.find((s) => s.team === team);
       return (u && ELEMENT_COLOR[u.element]) || (team === 0 ? 0xff7d5c : 0x6cb2ff);
@@ -180,7 +181,7 @@ export class BattleScene {
       glow.anchor.set(0.5);
       glow.scale.set(11);
       glow.tint = spec.color;
-      glow.alpha = 0.34;
+      glow.alpha = 0.3;
       glow.blendMode = 'add';
       glow.x = spec.x;
       glow.y = spec.y;
@@ -190,7 +191,7 @@ export class BattleScene {
       gsap.to(glow, {
         x: spec.x + (Math.random() * 60 - 30),
         y: spec.y + (Math.random() * 36 - 18),
-        alpha: 0.22,
+        alpha: 0.2,
         duration: 7 + Math.random() * 4,
         ease: 'sine.inOut',
         yoyo: true,
@@ -198,7 +199,6 @@ export class BattleScene {
       });
     }
 
-    // 微塵：一個 ParticleContainer、單張貼圖、additive —— 一次 draw call。
     const dust = new ParticleContainer({
       texture: this._dotTex,
       boundsArea: new Rectangle(0, 0, STAGE_W, STAGE_H),
@@ -233,22 +233,26 @@ export class BattleScene {
     this.root.addChild(dust);
   }
 
+  // 站位（腳底座標）：前排低近大、後排高遠小，排內斜向錯位（同參考原型）。
   _layoutFor(team, pos) {
     const row = pos <= 3 ? 'front' : 'back';
-    const cols = team === 0 ? { back: 150, front: 330 } : { front: STAGE_W - 330, back: STAGE_W - 150 };
-    const indexInRow = row === 'front' ? pos - 1 : pos - 4; // 0..2
-    // 斜隊形：沿排水平錯位（上小下大、team0 向右、team1 向左）。
-    const x = cols[row] + (indexInRow - 1) * 14 * (team === 0 ? 1 : -1);
-    const spacing = 116; // 需大於單位視覺高度（名字頂到條底約 106px），否則上下排疊字
-    const rowCount = 3;
-    const totalH = (rowCount - 1) * spacing;
-    const y = STAGE_H / 2 - totalH / 2 + indexInRow * spacing;
+    const indexInRow = row === 'front' ? pos - 1 : pos - 4; // 0..2（0=最遠/最上）
+    const colX = team === 0
+      ? { back: 130, front: 305 }
+      : { front: STAGE_W - 305, back: STAGE_W - 130 };
+    // 排內斜隊形：由遠而近往「戰場中心」錯位
+    const slant = (indexInRow - 1) * 30 * (team === 0 ? 1 : -1);
+    const x = colX[row] + slant;
+    const yTop = GROUND_Y + 40; // 最遠腳底
+    const ySpacing = 82;
+    const y = yTop + indexInRow * ySpacing;
     return { x, y, indexInRow };
   }
 
   _buildUnits() {
-    const DEPTH_SCALE = [0.92, 1.0, 1.08]; // 同排由上而下 → 由遠而近
-    for (const info of this.setup) {
+    const units = [...this.setup].sort((a, b) => a.pos - b.pos);
+    let order = 0;
+    for (const info of units) {
       const { x, y, indexInRow } = this._layoutFor(info.team, info.pos);
       const sprite = this._makeSprite(info);
       sprite.x = x;
@@ -256,21 +260,38 @@ export class BattleScene {
       sprite._homeX = x;
       sprite._homeY = y;
       const base = DEPTH_SCALE[indexInRow] ?? 1;
-      sprite._baseScale = base; // fx 的比例動畫以此為基準
+      sprite._baseScale = base;
       sprite.scale.set(base);
-      sprite.zIndex = y; // 愈下（近）愈後畫 → 遮擋上方單位
+      sprite.zIndex = y; // 愈近（低）愈後畫
       this.root.addChild(sprite);
       this.sprites.set(info.uid, sprite);
+
+      // 進場：自場外滑入 + 微彈（依站位 stagger）
+      const fromX = x + (info.team === 0 ? -120 : 120);
+      sprite.x = fromX;
+      sprite.alpha = 0;
+      gsap.to(sprite, {
+        x,
+        alpha: 1,
+        duration: ENTRANCE_S,
+        delay: order * ENTRANCE_STAGGER_S,
+        ease: 'back.out(1.3)',
+        onComplete: () => {
+          sprite.x = x;
+        },
+      });
+      order += 1;
     }
   }
 
-  // 待機呼吸：棋子主體輕微縮放（每隻週期/相位不同，畫面才會「活」）。
-  _startBreath(body, base = 1) {
+  // 待機呼吸：立繪以腳底為原點輕微「起伏」，每隻相位不同。
+  _startBreath(body) {
     gsap.killTweensOf(body.scale);
+    const bs = body.scale.x;
     gsap.to(body.scale, {
-      x: base * 1.035,
-      y: base * 1.035,
-      duration: 1.4 + Math.random() * 0.8,
+      y: body.scale.y * 1.018,
+      x: bs * 1.005,
+      duration: 1.3 + Math.random() * 0.7,
       yoyo: true,
       repeat: -1,
       ease: 'sine.inOut',
@@ -278,71 +299,60 @@ export class BattleScene {
     });
   }
 
+  // 單位容器：原點＝腳底。影 → 元素底光 → 立繪（anchor 腳底）→ 頭頂資訊條。
   _makeSprite(info) {
     const c = new Container();
     c._info = info;
-
     const color = ELEMENT_COLOR[info.element] || 0xffffff;
 
-    // 腳底橢圓影（最底層）。緊貼圓底、比條窄，避免和血條疊成「重影」。
+    // 腳底橢圓影
     const shadow = new Graphics();
-    shadow.ellipse(0, R + 3, 22, 5.5).fill({ color: 0x000000, alpha: 0.22 });
+    shadow.ellipse(0, 2, 30, 8).fill({ color: 0x000000, alpha: 0.3 });
     c.addChild(shadow);
 
-    // 元素色底光（additive 柔光，襯托棋子輪廓）。
+    // 元素底光（additive）
     const aura = new Sprite(this._dotTex);
     aura.anchor.set(0.5);
-    aura.scale.set(3.4);
+    aura.scale.set(2.6);
+    aura.y = -6;
     aura.tint = color;
-    aura.alpha = 0.5;
+    aura.alpha = 0.4;
     aura.blendMode = 'add';
     c.addChild(aura);
 
-    const body = new Graphics();
-    body.circle(0, 0, R).fill(color);
-    body.circle(0, 0, R).stroke({ color: GOLD, width: 2.5, alpha: 0.95 });
-    c.addChild(body);
-    c._body = body;
-    this._startBreath(body, 1);
-
-    const glyph = new Text({
-      text: CLASS_GLYPH[info.class] || '?',
-      style: { fontSize: 24, fill: 0x11131a },
-    });
+    // 佔位主體（立繪載入前）：元素色膠囊 + 職業符號
+    const placeholder = new Container();
+    const cap = new Graphics();
+    cap.roundRect(-24, -BODY_H * 0.72, 48, BODY_H * 0.72, 22).fill({ color, alpha: 0.85 });
+    cap.roundRect(-24, -BODY_H * 0.72, 48, BODY_H * 0.72, 22).stroke({ color: GOLD, width: 2, alpha: 0.8 });
+    placeholder.addChild(cap);
+    const glyph = new Text({ text: CLASS_GLYPH[info.class] || '?', style: { fontSize: 26, fill: 0x11131a } });
     glyph.anchor.set(0.5);
-    c.addChild(glyph);
-    c._glyph = glyph;
+    glyph.y = -BODY_H * 0.4;
+    placeholder.addChild(glyph);
+    c.addChild(placeholder);
+    c._body = placeholder;
+    this._startBreath(placeholder);
 
-    // 有卡圖 → async 載入後以圓形遮罩 Sprite 換掉程序化圓的填色部分。
+    // 立繪（async 載入後替換佔位）
     this._loadArt(c, info);
 
-    // 元素寶石角標（右下）。
-    const gem = new Graphics();
-    gem.circle(R * 0.72, R * 0.72, 7).fill(color);
-    gem.circle(R * 0.72, R * 0.72, 7).stroke({ color: 0x14101f, width: 2 });
-    c.addChild(gem);
-
-    const name = new Text({
-      text: `${info.name} Lv${info.level}`,
-      style: {
-        fontSize: 11,
-        fill: 0xdfe4f2,
-        fontWeight: '600',
-        stroke: { color: 0x10131f, width: 3 },
-      },
-    });
-    name.anchor.set(0.5);
-    name.y = -R - 16;
-    c.addChild(name);
-
+    // 頭頂資訊條：元素小點 + 血條/能量條
+    const infoBar = new Container();
+    infoBar.y = -BODY_H - 16;
+    const chip = new Graphics();
+    chip.circle(-BAR_W / 2 - 10, 5, 5.5).fill(color);
+    chip.circle(-BAR_W / 2 - 10, 5, 5.5).stroke({ color: 0x14101f, width: 1.5 });
+    infoBar.addChild(chip);
     const bars = new Graphics();
-    bars.y = R + 12; // 與腳底影錯開，否則影從條後緣露出像重影
-    c.addChild(bars);
+    infoBar.addChild(bars);
     c._bars = bars;
+    c.addChild(infoBar);
+    c._infoBar = infoBar;
 
-    // buff/debuff 小圖示列（血條下方；renderTick 依 replayer 狀態變更時重建）。
+    // buff/debuff 小圖示列（資訊條上方）
     const icons = new Container();
-    icons.y = R + 30;
+    icons.y = -BODY_H - 30;
     c.addChild(icons);
     c._buffIcons = icons;
     c._buffKey = '';
@@ -350,7 +360,30 @@ export class BattleScene {
     return c;
   }
 
-  // buff 摘要 → 顯示字符。
+  // 依 manifest 載入去背全身立繪，替換佔位主體。
+  _loadArt(c, info) {
+    const path = cutoutFor(info.cardId);
+    if (!path) return;
+    Assets.load(path)
+      .then((tex) => {
+        if (this._destroyed || c.destroyed || !tex) return;
+        const img = new Sprite(tex);
+        img.anchor.set(0.5, 1); // 腳底
+        const scale = BODY_H / tex.height;
+        img.scale.set(info.team === 1 ? -scale : scale, scale); // 敵方鏡像
+        // 替換佔位
+        const idx = c.getChildIndex(c._body);
+        gsap.killTweensOf(c._body.scale);
+        c._body.destroy({ children: true });
+        c.addChildAt(img, idx);
+        c._body = img;
+        this._startBreath(img);
+      })
+      .catch(() => {
+        /* 載入失敗留佔位 */
+      });
+  }
+
   _buffGlyph(b) {
     if (b.kind === 'dot') return b.element === 'fire' ? '🔥' : '☠';
     if (b.kind === 'shield') return '🔰';
@@ -366,7 +399,7 @@ export class BattleScene {
     if (!icons || icons.destroyed) return;
     for (const child of [...icons.children]) child.destroy({ children: true });
     const shown = buffs.slice(0, 6);
-    const SIZE = 15;
+    const SIZE = 14;
     const GAP = 3;
     const totalW = shown.length * SIZE + (shown.length - 1) * GAP;
     shown.forEach((b, i) => {
@@ -382,63 +415,21 @@ export class BattleScene {
     });
   }
 
-  // 依 manifest 載入卡圖並換掉程序化圓 body。無素材則 artFor 回 null，直接跳過。
-  _loadArt(c, info) {
-    const path = artFor(info.cardId);
-    if (!path) return;
-    Assets.load(path)
-      .then((tex) => {
-        // async 防護：場景已拆或此 sprite 已 destroy 就不動它。
-        if (this._destroyed || c.destroyed || !tex) return;
-
-        const img = new Sprite(tex);
-        img.anchor.set(0.5);
-        // 棋子很小（直徑 2R），整張立繪塞進來人物會太小 →
-        // 以 portrait 焦點（頭部）為中心額外放大，呈現頭像式棋子。
-        const p = portraitFor(info.cardId);
-        const TOKEN_ZOOM = 3.2;
-        const short = Math.min(tex.width, tex.height) || 2 * R;
-        const scale = ((2 * R) / short) * TOKEN_ZOOM;
-        img.scale.set(scale);
-        img.x = (0.5 - (p?.x ?? 0.5)) * tex.width * scale;
-        img.y = (0.5 - (p?.y ?? 0.3)) * tex.height * scale;
-
-        // 圓形遮罩（需掛進顯示樹才生效）。
-        const mask = new Graphics().circle(0, 0, R).fill(0xffffff);
-        c.addChild(mask);
-        img.mask = mask;
-
-        // 影/底光 之上、body 之下插入圖，讓 body 的外圈金環仍框住圖。
-        const bodyIdx = c.getChildIndex(c._body);
-        c.addChildAt(img, bodyIdx);
-
-        // body 只留外圈金環（清掉填色圓）；符號隱藏；呼吸改作用在圖上。
-        gsap.killTweensOf(c._body.scale);
-        c._body.clear();
-        c._body.circle(0, 0, R).stroke({ color: GOLD, width: 2.5, alpha: 0.95 });
-        if (c._glyph) c._glyph.visible = false;
-
-        // hitFlash / ultPulse tint 對象改為圖（Sprite 支援 tint）。
-        c._body = img;
-        c._artMask = mask;
-        // 注意：呼吸不作用在遮罩圖上（scale 是裁切參數的一部分），改由金環環代替微動效果即可省略。
-      })
-      .catch(() => {
-        // 載入失敗：silently 留程序化圓。
-      });
-  }
-
   _bar(g, y, ratio, color, bgColor, glow = 0) {
     const x = -BAR_W / 2;
-    g.roundRect(x - 1, y - 1, BAR_W + 2, 8, 4).fill({ color: 0x0b0d16, alpha: 0.9 });
-    g.roundRect(x, y, BAR_W, 6, 3).fill(bgColor);
-    if (ratio > 0) g.roundRect(x, y, BAR_W * ratio, 6, 3).fill(color);
+    g.roundRect(x - 1, y - 1, BAR_W + 2, 7, 3.5).fill({ color: 0x0b0d16, alpha: 0.9 });
+    g.roundRect(x, y, BAR_W, 5, 2.5).fill(bgColor);
+    if (ratio > 0) g.roundRect(x, y, BAR_W * ratio, 5, 2.5).fill(color);
     if (glow > 0) {
-      g.roundRect(x - 1, y - 1, BAR_W + 2, 8, 4).stroke({ color: 0xffe27a, width: 1.5, alpha: 0.25 + glow * 0.55 });
+      g.roundRect(x - 1, y - 1, BAR_W + 2, 7, 3.5).stroke({ color: 0xffe27a, width: 1.5, alpha: 0.25 + glow * 0.55 });
     }
   }
 
-  // 每幀刷新所有條（由 controller 的 ticker 呼叫），由 replayer 狀態驅動。
+  // 胸口座標（特效/飄字定位；相對容器腳底原點）。
+  _chestY(sprite) {
+    return sprite.y - BODY_H * 0.55 * (sprite._baseScale ?? 1);
+  }
+
   renderTick() {
     for (const [uid, sprite] of this.sprites) {
       const info = sprite._info;
@@ -449,10 +440,9 @@ export class BattleScene {
       const hpColor = hpRatio > 0.5 ? 0x57d77a : hpRatio > 0.25 ? 0xf5c451 : 0xff6b6b;
       const full = energy >= ENERGY_MAX;
       g.clear();
-      this._bar(g, 0, hpRatio, hpColor, 0x232d26); // HP（低血變色）
-      this._bar(g, 9, Math.min(1, energy / ENERGY_MAX), 0xf5c451, 0x2e2a1c, full ? this._pulse.v : 0); // 能量（滿格脈衝）
+      this._bar(g, 0, hpRatio, hpColor, 0x232d26);
+      this._bar(g, 8, Math.min(1, energy / ENERGY_MAX), 0xf5c451, 0x2e2a1c, full ? this._pulse.v : 0);
 
-      // buff/debuff 圖示：狀態變更時才重建（key 比對，避免每幀重繪）。
       const buffs = this.replayer.buffsOf(uid);
       const buffKey = buffs.map((b) => `${b.kind}:${b.stat || b.control || b.element || ''}:${b.neg ? 1 : 0}`).join(',');
       if (buffKey !== sprite._buffKey) {
@@ -460,9 +450,7 @@ export class BattleScene {
         this._rebuildBuffIcons(sprite, buffs);
       }
 
-      // 跳過 / 瞬時模式下沒有 death 事件動畫，這裡補套終局視覺（與 death 共用 _dead 去重）。
-      // 正常播放時死亡淡出交給 death 事件的 deathFade；此處只在瞬時模式生效，
-      // 否則 renderTick 會在致死 damage 當幀（alive 已 false）搶先套終局視覺，淡出永遠不會播。
+      // 跳過/瞬時模式：沒有 death 事件動畫，補終局視覺。
       if (this._instant && !this.replayer.aliveOf(uid) && !this._dead.has(uid)) {
         this._dead.add(uid);
         sprite.alpha = 0.25;
@@ -486,7 +474,7 @@ export class BattleScene {
         const info = s._info;
         const color = ELEMENT_COLOR[info.element] ?? 0xffffff;
         ultPulse(s, s._body, color);
-        shockwave(this.fxLayer, s.x, s.y, color);
+        shockwave(this.fxLayer, s.x, s.y - 6, color);
         screenShake(this.root);
         cutIn(this.fxLayer, STAGE_W, {
           name: info.name,
@@ -499,10 +487,9 @@ export class BattleScene {
         if (this._instant) return;
         const s = this.sprites.get(targetUid);
         if (!s) return;
-        // 被打往「遠離戰場中心」的方向擊退。
         const pushDir = s._info.team === 0 ? -1 : 1;
         hitFlash(s, s._body, pushDir);
-        spark(this.fxLayer, s.x, s.y - 4, isCrit ? 0xffa940 : 0xffd27a, this._dotTex, isCrit ? 14 : 8);
+        spark(this.fxLayer, s.x, this._chestY(s), isCrit ? 0xffa940 : 0xffd27a, this._dotTex, isCrit ? 14 : 8);
         let text;
         let size;
         let color;
@@ -520,18 +507,18 @@ export class BattleScene {
           text,
           style: { fontSize: size, fill: color, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
         });
-        floatText(this.fxLayer, s.x, s.y - R, txt);
+        floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
       }),
       rp.on('heal', ({ targetUid, amount }) => {
         if (this._instant) return;
         const s = this.sprites.get(targetUid);
         if (!s) return;
-        spark(this.fxLayer, s.x, s.y - 6, 0x8ef2ae, this._dotTex, 6);
+        spark(this.fxLayer, s.x, this._chestY(s), 0x8ef2ae, this._dotTex, 6);
         const txt = new Text({
           text: `+${amount}`,
           style: { fontSize: 20, fill: 0x6bdc8a, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
         });
-        floatText(this.fxLayer, s.x, s.y - R, txt);
+        floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
       }),
       rp.on('stunned', ({ uid }) => {
         if (this._instant) return;
@@ -541,7 +528,7 @@ export class BattleScene {
           text: '暈眩',
           style: { fontSize: 20, fill: 0x9aa3b8, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
         });
-        floatText(this.fxLayer, s.x, s.y - R, txt);
+        floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
       }),
       rp.on('death', ({ uid }) => {
         if (this._instant) return;
@@ -559,34 +546,23 @@ export class BattleScene {
   }
 
   destroy() {
-    this._destroyed = true; // 阻擋仍在飛行的 async 載圖回填已拆場景
+    this._destroyed = true;
     this._unsubs.forEach((fn) => fn());
     this._unsubs = [];
-    // 停掉背景柔光 / 微塵 / 能量脈衝 tween（作用於 root 子物件，需在 root 銷毀前殺）。
     for (const glow of this._glows) gsap.killTweensOf(glow);
     this._glows = [];
     for (const p of this._ambient) gsap.killTweensOf(p);
     this._ambient = [];
     this._pulseTween.kill();
-    // 先停掉所有進行中的 GSAP tween，避免在物件已銷毀後仍寫入屬性。
     for (const s of this.sprites.values()) {
       resetVisual(s);
-      killFx(s); // 殺掉子物件（_body 等）的 tint/位移/呼吸 tween
+      killFx(s);
     }
     killFx(this.fxLayer);
-    // screenShake 直接動 root 的 x/y（非子物件），需另外殺掉飛行中 tween，
-    // 避免在 root 銷毀後仍寫入座標。
     gsap.killTweensOf(this.root);
-    // cacheAsTexture 的容器銷毀前必須先關閉快取（performance skill 規範）。
     this._bgStatic?.cacheAsTexture(false);
     this.root.destroy({ children: true });
     this.fxLayer.destroy({ children: true });
-    this._dotTex?.destroy(true);
-    this._dotTex = null;
+    this._dotTex = null; // 共享材質不銷毀（掛在 app 上，跨場景復用）
   }
-}
-
-// 遠山其中一個峰的高度（拉出一個「主峰」讓輪廓不呆板）。
-function goldenPeak(groundY) {
-  return groundY - 110;
 }

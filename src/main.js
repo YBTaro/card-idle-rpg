@@ -1,70 +1,70 @@
-// 入口：載存檔 → 建 Pixi → 啟動戰鬥迴圈 → 掛載 UI → 分頁切換。
+// 入口：載存檔 → 建 Pixi → 掛五大畫面（主城/隊伍/英雄/召喚/戰役）→
+// 主城大廳制導覽 → 登入彈窗佇列 + FTUE。
 import './style.css';
 import { loadGame } from './core/save.js';
 import { store } from './core/state.js';
 import { createPixiApp } from './render/pixiApp.js';
 import { BattleController } from './render/battleController.js';
-import { Hud } from './ui/hud.js';
+import { nav } from './ui/router.js';
+import { HomeUI } from './ui/homeUI.js';
+import { TeamUI } from './ui/teamUI.js';
+import { HeroesUI } from './ui/heroesUI.js';
 import { GachaUI } from './ui/gachaUI.js';
-import { RosterUI } from './ui/rosterUI.js';
-import { el } from './ui/dom.js';
+import { BattleOverlay } from './ui/battleOverlay.js';
+import { ensureQuests } from './systems/quests.js';
 
 async function main() {
   loadGame();
+  ensureQuests(); // 跨日任務重置
 
+  // Pixi 戰場（常駐運轉＝掛機推關，不在戰役頁也照打）
   const app = await createPixiApp(document.getElementById('battle-canvas'));
-  const statusEl = document.getElementById('battle-status');
-  const battle = new BattleController(app, statusEl);
+  app.canvas.style.width = '100%';
+  app.canvas.style.height = '100%';
+  app.canvas.style.objectFit = 'contain';
 
-  const hud = new Hud(document.getElementById('hud'), {
-    onSpeedChange: (x) => battle.setSpeed(x),
-    getSpeed: () => battle.speed,
-    onSkip: () => battle.skip(),
-    onReset: () => {
-      battle.restart();
-      roster.render();
-      gacha.render();
-    },
-  });
+  const overlay = new BattleOverlay(document.getElementById('battle-overlay'));
+  const battle = new BattleController(app, overlay);
 
-  const roster = new RosterUI(document.getElementById('screen-roster'), {
-    onFormationChange: () => battle.restart(),
-  });
-
+  // 五大畫面
+  const home = new HomeUI(document.getElementById('screen-home'));
+  const team = new TeamUI(document.getElementById('screen-team'));
+  const heroes = new HeroesUI(document.getElementById('screen-heroes'));
   const gacha = new GachaUI(document.getElementById('screen-gacha'));
+  const screens = { home, team, heroes, gacha };
 
-  setupTabs();
+  nav.register('home', document.getElementById('screen-home'), home);
+  nav.register('team', document.getElementById('screen-team'), team);
+  nav.register('heroes', document.getElementById('screen-heroes'), heroes);
+  nav.register('gacha', document.getElementById('screen-gacha'), gacha);
+  nav.register('battle', document.getElementById('screen-battle'), null);
+  nav.go('home');
 
-  // 任何狀態變更 → 重繪相關 UI（戰鬥場景靠事件，不在此重繪）。
+  // 任何狀態變更 → 重繪目前畫面（戰役頁由事件/ticker 驅動，不重繪）。
   store.subscribe(() => {
-    hud.render();
-    roster.render();
-    gacha.render();
+    const id = nav.current();
+    if (id && screens[id]) screens[id].render?.();
   });
-}
 
-function setupTabs() {
-  const tabsEl = document.getElementById('tabs');
-  const defs = [
-    ['battle', '⚔ 戰鬥'],
-    ['roster', '🃏 角色'],
-    ['gacha', '🎴 抽卡'],
-  ];
-  for (const [id, label] of defs) {
-    const b = el('button', { text: label, onClick: () => activate(id) });
-    b.dataset.tab = id;
-    tabsEl.appendChild(b);
-  }
-  function activate(id) {
-    document
-      .querySelectorAll('.screen')
-      .forEach((s) => s.classList.toggle('active', s.id === `screen-${id}`));
-    tabsEl.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.tab === id));
-  }
-  activate('battle');
+  // 陣容變更 → 重啟當前戰鬥（升級不重啟，下一場才吃新數值）。
+  let lastFormation = JSON.stringify(store.state.formation);
+  store.subscribe(() => {
+    const f = JSON.stringify(store.state.formation);
+    if (f !== lastFormation) {
+      lastFormation = f;
+      battle.restart();
+    }
+  });
+
+  // 新手引導（新檔）→ 之後才排登入彈窗佇列（簽到 / 掛機箱滿）。
+  home.startupTutorial();
+  home.startupPopups();
 }
 
 main().catch((err) => {
   console.error(err);
-  document.getElementById('battle-status').textContent = '初始化失敗：' + err.message;
+  const hint = document.createElement('div');
+  hint.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#ff7a6b;font-size:16px;z-index:999';
+  hint.textContent = '初始化失敗：' + err.message;
+  document.body.appendChild(hint);
 });

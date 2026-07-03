@@ -44,6 +44,14 @@ export function artFor(cardId) {
   return entry && entry.art ? entry.art : null;
 }
 
+// → 去背立繪路徑或 null（戰場單位 / 主城看板 / 召喚看板用）。
+// 佔位期為 make-cutouts.mjs 生成的 _cutout.svg；真素材到位後改為 body.png 路徑。
+export function cutoutFor(cardId) {
+  const entry = CARD_ART[cardId];
+  if (!entry || !entry.art) return null;
+  return entry.cutout ?? entry.art.replace(/\.(svg|png)$/, '_cutout.$1');
+}
+
 // → { src, x, y, zoom } 或 null（同一張圖 + 裁切焦點/縮放；未指定套預設 0.5/0.25/2.0）
 export function portraitFor(cardId) {
   const entry = CARD_ART[cardId];
