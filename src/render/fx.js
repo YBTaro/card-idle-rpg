@@ -140,79 +140,138 @@ export function floatText(layer, x, y, textObj) {
     .to(textObj, { alpha: 0, duration: 0.45, ease: 'power1.in' }, 0.32);
 }
 
-// 大招 cut-in 帶狀橫幅（劍與遠征/AFK Arena 療癒手遊風）：
-// 全寬半透明深藍紫底帶（置中）+ 上下柔和元素色細邊線 + 左側元素色圓（職業符號 + 淡金描邊）；
-// 角色名（小、dim）+ 技能名（大、元素色、粗體黑描邊）自左滑入（back.out 帶彈性）→停→右滑出。
-// 整段 ~0.65s，對齊 DELAYS.ultimate = 0.7。所有物件 onComplete 銷毀 + 防重複；可被 killFx 掃到。
-export function cutIn(layer, stageW, { name, skillName, color, glyph }) {
-  const BAND_H = 90;
-
+// 施法法陣：掛在施放者容器腳底的旋轉魔法陣（雙環 + 虛線環 + 底光），
+// 聚光燈演出期間亮起 → 淡出自毀。additive 疊色，用元素色。
+export function castCircle(parent, color, { radius = 46, duration = 1.25 } = {}) {
   const cont = new Container();
-  cont.x = 0;
-  cont.y = STAGE_H / 2; // 帶垂直置中
+  cont.y = 0; // 腳底
+  cont.scale.set(0.3, 0.3 * 0.38); // 透視壓扁
   cont.alpha = 0;
-  layer.addChild(cont);
+  parent.addChildAt(cont, 0); // 陰影之下層級無妨，同容器內在立繪後面即可
 
-  // 半透明深藍紫底帶（圓潤細邊，兩端輕微圓角）+ 上下柔和元素色邊線。
-  const band = new Graphics();
-  const top = -BAND_H / 2;
-  // 底帶要明顯比天幕深（天幕 ~0x1e2438 系），否則整條帶只剩上下邊線看得見。
-  band.roundRect(0, top, stageW, BAND_H, 6).fill({ color: 0x0a0d1a, alpha: 0.88 });
-  band.rect(0, top, stageW, 2).fill({ color, alpha: 0.55 });
-  band.rect(0, top + BAND_H - 2, stageW, 2).fill({ color, alpha: 0.55 });
-  cont.addChild(band);
+  const ring = new Graphics();
+  ring.circle(0, 0, radius).stroke({ width: 4, color, alpha: 0.95 });
+  ring.circle(0, 0, radius * 0.72).stroke({ width: 2, color: 0xfff2c8, alpha: 0.8 });
+  ring.blendMode = 'add';
+  cont.addChild(ring);
 
-  // 左側圓形頭像位（本階段 = 元素色圓 + 職業符號 + 淡金描邊；portrait 版待素材到位）。
-  const circleX = 72;
-  const circle = new Graphics();
-  circle.circle(0, 0, 32).fill(color);
-  circle.circle(0, 0, 32).stroke({ color: 0xf5e6b0, width: 2, alpha: 0.9 });
-  circle.x = circleX;
-  cont.addChild(circle);
-
-  const gl = new Text({ text: glyph || '?', style: { fontSize: 30, fill: 0x11131a } });
-  gl.anchor.set(0.5);
-  gl.x = circleX;
-  cont.addChild(gl);
-
-  // 文字群（滑入 / 滑出的唯一移動對象；band 與圓維持不動）。
-  const textGroup = new Container();
-  const nameText = new Text({
-    text: name,
-    style: { fontSize: 14, fill: 0xaab3c8, fontWeight: '600' },
-  });
-  nameText.anchor.set(0, 0.5);
-  nameText.y = -16;
-  const skillText = new Text({
-    text: skillName,
-    style: { fontSize: 34, fill: color, fontWeight: '800', stroke: { color: 0x0c0e14, width: 5 } },
-  });
-  skillText.anchor.set(0, 0.5);
-  skillText.y = 12;
-  textGroup.addChild(nameText);
-  textGroup.addChild(skillText);
-  cont.addChild(textGroup);
-
-  const restX = circleX + 46;
-  textGroup.x = restX - 60; // 自左偏移入場
-  textGroup.alpha = 0;
+  // 虛線外環（旋轉層）
+  const dashed = new Graphics();
+  const SEGS = 12;
+  for (let i = 0; i < SEGS; i += 1) {
+    const a0 = (i / SEGS) * Math.PI * 2;
+    const a1 = a0 + (Math.PI * 2) / SEGS / 2;
+    dashed.arc(0, 0, radius * 1.22, a0, a1).stroke({ width: 3, color, alpha: 0.7 });
+  }
+  dashed.blendMode = 'add';
+  cont.addChild(dashed);
 
   let done = false;
   const finish = () => {
     if (done) return;
     done = true;
     gsap.killTweensOf(cont);
-    gsap.killTweensOf(textGroup);
+    gsap.killTweensOf(cont.scale);
+    gsap.killTweensOf(dashed);
     if (!cont.destroyed) cont.destroy({ children: true });
   };
-
-  // 進場(帶淡入 + 文字彈性滑入) → 停 → 右滑出淡出。總長 ~0.66s。
+  gsap.to(dashed, { rotation: Math.PI * 1.5, duration, ease: 'none' });
   gsap
     .timeline({ onComplete: finish })
-    .to(cont, { alpha: 1, duration: 0.15, ease: 'power1.out' }, 0)
-    .to(textGroup, { x: restX, alpha: 1, duration: 0.28, ease: 'back.out(1.7)' }, 0.02)
-    .to(textGroup, { x: restX + 80, alpha: 0, duration: 0.18, ease: 'power2.in' }, 0.48)
-    .to(cont, { alpha: 0, duration: 0.16, ease: 'power1.in' }, 0.5);
+    .to(cont, { alpha: 1, duration: 0.16, ease: 'power1.out' }, 0)
+    .to(cont.scale, { x: 1, y: 0.38, duration: 0.3, ease: 'back.out(1.6)' }, 0)
+    .to(cont, { alpha: 0, duration: 0.3, ease: 'power1.in' }, duration - 0.3);
+}
+
+// 施放者背後光柱：additive 雙層光帶 + 微幅呼吸，聚光窗內常駐（由呼叫端銷毀）。
+export function lightPillar(parent, color) {
+  const cont = new Container();
+  const halo = new Graphics();
+  halo.roundRect(-42, -240, 84, 240, 42).fill({ color, alpha: 0.15 });
+  halo.blendMode = 'add';
+  const core = new Graphics();
+  core.roundRect(-18, -240, 36, 240, 18).fill({ color: 0xfff2c8, alpha: 0.16 });
+  core.blendMode = 'add';
+  cont.addChild(halo);
+  cont.addChild(core);
+  cont.scale.set(1, 0);
+  parent.addChildAt(cont, Math.min(1, parent.children.length)); // 影之上、立繪之後
+  gsap.to(cont.scale, { y: 1, duration: 0.28, ease: 'power3.out' });
+  gsap.to(cont, { alpha: 0.75, duration: 0.5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  return cont;
+}
+
+// 目標爆光：大型地面光圈爆發（雙環擴散 + 中心閃光 + 上竄火花）。
+// 掛 fxLayer（永遠在壓暗層之上），x/y 為目標腳底。
+export function impactBurst(layer, x, y, color, dotTexture) {
+  const cont = new Container();
+  cont.x = x;
+  cont.y = y;
+  layer.addChild(cont);
+
+  const mk = (r, w, a) => {
+    const g = new Graphics();
+    g.ellipse(0, 0, r, r * 0.38).stroke({ width: w, color, alpha: a });
+    g.blendMode = 'add';
+    g.scale.set(0.25);
+    cont.addChild(g);
+    return g;
+  };
+  const ringA = mk(52, 5, 0.95);
+  const ringB = mk(34, 3, 0.8);
+
+  let flash = null;
+  if (dotTexture) {
+    flash = new Sprite(dotTexture);
+    flash.anchor.set(0.5);
+    flash.y = -14;
+    flash.tint = 0xfff2c8;
+    flash.alpha = 0.9;
+    flash.blendMode = 'add';
+    flash.scale.set(1.2);
+    cont.addChild(flash);
+  }
+
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    for (const c of cont.children) {
+      gsap.killTweensOf(c);
+      if (c.scale) gsap.killTweensOf(c.scale);
+    }
+    if (!cont.destroyed) cont.destroy({ children: true });
+  };
+  const tl = gsap.timeline({ onComplete: finish });
+  tl.to(ringA.scale, { x: 1.6, y: 1.6, duration: 0.5, ease: 'power2.out' }, 0)
+    .to(ringA, { alpha: 0, duration: 0.5, ease: 'power1.in' }, 0.1)
+    .to(ringB.scale, { x: 1.1, y: 1.1, duration: 0.42, ease: 'power2.out' }, 0.06)
+    .to(ringB, { alpha: 0, duration: 0.4, ease: 'power1.in' }, 0.16);
+  if (flash) {
+    tl.to(flash.scale, { x: 4.2, y: 4.2, duration: 0.3, ease: 'power2.out' }, 0)
+      .to(flash, { alpha: 0, duration: 0.34, ease: 'power1.in' }, 0.08);
+    // 上竄火花：命中點向上噴散
+    for (let i = 0; i < 6; i += 1) {
+      const s = new Sprite(dotTexture);
+      s.anchor.set(0.5);
+      s.blendMode = 'add';
+      s.tint = color;
+      s.scale.set(0.3 + Math.random() * 0.3);
+      s.y = -10;
+      cont.addChild(s);
+      tl.to(
+        s,
+        {
+          x: Math.random() * 90 - 45,
+          y: -60 - Math.random() * 70,
+          alpha: 0,
+          duration: 0.45 + Math.random() * 0.2,
+          ease: 'power2.out',
+        },
+        0.02
+      );
+    }
+  }
 }
 
 // 震屏：記 home 座標，快速抖 4~5 下後回原位。作用於整體容器（root）。

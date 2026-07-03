@@ -49,6 +49,8 @@ export class BattleController {
     this.scene = new BattleScene(this.app, sim.setup, this.replayer);
     this.director = new AnimationDirector(this.replayer);
     this.director.speed = this.speed;
+    // 絕技聚光燈演出未收燈前，不放行下一個單位的回合（要等特效放完才下一個動作）。
+    this.director.gate = (entry) => this.scene?.gateEvent?.(entry) ?? false;
     this.replayer.on('battleEnd', ({ winner }) => this._onEnd(winner));
     this._cooldown = 0;
     this.overlay?.setBattle({ stage });

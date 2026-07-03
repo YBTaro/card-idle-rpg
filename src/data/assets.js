@@ -52,6 +52,17 @@ export function cutoutFor(cardId) {
   return entry.cutout ?? entry.art.replace(/\.(svg|png)$/, '_cutout.$1');
 }
 
+// 語音 manifest：cardId → { attack, ultimate }（路徑相對 /public）。
+// 加語音兩步驟：1. 音檔丟 public/assets/voice/  2. 這裡填一行。目前無素材＝全靜默。
+export const VOICE_MANIFEST = {
+  // 範例：ifrit: { attack: 'assets/voice/ifrit_attack.mp3', ultimate: 'assets/voice/ifrit_ult.mp3' },
+};
+
+// → 音檔路徑或 null。
+export function voiceFor(cardId, kind) {
+  return VOICE_MANIFEST[cardId]?.[kind] ?? null;
+}
+
 // → { src, x, y, zoom } 或 null（同一張圖 + 裁切焦點/縮放；未指定套預設 0.5/0.25/2.0）
 export function portraitFor(cardId) {
   const entry = CARD_ART[cardId];

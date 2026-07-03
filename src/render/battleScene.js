@@ -25,13 +25,16 @@ import {
   ultPulse,
   floatText,
   spark,
-  shockwave,
-  cutIn,
+  castCircle,
+  impactBurst,
+  lightPillar,
   screenShake,
   deathFade,
   resetVisual,
   killFx,
 } from './fx.js';
+import { casterVfx, targetVfx } from './skillVfx.js';
+import { playVoice } from './audio.js';
 
 // 與 style.css 的 --fire/--wind/--water/--light/--dark 同色值。
 const ELEMENT_COLOR = {
@@ -51,6 +54,17 @@ const GROUND_Y = STAGE_H * 0.55;
 const DEPTH_SCALE = [0.8, 0.92, 1.04];
 const ENTRANCE_S = 0.4; // 進場滑入
 const ENTRANCE_STAGGER_S = 0.08;
+// 絕技聚光燈演出（參考原型：全場壓暗、只亮施放者與目標，技能名小標籤貼施放者旁）
+// 收燈為事件/計時混合驅動：施放後保底 CAST 秒；每次命中把「餘韻計時」重設為 IMPACT 秒，
+// 最後一擊的特效播完才收燈；收燈前 director gate 擋住下一個單位的回合。
+const ULT_HOLD_CAST_S = 1.9; // 施放後（尚無命中）保底窗長
+const ULT_HOLD_IMPACT_S = 0.85; // 每次命中後的餘韻（特效播完的時間）
+const ULT_DIM_ALPHA = 0.66; // 壓暗層不透明度
+const ULT_DIM_IN_S = 0.16;
+const ULT_DIM_OUT_S = 0.35;
+const Z_DIM = 500; // 壓暗層（單位 zIndex = y，最多 ~540）
+const Z_SPOT_TARGET = 590; // 被點亮的目標
+const Z_SPOT_CASTER = 600; // 施放者最上層
 
 export class BattleScene {
   constructor(app, setup, replayer) {
@@ -465,28 +479,37 @@ export class BattleScene {
       rp.on('attack', ({ attackerUid }) => {
         if (this._instant) return;
         const s = this.sprites.get(attackerUid);
-        if (s) lunge(s, s._info.team === 0 ? 1 : -1);
+        if (!s) return;
+        lunge(s, s._info.team === 0 ? 1 : -1);
+        playVoice(s._info.cardId, 'attack'); // 普攻語音（抽播；無音檔＝靜默）
       }),
-      rp.on('ultimate', ({ casterUid, skill }) => {
+      rp.on('ultimate', ({ casterUid, skill, targetUid }) => {
         if (this._instant) return;
         const s = this.sprites.get(casterUid);
         if (!s) return;
         const info = s._info;
         const color = ELEMENT_COLOR[info.element] ?? 0xffffff;
+        // 聚光燈演出：全場壓暗、施放者置頂 + 施法法陣 + 技能名小標籤（貼施放者旁）
+        this._beginUltSpotlight(s, color, SKILLS[skill]?.name ?? skill);
+        if (targetUid != null) this._spotlightTarget(this.sprites.get(targetUid));
+        this._ultColor = color;
         ultPulse(s, s._body, color);
-        shockwave(this.fxLayer, s.x, s.y - 6, color);
+        castCircle(s, color);
+        casterVfx({ fxLayer: this.fxLayer, dotTex: this._dotTex }, s, skill, color); // 依技能資料派生施放特效
+        playVoice(s._info.cardId, 'ultimate'); // 絕技語音（無音檔＝靜默）
         screenShake(this.root);
-        cutIn(this.fxLayer, STAGE_W, {
-          name: info.name,
-          skillName: SKILLS[skill]?.name ?? skill,
-          color,
-          glyph: CLASS_GLYPH[info.class] || '?',
-        });
       }),
-      rp.on('damage', ({ targetUid, amount, isCrit, isAdvantage, isDisadvantage }) => {
+      rp.on('damage', ({ targetUid, amount, skill, isCrit, isAdvantage, isDisadvantage }) => {
         if (this._instant) return;
         const s = this.sprites.get(targetUid);
         if (!s) return;
+        // 絕技窗內被打的目標 → 點亮 + 依技能派生受擊特效 + 地面爆光；命中重設餘韻計時
+        if (this._ultDim) {
+          this._spotlightTarget(s);
+          if (skill && skill !== 'normal') targetVfx({ dotTex: this._dotTex }, s, skill, this._ultColor ?? 0xffffff);
+          impactBurst(this.fxLayer, s.x, s.y, this._ultColor ?? 0xff8a6a, this._dotTex);
+          this._refreshUltTimer(ULT_HOLD_IMPACT_S);
+        }
         const pushDir = s._info.team === 0 ? -1 : 1;
         hitFlash(s, s._body, pushDir);
         spark(this.fxLayer, s.x, this._chestY(s), isCrit ? 0xffa940 : 0xffd27a, this._dotTex, isCrit ? 14 : 8);
@@ -513,6 +536,11 @@ export class BattleScene {
         if (this._instant) return;
         const s = this.sprites.get(targetUid);
         if (!s) return;
+        if (this._ultDim) {
+          this._spotlightTarget(s);
+          targetVfx({ dotTex: this._dotTex }, s, null, 0x8ef2ae, { heal: true });
+          this._refreshUltTimer(ULT_HOLD_IMPACT_S);
+        }
         spark(this.fxLayer, s.x, this._chestY(s), 0x8ef2ae, this._dotTex, 6);
         const txt = new Text({
           text: `+${amount}`,
@@ -537,16 +565,148 @@ export class BattleScene {
           this._dead.add(uid);
           deathFade(s, this._greyFilter);
         }
-      })
+      }),
+      rp.on('battleEnd', () => this._endUltSpotlight())
     );
+  }
+
+  // director gate：聚光燈亮著時，擋住「下一個單位的回合」——要等特效放完才下一個動作。
+  gateEvent(entry) {
+    return !!this._ultDim && entry.type === 'turn';
+  }
+
+  // 重設收燈計時（施放時保底 / 每次命中後餘韻）。
+  _refreshUltTimer(delayS) {
+    this._ultTimer?.kill();
+    this._ultTimer = gsap.delayedCall(delayS, () => this._endUltSpotlight());
+  }
+
+  // ---- 絕技聚光燈：全場壓暗（Z_DIM），施放者/被打目標抬到壓暗層之上 ----
+  _beginUltSpotlight(casterSprite, color, skillName) {
+    this._endUltSpotlight(true); // 前一發未收尾就先收
+
+    const dim = new Graphics();
+    dim.rect(0, 0, STAGE_W, STAGE_H).fill({ color: 0x05060c, alpha: 1 });
+    dim.alpha = 0;
+    dim.zIndex = Z_DIM;
+    this.root.addChild(dim);
+    gsap.to(dim, { alpha: ULT_DIM_ALPHA, duration: ULT_DIM_IN_S, ease: 'power1.out' });
+    this._ultDim = dim;
+    this._ultRaised = new Set();
+
+    casterSprite.zIndex = Z_SPOT_CASTER;
+    this._ultRaised.add(casterSprite);
+
+    // 施放者背後光柱（窗內常駐，收燈時拆）
+    this._ultPillar = lightPillar(casterSprite, color);
+
+    // 技能名小標籤：貼施放者旁（朝戰場中心側），黑底金字，非全寬（參考原型）
+    const dir = casterSprite._info.team === 0 ? 1 : -1;
+    const tag = new Container();
+    const label = new Text({
+      text: skillName,
+      style: { fontSize: 26, fill: 0xffe9b0, fontWeight: '900', letterSpacing: 4, stroke: { color: 0x0c0e14, width: 4 } },
+    });
+    label.anchor.set(0.5);
+    const padX = 18;
+    const bg = new Graphics();
+    bg.roundRect(-label.width / 2 - padX, -20, label.width + padX * 2, 40, 8).fill({ color: 0x0a0d1a, alpha: 0.85 });
+    bg.roundRect(-label.width / 2 - padX, -20, label.width + padX * 2, 40, 8).stroke({ color, width: 1.5, alpha: 0.7 });
+    tag.addChild(bg);
+    tag.addChild(label);
+    tag.x = casterSprite.x + dir * 30;
+    tag.y = this._chestY(casterSprite) - 42;
+    tag.alpha = 0;
+    tag.scale.set(0.6);
+    this.fxLayer.addChild(tag);
+    this._ultTag = tag;
+    gsap
+      .timeline()
+      .to(tag, { alpha: 1, duration: 0.14, ease: 'power1.out' }, 0)
+      .to(tag.scale, { x: 1, y: 1, duration: 0.24, ease: 'back.out(1.8)' }, 0);
+
+    this._refreshUltTimer(ULT_HOLD_CAST_S);
+  }
+
+  // 窗內把目標抬到壓暗層之上（施放者保持最上）。
+  _spotlightTarget(sprite) {
+    if (!this._ultDim || !sprite || sprite.destroyed) return;
+    if (this._ultRaised.has(sprite)) return;
+    sprite.zIndex = Z_SPOT_TARGET;
+    this._ultRaised.add(sprite);
+  }
+
+  _endUltSpotlight(instant = false) {
+    this._ultTimer?.kill();
+    this._ultTimer = null;
+    if (this._ultPillar) {
+      const pillar = this._ultPillar;
+      this._ultPillar = null;
+      gsap.killTweensOf(pillar);
+      if (instant) {
+        if (!pillar.destroyed) pillar.destroy({ children: true });
+      } else {
+        gsap.to(pillar, {
+          alpha: 0,
+          duration: 0.25,
+          onComplete: () => {
+            if (!pillar.destroyed) pillar.destroy({ children: true });
+          },
+        });
+      }
+    }
+    if (this._ultTag) {
+      const tag = this._ultTag;
+      this._ultTag = null;
+      gsap.killTweensOf(tag);
+      gsap.killTweensOf(tag.scale);
+      if (instant) {
+        if (!tag.destroyed) tag.destroy({ children: true });
+      } else {
+        gsap.to(tag, {
+          alpha: 0,
+          y: tag.y - 14,
+          duration: 0.2,
+          ease: 'power1.in',
+          onComplete: () => {
+            if (!tag.destroyed) tag.destroy({ children: true });
+          },
+        });
+      }
+    }
+    if (this._ultRaised) {
+      for (const s of this._ultRaised) {
+        if (!s.destroyed) s.zIndex = s._homeY ?? s.y; // 還原景深排序
+      }
+      this._ultRaised = null;
+    }
+    if (this._ultDim) {
+      const dim = this._ultDim;
+      this._ultDim = null;
+      gsap.killTweensOf(dim);
+      if (instant) {
+        if (!dim.destroyed) dim.destroy();
+      } else {
+        gsap.to(dim, {
+          alpha: 0,
+          duration: ULT_DIM_OUT_S,
+          ease: 'power1.in',
+          onComplete: () => {
+            if (!dim.destroyed) dim.destroy();
+          },
+        });
+      }
+    }
   }
 
   setInstant(v) {
     this._instant = v;
+    if (v) this._endUltSpotlight(true); // 跳過時立即收掉壓暗層
   }
 
   destroy() {
     this._destroyed = true;
+    this._endUltSpotlight(true);
     this._unsubs.forEach((fn) => fn());
     this._unsubs = [];
     for (const glow of this._glows) gsap.killTweensOf(glow);

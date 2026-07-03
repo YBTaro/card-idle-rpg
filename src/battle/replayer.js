@@ -40,6 +40,11 @@ export class Replayer {
     }
   }
 
+  // 看下一筆但不前進（AnimationDirector 的 gate 用）。
+  peek() {
+    return this.done ? null : this.log[this.cursor];
+  }
+
   step() {
     if (this.done) return null;
     const entry = this.log[this.cursor];

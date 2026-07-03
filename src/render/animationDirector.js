@@ -1,7 +1,7 @@
 // src/render/animationDirector.js
 // 動畫節奏層：把 replayer 的事件流按型別時間預算播出。純邏輯，不碰 pixi/gsap。
 export const DELAYS = {
-  turn: 0.1, attack: 0.25, ultimate: 0.7, damage: 0.18,
+  turn: 0.1, attack: 0.25, ultimate: 1.05, damage: 0.18,
   heal: 0.15, death: 0.25, stunned: 0.25,
 };
 
@@ -11,12 +11,19 @@ export class AnimationDirector {
     this.delays = delays;
     this.speed = 1;
     this._wait = 0;
+    // gate(nextEntry) → true 表示「先卡住別播」（例：絕技演出未結束前不放行下一個回合）。
+    this.gate = null;
   }
   get done() { return this.replayer.done; }
   update(dt) {
     if (this.done) return;
     this._wait -= dt * this.speed;
     while (this._wait <= 0 && !this.replayer.done) {
+      const next = this.replayer.peek?.();
+      if (next && this.gate && this.gate(next)) {
+        this._wait = 0; // 等 gate 放行後立即續播
+        return;
+      }
       const entry = this.replayer.step();
       this._wait += this.delays[entry.type] ?? 0;
     }
