@@ -3,7 +3,7 @@
 import { EventEmitter } from './events.js';
 import { STARTER_CARD_IDS, CARDS } from '../data/cards.js';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 // 開發期測試資源水準（新檔直接給；舊檔由 save.js 的 v2 遷移一次性補到至少此值）。
 export const DEV_RESOURCES = { tickets: 300, gold: 100000, essence: 10000 };
@@ -12,12 +12,14 @@ export const DEV_RESOURCES = { tickets: 300, gold: 100000, essence: 10000 };
 export function createNewGame() {
   const state = {
     version: SCHEMA_VERSION,
-    meta: { createdAt: Date.now(), nextInstanceId: 1 },
+    meta: { createdAt: Date.now(), nextInstanceId: 1, ftueDone: false },
+    player: { name: '指揮官' },
     currencies: { tickets: DEV_RESOURCES.tickets, gold: DEV_RESOURCES.gold }, // 初始資源（開發期加量）
     inventory: { materials: { essence: DEV_RESOURCES.essence } },
     cards: [], // { instanceId, cardId, level }
     formation: [], // [{ instanceId, pos: 1..6 }] 最多 6
-    daily: { lastClaim: 0 },
+    daily: { lastClaim: 0, streak: 0, quests: null }, // streak=七日簽到進度；quests=每日任務（見 systems/quests.js）
+    idle: { lastClaim: Date.now() }, // 掛機獎勵箱上次領取時間
     progress: { wins: 0, losses: 0, stage: 1 },
   };
 
