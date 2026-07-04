@@ -95,9 +95,9 @@ function describeEffect(effect, targetLabel) {
       break;
     case 'weather': {
       const w = {
-        sunny: '烈日（火屬傷害 +20%、水屬 -10%）',
-        rain: '暴雨（水屬傷害 +20%、火屬 -10%）',
-        gale: '颶風（風屬傷害 +20%、水火 -5%）',
+        sunny: '烈日（火屬傷害 +20%、水屬 -20%）',
+        rain: '暴雨（水屬傷害 +20%、火屬 -20%）',
+        gale: '颶風（風屬傷害 +20%、風屬承傷 -10%）',
       }[effect.weather];
       text = `使天候轉為${w ?? effect.weather}`;
       break;

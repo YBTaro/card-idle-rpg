@@ -7,27 +7,28 @@
 export const WEATHERS = {
   sunny: {
     id: 'sunny', name: '烈日', color: '#ff9a5c',
-    desc: '火屬性造成傷害 +20%；水屬性 -10%',
+    desc: '火屬性造成傷害 +20%；水屬性造成傷害 -20%',
     auras: [
       { where: { element: 'fire' }, effects: [{ stat: 'dmgDealt', op: 'mul', value: 1.2 }] },
-      { where: { element: 'water' }, effects: [{ stat: 'dmgDealt', op: 'mul', value: 0.9 }] },
+      { where: { element: 'water' }, effects: [{ stat: 'dmgDealt', op: 'mul', value: 0.8 }] },
     ],
   },
   rain: {
     id: 'rain', name: '暴雨', color: '#7cc4ff',
-    desc: '水屬性造成傷害 +20%；火屬性 -10%',
+    desc: '水屬性造成傷害 +20%；火屬性造成傷害 -20%',
     auras: [
       { where: { element: 'water' }, effects: [{ stat: 'dmgDealt', op: 'mul', value: 1.2 }] },
-      { where: { element: 'fire' }, effects: [{ stat: 'dmgDealt', op: 'mul', value: 0.9 }] },
+      { where: { element: 'fire' }, effects: [{ stat: 'dmgDealt', op: 'mul', value: 0.8 }] },
     ],
   },
   gale: {
     id: 'gale', name: '颶風', color: '#8ef2ae',
-    desc: '風屬性造成傷害 +20%；水、火屬性 -5%',
+    desc: '風屬性造成傷害 +20%、受到傷害 -10%',
     auras: [
-      { where: { element: 'wind' }, effects: [{ stat: 'dmgDealt', op: 'mul', value: 1.2 }] },
-      { where: { element: 'water' }, effects: [{ stat: 'dmgDealt', op: 'mul', value: 0.95 }] },
-      { where: { element: 'fire' }, effects: [{ stat: 'dmgDealt', op: 'mul', value: 0.95 }] },
+      { where: { element: 'wind' }, effects: [
+        { stat: 'dmgDealt', op: 'mul', value: 1.2 },
+        { stat: 'dmgTaken', op: 'mul', value: 0.9 },
+      ] },
     ],
   },
 };

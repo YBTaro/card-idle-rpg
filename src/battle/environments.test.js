@@ -8,24 +8,25 @@ import { resolve, applyBuff } from './buffs.js';
 import { campaignEnv, towerEnv, WEATHERS, TERRAINS } from './environments.js';
 
 describe('天氣（烈日/暴雨）', () => {
-  it('烈日：火屬 dmgDealt ×1.2、水屬 ×0.9（雙方都吃）', () => {
+  it('烈日：火屬 dmgDealt ×1.2、水屬 ×0.8（雙方都吃）', () => {
     const fire = makeUnit({ team: 0, pos: 1, element: 'fire' });
     const water = makeUnit({ team: 1, pos: 1, element: 'water' });
     const e = new BattleEngine([fire], [water], { rng: new Rng(1), env: { weather: 'sunny', terrain: null } });
     e.step();
     expect(resolve(fire, 'dmgDealt', 1)).toBeCloseTo(1.2);
-    expect(resolve(water, 'dmgDealt', 1)).toBeCloseTo(0.9);
+    expect(resolve(water, 'dmgDealt', 1)).toBeCloseTo(0.8);
   });
 
-  it('颶風：風屬 ×1.2、水火 ×0.95', () => {
+  it('颶風：風屬造成傷害 ×1.2、承受傷害 ×0.9（其他屬性不受影響）', () => {
     const wind = makeUnit({ team: 0, pos: 1, element: 'wind' });
     const fire = makeUnit({ team: 0, pos: 2, element: 'fire' });
     const water = makeUnit({ team: 1, pos: 1, element: 'water' });
     const e = new BattleEngine([wind, fire], [water], { rng: new Rng(1), env: { weather: 'gale', terrain: null } });
     e.step();
     expect(resolve(wind, 'dmgDealt', 1)).toBeCloseTo(1.2);
-    expect(resolve(fire, 'dmgDealt', 1)).toBeCloseTo(0.95);
-    expect(resolve(water, 'dmgDealt', 1)).toBeCloseTo(0.95);
+    expect(resolve(wind, 'dmgTaken', 1)).toBeCloseTo(0.9);
+    expect(resolve(fire, 'dmgDealt', 1)).toBe(1);
+    expect(resolve(water, 'dmgDealt', 1)).toBe(1);
   });
 
   it('進場被動照行動序 1-1-2-2：守方最後一位搶到最終天氣', () => {
