@@ -818,8 +818,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .bo-result .vnext { font-size: .78rem; color: var(--dim); }
 .bo-result .btn { margin-top: .4rem; border-radius: 99px; }
 
-/* 貨幣飛入動畫用的小圖示 */
-.coin-fly { position: fixed; z-index: 150; font-size: 1.2rem; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
+/* 貨幣飛入動畫用的小圖示（z 低於召喚演出層 120，背景戰鬥的金幣不會飛過儀式畫面） */
+.coin-fly { position: fixed; z-index: 110; font-size: 1.2rem; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
 
 /* =====================================================================
    FTUE 新手聚光引導
