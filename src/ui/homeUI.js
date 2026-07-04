@@ -10,12 +10,13 @@ import {
   openQuestsSheet,
   openSigninSheet,
   openIdleSheet,
-  openProfileSheet,
   openSettingsSheet,
 } from './metaSheets.js';
 import { queuePopup } from './modal.js';
 import { runTutorial } from './tutorial.js';
 import { stageLabel, featuredHero } from '../systems/profile.js';
+import { openPlayerCard, myProfileData } from './profileCard.js';
+import { net } from '../net/api.js';
 import { canSignin } from '../systems/signin.js';
 import { idlePending, canClaimIdle } from '../systems/idle.js';
 import { cutoutFor, portraitFor } from '../data/assets.js';
@@ -82,8 +83,11 @@ export class HomeUI {
     ]);
     this.root.appendChild(this._say);
 
-    // 左上：檔案 + 貨幣
-    const ava = el('div', { class: 'hub-ava pressable', onClick: () => openProfileSheet() });
+    // 左上：檔案（點開自己的名片，可編輯暱稱/頭像/簽名）+ 貨幣
+    const ava = el('div', {
+      class: 'hub-ava pressable',
+      onClick: () => openPlayerCard({ ...myProfileData(), ...(net.profile ?? {}) }, { editable: true }),
+    });
     const p = hero ? portraitFor(hero.cardId) : null;
     if (p) ava.appendChild(el('img', { src: p.src, alt: '', style: `object-position:${p.x * 100}% ${p.y * 100}%` }));
     this.root.appendChild(
@@ -110,8 +114,9 @@ export class HomeUI {
       ])
     );
 
-    // 左下：營運捷徑
+    // 左下：營運捷徑（社交按鈕與營運捷徑並列）
     const sc = el('div', { class: 'hub-sc' });
+    sc.appendChild(shortcut('👥', '好友', false, () => nav.go('friends')));
     sc.appendChild(shortcut('📋', '任務', badges.quests, () => openQuestsSheet()));
     sc.appendChild(shortcut('📅', '簽到', badges.signin, () => openSigninSheet()));
     this._idleShortcut = shortcut(idlePending(s).capped ? '🎁' : '📦', '掛機箱', badges.idle, () => openIdleSheet());
@@ -122,7 +127,8 @@ export class HomeUI {
     const dia = el('div', { class: 'hub-dia' });
     this._battleDia = diamond('⚔', '戰役', { big: true, badge: false, onClick: () => nav.go('battle') });
     dia.appendChild(this._battleDia);
-    dia.appendChild(diamond('🏆', '競技場', { locked: true }));
+    dia.appendChild(diamond('🏆', '競技場', { onClick: () => nav.go('arena') }));
+    dia.appendChild(diamond('🏰', '公會', { onClick: () => nav.go('guild') }));
     dia.appendChild(diamond('🗼', '試煉塔', { locked: true }));
     this.root.appendChild(dia);
 

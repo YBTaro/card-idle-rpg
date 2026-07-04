@@ -1,6 +1,7 @@
 // 入口：載存檔 → 建 Pixi → 掛五大畫面（主城/隊伍/英雄/召喚/戰役）→
 // 主城大廳制導覽 → 登入彈窗佇列 + FTUE。
 import './style.css';
+import './social.css';
 import { loadGame } from './core/save.js';
 import { store } from './core/state.js';
 import { createPixiApp } from './render/pixiApp.js';
@@ -10,8 +11,12 @@ import { HomeUI } from './ui/homeUI.js';
 import { TeamUI } from './ui/teamUI.js';
 import { HeroesUI } from './ui/heroesUI.js';
 import { GachaUI } from './ui/gachaUI.js';
+import { ArenaUI } from './ui/arenaUI.js';
+import { FriendsUI } from './ui/friendsUI.js';
+import { GuildUI } from './ui/guildUI.js';
 import { BattleOverlay } from './ui/battleOverlay.js';
 import { ensureQuests } from './systems/quests.js';
+import { bootAuth, cloudBackup, pushProfile, net } from './net/api.js';
 
 async function main() {
   loadGame();
@@ -26,19 +31,41 @@ async function main() {
   const overlay = new BattleOverlay(document.getElementById('battle-overlay'));
   const battle = new BattleController(app, overlay);
 
-  // 五大畫面
+  // 各功能畫面
   const home = new HomeUI(document.getElementById('screen-home'));
   const team = new TeamUI(document.getElementById('screen-team'));
   const heroes = new HeroesUI(document.getElementById('screen-heroes'));
   const gacha = new GachaUI(document.getElementById('screen-gacha'));
+  const arena = new ArenaUI(document.getElementById('screen-arena'), battle);
+  const friends = new FriendsUI(document.getElementById('screen-friends'), battle);
+  const guild = new GuildUI(document.getElementById('screen-guild'), battle);
   const screens = { home, team, heroes, gacha };
 
   nav.register('home', document.getElementById('screen-home'), home);
   nav.register('team', document.getElementById('screen-team'), team);
   nav.register('heroes', document.getElementById('screen-heroes'), heroes);
   nav.register('gacha', document.getElementById('screen-gacha'), gacha);
+  nav.register('arena', document.getElementById('screen-arena'), arena);
+  nav.register('friends', document.getElementById('screen-friends'), friends);
+  nav.register('guild', document.getElementById('screen-guild'), guild);
   nav.register('battle', document.getElementById('screen-battle'), null);
   nav.go('home');
+
+  // 前後端分離：背景登入（裝置帳號），失敗＝離線模式（競技場退機器人）。
+  bootAuth().then((ok) => {
+    if (ok && nav.current() === 'home') home.render(); // 連線標示刷新
+  });
+  // 雲端備份（防抖）＋ 章節同步：狀態變更後推伺服器（離線靜默）。
+  store.subscribe(() => {
+    cloudBackup();
+  });
+  let lastStage = store.state.progress.stage;
+  store.subscribe(() => {
+    if (store.state.progress.stage !== lastStage) {
+      lastStage = store.state.progress.stage;
+      if (net.authed) pushProfile();
+    }
+  });
 
   // 任何狀態變更 → 重繪目前畫面（戰役頁由事件/ticker 驅動，不重繪）。
   store.subscribe(() => {

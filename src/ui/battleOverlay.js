@@ -80,12 +80,12 @@ export class BattleOverlay {
     this.speedBtn.querySelector('span').textContent = `×${s}`;
   }
 
-  // 每場開打時同步靜態資訊。
-  setBattle({ stage }) {
+  // 每場開打時同步靜態資訊。title 有值＝自訂回放（競技場/切磋/公會 Boss）。
+  setBattle({ stage, title = null }) {
     const label = stageLabel(stage);
-    this.waveText.textContent = label;
+    this.waveText.textContent = title ?? label;
     this.nmLeft.textContent = '我方';
-    this.nmRight.textContent = `西境軍 ${label}`;
+    this.nmRight.textContent = title ? '對手' : `西境軍 ${label}`;
     clear(this.avaLeft);
     this.avaLeft.appendChild(avatarEl());
     this.hideResult();
@@ -125,7 +125,11 @@ export class BattleOverlay {
   showResult(result) {
     this.hideResult();
     const node = el('div', { class: `bo-result ${result.win ? 'win' : 'lose'}` });
-    if (result.win) {
+    if (result.custom) {
+      // 自訂回放（競技場等）：不顯示推關文案，結算交回呼叫方頁面
+      node.appendChild(el('div', { class: 'vt', text: result.win ? 'VICTORY' : result.draw ? 'DRAW' : 'DEFEAT' }));
+      node.appendChild(el('div', { class: 'vr', text: `${result.title ?? ''} 結算中…` }));
+    } else if (result.win) {
       node.appendChild(el('div', { class: 'vt', text: 'VICTORY' }));
       node.appendChild(el('div', { class: 'vr', text: `🪙 +${result.gold}　✨ 前進 ${stageLabel(result.nextStage)}` }));
       node.appendChild(el('div', { class: 'vnext', text: '即將開始下一場…' }));

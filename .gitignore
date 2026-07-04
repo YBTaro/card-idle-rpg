@@ -5,3 +5,4 @@ dist/
 .vite/
 scripts/shots*/
 shots/
+server/data/

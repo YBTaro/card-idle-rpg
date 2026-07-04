@@ -46,6 +46,19 @@ function migrate(data) {
   data.daily.quests ??= null;
   data.meta ??= { createdAt: Date.now(), nextInstanceId: maxInstanceId(data) + 1 };
   data.meta.ftueDone ??= false;
+  // v4：前後端分離——玩家名片（裝置帳號）與競技場本地資料（離線模式用）
+  if (!data.profile) {
+    const rand = Math.random().toString(36).slice(2, 6);
+    data.profile = {
+      deviceId: globalThis.crypto?.randomUUID?.() ?? `dev-${Date.now()}-${rand}`,
+      playerId: null,
+      token: null,
+      nickname: data.player?.name && data.player.name !== '指揮官' ? data.player.name : `指揮官${rand.toUpperCase()}`,
+      avatarCardId: null,
+      signature: '',
+    };
+  }
+  data.arena ??= { rating: 1000, day: '', used: 0, defense: [], reports: [] };
   data.version = SCHEMA_VERSION;
   return data;
 }
@@ -66,7 +79,7 @@ export function loadGame() {
     console.warn('[save] 讀檔失敗，開新遊戲：', err);
     state = null;
   }
-  if (!state) state = createNewGame();
+  if (!state) state = migrate(createNewGame()); // 新檔也跑 migrate 補齊新版欄位（profile/arena）
   store.set(state);
   saveNow(); // 立即落地，確保存檔即時存在（新檔/補欄位後）
   return state;

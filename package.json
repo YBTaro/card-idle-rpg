@@ -6,6 +6,7 @@
   "description": "卡牌每日養成全自動戰鬥 — card daily-cultivation auto-battle web game",
   "scripts": {
     "dev": "vite",
+    "server": "node server/index.js",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",

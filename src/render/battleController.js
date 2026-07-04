@@ -36,9 +36,10 @@ export class BattleController {
   }
 
   start() {
-    this._teardownScene();
+    this._custom = null;
     const player = buildPlayerUnits(store.state);
     if (player.length === 0) {
+      this._teardownScene();
       this.overlay?.setNotice('⚠ 尚未編排陣容——到「隊伍」上陣後自動開戰');
       this.replayer = null;
       this.director = null;
@@ -48,6 +49,20 @@ export class BattleController {
     const stage = store.state.progress.stage || 1;
     const enemy = buildEnemyUnits(stage, new Rng());
     const sim = simulateBattle(player, enemy, { rng: new Rng() });
+    this._mount(sim);
+    this.overlay?.setBattle({ stage });
+  }
+
+  // 播放外部戰報（競技場/切磋/公會 Boss：伺服器或本地模擬的 {setup, log}）。
+  // 期間不動關卡進度；播完呼叫 onDone(winner) 並回到掛機戰。
+  playCustom(sim, { title = '競技場', onDone } = {}) {
+    this._custom = { onDone, title };
+    this._mount(sim);
+    this.overlay?.setBattle({ stage: store.state.progress.stage || 1, title });
+  }
+
+  _mount(sim) {
+    this._teardownScene();
     this._setup = sim.setup;
     this.replayer = new Replayer(sim.setup, sim.log);
     this.scene = new BattleScene(this.app, sim.setup, this.replayer);
@@ -60,7 +75,6 @@ export class BattleController {
     this.director.gate = (entry) => this.scene?.gateEvent?.(entry) ?? false;
     this.replayer.on('battleEnd', ({ winner }) => this._onEnd(winner));
     this._cooldown = 0;
-    this.overlay?.setBattle({ stage });
   }
 
   // 陣容/等級變更後呼叫，重啟當前戰鬥。
@@ -83,6 +97,13 @@ export class BattleController {
   }
 
   _onEnd(winner) {
+    // 自訂回放：不動關卡進度與獎勵，短暫展示勝敗後交還 onDone。
+    if (this._custom) {
+      this._customWinner = winner;
+      this.overlay?.showResult({ win: winner === 0, draw: winner === -1, custom: true, title: this._custom.title });
+      this._cooldown = 1.6;
+      return;
+    }
     const s = store.state;
     if (winner === 0) {
       s.progress.wins = (s.progress.wins || 0) + 1;
@@ -110,7 +131,17 @@ export class BattleController {
     if (this.replayer.done) {
       this.scene?.renderTick();
       this._cooldown -= dt;
-      if (this._cooldown <= 0) this.start();
+      if (this._cooldown <= 0) {
+        if (this._custom) {
+          const done = this._custom.onDone;
+          const winner = this._customWinner;
+          this._custom = null;
+          this.start(); // 回到掛機戰
+          done?.(winner);
+        } else {
+          this.start();
+        }
+      }
       return;
     }
 

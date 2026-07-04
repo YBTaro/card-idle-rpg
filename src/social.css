@@ -1,0 +1,152 @@
+/* ================= 社交/競技系統（競技場・好友・公會・名片） ================= */
+
+/* ---- 玩家名片 ---- */
+.ov-playercard { width: min(440px, 92vw); }
+.pc-head { display: flex; gap: 12px; align-items: center; margin: 10px 0; }
+.pc-ava {
+  border-radius: 12px; overflow: hidden; flex: none;
+  background: var(--panel-2, #262336); border: 2px solid var(--border, #3a3550);
+  display: flex; align-items: center; justify-content: center;
+}
+.pc-ava img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.6); }
+.pc-ava.on { border-color: var(--gold, #e8c46a); box-shadow: 0 0 8px rgba(232, 196, 106, 0.5); }
+.pc-info { min-width: 0; }
+.pc-name { font-weight: 800; font-size: 17px; }
+.pc-sign { color: var(--text-dim, #a89f92); font-size: 12.5px; margin-top: 2px; }
+.pc-rows { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.pc-row {
+  display: flex; justify-content: space-between; font-size: 13.5px;
+  background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 7px 12px;
+}
+.pc-sub { color: var(--gold, #e8c46a); font-size: 12.5px; font-weight: 700; margin: 10px 0 6px; }
+.pc-defense { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pc-defcell .cardframe.mini { width: 100%; }
+.pc-actions { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
+.pc-input {
+  width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border, #3a3550); border-radius: 8px;
+  color: var(--text, #e8e4da); padding: 9px 12px; font-size: 14px; margin: 2px 0;
+}
+.pc-input:focus { outline: none; border-color: var(--gold, #e8c46a); }
+.pc-avagrid { display: flex; flex-wrap: wrap; gap: 6px; max-height: 130px; overflow-y: auto; }
+
+/* ---- 競技場頁 ---- */
+.ar-top { position: absolute; top: 12px; right: 16px; display: flex; gap: 14px; align-items: center; }
+.ar-tier { display: flex; gap: 8px; align-items: center; }
+.ar-tier .ic { font-size: 26px; }
+.ar-tier .t1 { font-weight: 800; font-size: 14px; color: var(--gold, #e8c46a); }
+.ar-tier .t2 { font-size: 12px; color: var(--text-dim, #a89f92); }
+.ar-daily { font-size: 12.5px; background: rgba(0, 0, 0, 0.35); border-radius: 99px; padding: 5px 12px; }
+.ar-net { font-size: 11.5px; color: var(--text-dim, #a89f92); }
+.ar-net.on { color: #7fd49a; }
+.ar-body { position: absolute; inset: 64px 16px 14px; display: flex; gap: 14px; min-height: 0; }
+.ar-list { flex: 1.6; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-right: 4px; }
+.ar-foe {
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border, #3a3550);
+  border-radius: 12px; padding: 10px 12px; display: flex; gap: 12px; align-items: center; flex: none;
+}
+.ar-foehead { display: flex; gap: 8px; align-items: center; min-width: 128px; }
+.ar-foehead .n { font-weight: 700; font-size: 14px; }
+.ar-foehead .r { font-size: 12px; color: var(--text-dim, #a89f92); }
+.ar-foedef { display: flex; gap: 4px; flex: 1; overflow: hidden; }
+.ar-foedef .cardframe.mini { width: 40px; height: 40px; flex: none; }
+.ar-side {
+  flex: 1; display: flex; flex-direction: column; gap: 10px;
+  background: rgba(0, 0, 0, 0.25); border-radius: 12px; padding: 12px; overflow-y: auto;
+}
+.ar-sub { color: var(--gold, #e8c46a); font-size: 13px; font-weight: 700; }
+.ar-defgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ar-defgrid .cardframe.mini { width: 100%; }
+.ar-links { display: flex; gap: 8px; }
+.ar-links .btn { flex: 1; }
+.ar-empty { color: var(--text-dim, #a89f92); font-size: 13px; text-align: center; padding: 18px 8px; }
+.ar-refresh { margin-top: 2px; flex: none; }
+
+/* 結算/排行/戰報彈窗 */
+.ov-arena-result { width: min(360px, 90vw); text-align: center; }
+.arr-line { color: var(--text-dim, #a89f92); margin: 8px 0 4px; }
+.arr-delta { font-size: 20px; font-weight: 800; margin: 8px 0 14px; }
+.arr-delta.up { color: #7fd49a; }
+.arr-delta.down { color: #ff8a7a; }
+.ov-arena-board { width: min(520px, 94vw); }
+.arb-list { display: flex; flex-direction: column; gap: 6px; max-height: 55vh; overflow-y: auto; margin-top: 8px; }
+.arb-row {
+  display: flex; align-items: center; gap: 10px; font-size: 13.5px;
+  background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 7px 10px;
+}
+.arb-row .rk { width: 24px; text-align: center; color: var(--gold, #e8c46a); font-weight: 800; }
+.arb-row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arb-row .rt { color: var(--text-dim, #a89f92); }
+.arb-row .tm { font-size: 11.5px; color: var(--text-dim, #a89f92); }
+.arb-row .res {
+  width: 24px; height: 24px; border-radius: 6px; flex: none;
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px;
+}
+.arb-row .res.w { background: rgba(127, 212, 154, 0.2); color: #7fd49a; }
+.arb-row .res.l { background: rgba(255, 138, 122, 0.18); color: #ff8a7a; }
+
+/* ---- 好友頁 ---- */
+.fr-top { position: absolute; top: 56px; left: 16px; right: 16px; display: flex; gap: 8px; align-items: center; }
+.fr-search { flex: 1; max-width: 260px; margin: 0; }
+.fr-points { font-size: 13px; color: #ff9eb0; margin-left: auto; }
+.fr-gifts { position: absolute; top: 104px; left: 16px; display: flex; gap: 8px; }
+.fr-list { position: absolute; inset: 148px 16px 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.fr-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border, #3a3550);
+  border-radius: 12px; padding: 8px 12px; flex: none;
+}
+.fr-head { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.fr-head .n { font-weight: 700; font-size: 14px; }
+.fr-head .r { font-size: 12px; color: var(--text-dim, #a89f92); }
+.fr-acts { display: flex; gap: 8px; align-items: center; }
+.fr-gift.sent { color: #ff9eb0; font-size: 12px; }
+
+/* ---- 公會頁 ---- */
+.gd-browse { position: absolute; inset: 60px 16px 14px; display: flex; flex-direction: column; gap: 10px; }
+.gd-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.gd-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border, #3a3550);
+  border-radius: 12px; padding: 10px 14px; flex: none;
+}
+.gd-row .n { font-weight: 700; }
+.gd-row .r { font-size: 12px; color: var(--text-dim, #a89f92); }
+.gd-top { position: absolute; top: 14px; left: 70px; right: 16px; display: flex; gap: 14px; align-items: baseline; }
+.gd-name { font-size: 18px; font-weight: 800; color: var(--gold, #e8c46a); }
+.gd-meta { font-size: 12.5px; color: var(--text-dim, #a89f92); }
+.gd-body { position: absolute; inset: 60px 16px 14px; display: flex; gap: 14px; min-height: 0; }
+.gd-side { width: 172px; flex: none; display: flex; flex-direction: column; gap: 8px; }
+.gd-main { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; min-width: 0; }
+.gd-boss {
+  background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border, #3a3550);
+  border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; flex: none;
+}
+.gd-boss .b1 { font-weight: 800; }
+.gd-boss .b2 { font-size: 12px; color: var(--text-dim, #a89f92); }
+.gd-boss .gauge { height: 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.gd-boss .gauge i { display: block; height: 100%; background: linear-gradient(90deg, #ff9a84, #ff6b6b); border-radius: 99px; transition: width 0.3s ease; }
+.gd-bossrow { display: flex; gap: 8px; }
+.gd-notice {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: rgba(232, 196, 106, 0.08); border: 1px dashed rgba(232, 196, 106, 0.4);
+  border-radius: 10px; padding: 8px 12px; font-size: 13px; flex: none;
+}
+.gd-board {
+  background: rgba(0, 0, 0, 0.22); border-radius: 12px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px; flex: none;
+}
+.gd-msgs { display: flex; flex-direction: column; gap: 5px; max-height: 180px; overflow-y: auto; }
+.gd-msg { font-size: 13px; display: flex; gap: 8px; }
+.gd-msg b { color: var(--gold, #e8c46a); flex: none; }
+.gd-postrow { display: flex; gap: 8px; }
+.gd-postrow .pc-input { flex: 1; }
+
+/* ---- 離線提示 ---- */
+.net-offline {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 0 40px;
+}
+.net-offline .ic { font-size: 44px; opacity: 0.8; }
+.net-offline .t { font-size: 15px; font-weight: 700; }
+.net-offline .d { font-size: 12.5px; color: var(--text-dim, #a89f92); }
