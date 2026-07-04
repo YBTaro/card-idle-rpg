@@ -44,7 +44,7 @@ import { normalAttack, castSkill, skillFor } from './skills.js';
 import { tickBuffs, dotEntries, hotEntries, hasControl, summarizeBuffs } from './buffs.js';
 import { dealDot, dealDirect, healAmount } from './effects.js';
 import { recomputePassives, applyEnvAuras } from './passives.js';
-import { envAurasOf, envRulesOf, TERRAINS } from './environments.js';
+import { envAurasOf, envRulesOf } from './environments.js';
 
 export const MAX_ROUNDS = 100; // 回合上限，防打不完
 export const MAX_SKILL_PASSES = 50; // 技能階段掃描上限，防死迴圈
@@ -87,19 +87,11 @@ export class BattleEngine {
     this.emit('weather', { id, unit: byUnit });
   }
 
-  // 換場地。湧能磁場：啟動當下全體 +activateEnergy（一次性）。
+  // 換場地。後開覆蓋先開。
   setTerrain(id, byUnit = null) {
     if (!id) return;
     this.terrainId = id;
     this.emit('terrain', { id, unit: byUnit });
-    const gain = TERRAINS[id]?.rules?.activateEnergy;
-    if (gain) {
-      for (const u of this.units) {
-        if (!u.alive) continue;
-        u.gainEnergy(gain);
-        this.emit('energy', { unit: u, value: u.energy });
-      }
-    }
   }
 
   // 開場結算：關卡預設環境宣告 → 進場被動照行動序 1-1-2-2 依序開（後者覆蓋，
@@ -107,11 +99,7 @@ export class BattleEngine {
   _start() {
     this._started = true;
     if (this.weatherId) this.emit('weather', { id: this.weatherId, unit: null });
-    if (this.terrainId) {
-      const tid = this.terrainId;
-      this.terrainId = null;
-      this.setTerrain(tid, null); // 走 setTerrain：湧能磁場開場也要觸發啟動能量
-    }
+    if (this.terrainId) this.emit('terrain', { id: this.terrainId, unit: null });
     for (const [team, pos] of TURN_SEQUENCE) {
       const u = this._unitAt(team, pos);
       if (!u?.onEnter) continue;

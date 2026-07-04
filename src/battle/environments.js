@@ -36,12 +36,11 @@ export const WEATHERS = {
 export const TERRAINS = {
   surge: {
     id: 'surge', name: '湧能磁場', color: '#f5c451',
-    desc: '場地啟動時全體能量 +50；光屬性集氣速度 +20%、所受傷害 -15%',
+    desc: '光屬性集氣速度 +20%、所受傷害 -15%',
     auras: [{ where: { element: 'light' }, effects: [
       { stat: 'energyGain', op: 'mul', value: 1.2 },
       { stat: 'dmgTaken', op: 'mul', value: 0.85 },
     ] }],
-    rules: { activateEnergy: 50 }, // 啟動當下一次性（開場或中途開場地都觸發）
   },
   erosion: {
     id: 'erosion', name: '侵蝕之地', color: '#c97b8e',

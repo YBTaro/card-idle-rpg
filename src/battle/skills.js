@@ -99,10 +99,9 @@ export const SKILLS = {
     { type: 'shield', power: 2.2, duration: 3, scope: 'self' },
     { type: 'buff', stat: 'def', op: 'mul', value: 1.3, duration: 2, scope: 'self' },
   ]},
-  fireArrow: { name: '火矢', target: 'singleEnemyByColumn', effects: [
-    { type: 'damage', mult: 2.0, scope: 'target' },
-    { type: 'dot', power: 0.5, element: 'fire', duration: 2, scope: 'target' },
-    { type: 'buff', stat: 'dotTaken', op: 'mul', value: 1.3, duration: 2, scope: 'target' }, // 火油：灼燒易傷
+  flameShift: { name: '引火', target: 'enemyColumn', effects: [ // 屬性轉化：敵直排變風屬 → 火隊穩吃剋制
+    { type: 'damage', mult: 1.4, scope: 'target' },
+    { type: 'transmute', duration: 2, scope: 'target' },
   ]},
   detonate: { name: '爆燃', target: 'enemyColumn', effects: [
     { type: 'detonateDot', element: 'fire', mult: 1.0, scope: 'target' }, // 先引爆舊灼燒（每跳×剩餘回合一次結算）
@@ -126,9 +125,9 @@ export const SKILLS = {
     { type: 'control', control: 'stun', duration: 1, scope: 'target', chance: 0.3 }, // 機率暈眩
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.3, duration: 2, scope: 'self' },
   ]},
-  phantomEdge: { name: '殘影', target: 'singleEnemyByColumn', effects: [ // 透甲殘影：第二刀無視防禦
-    { type: 'damage', mult: 1.4, scope: 'target' },
-    { type: 'damage', mult: 1.0, scope: 'target', ignoreDef: true },
+  windShift: { name: '風蝕', target: 'enemyColumn', effects: [ // 屬性轉化：敵直排變水屬 → 風隊穩吃剋制
+    { type: 'damage', mult: 1.3, scope: 'target' },
+    { type: 'transmute', duration: 2, scope: 'target' },
   ]},
   huntFeather: { name: '獵翎', target: 'enemyBackRow', effects: [
     { type: 'damage', mult: 1.9, scope: 'target' },
@@ -180,10 +179,9 @@ export const SKILLS = {
     { type: 'damage', mult: 2.2, scope: 'target', lifesteal: 0.35 }, // 吸血
     { type: 'buff', stat: 'def', op: 'mul', value: 0.75, duration: 2, scope: 'target' }, // 破甲
   ]},
-  mistBlades: { name: '霧刃', target: 'singleEnemyByColumn', effects: [
-    { type: 'damage', mult: 1.4, scope: 'target' },
-    { type: 'damage', mult: 1.4, scope: 'target' },
-    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.8, duration: 2, scope: 'self' },
+  mistShift: { name: '霧化', target: 'enemyColumn', effects: [ // 屬性轉化：敵直排變火屬 → 水隊穩吃剋制（暴雨下再 -20%）
+    { type: 'damage', mult: 1.3, scope: 'target' },
+    { type: 'transmute', duration: 2, scope: 'target' },
   ]},
   springSurge: { name: '湧泉', effects: [
     { type: 'heal', power: 1.4, scope: 'allAllies' },
@@ -302,12 +300,12 @@ export const CARD_SKILLS = {
   pyrelord: 'karmicFire',
   ashpriest: 'emberWarmth',
   magmaturtle: 'shellAegis',
-  flarearcher: 'fireArrow',
+  flarearcher: 'flameShift',
   emberwitch: 'detonate',
   warbanner: 'warBanner',
   redlion: 'lionRoar',
   stormblade: 'thunderCut',
-  galeninja: 'phantomEdge',
+  galeninja: 'windShift',
   tempesthawk: 'huntFeather',
   windsister: 'gentleBreeze',
   thundertotem: 'thunderMark',
@@ -318,7 +316,7 @@ export const CARD_SKILLS = {
   tidesinger: 'tideHymn',
   glacierknight: 'glacialArmor',
   abysshunter: 'abyssBite',
-  mistdancer: 'mistBlades',
+  mistdancer: 'mistShift',
   coralshaman: 'springSurge',
   leviathan: 'tsunami',
   pearlguard: 'pearlBulwark',

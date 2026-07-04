@@ -105,6 +105,9 @@ function describeEffect(effect, targetLabel) {
     case 'terrain':
       text = `將場地轉為「${TERRAIN_NAME[effect.terrain] ?? effect.terrain}」`;
       break;
+    case 'transmute':
+      text = `將${who}轉化為自身剋制的屬性${dur(effect.duration)}`;
+      break;
     case 'castDrain':
       text = `展開靈壓領域（敵方施放技能時，其餘敵人能量 -${effect.amount ?? 20}${dur(effect.duration)}）`;
       break;

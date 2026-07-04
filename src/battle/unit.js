@@ -15,7 +15,7 @@ export class Unit {
     this.uid = _uidSeq++;
     this.name = stats.name;
     this.cardId = stats.cardId;
-    this.element = stats.element;
+    this._baseElement = stats.element; // 屬性可被「轉化」狀態暫時覆蓋（見 element getter）
     this.class = stats.class;
     this.level = stats.level;
     this.team = team;
@@ -40,6 +40,13 @@ export class Unit {
 
   get alive() {
     return this.hp > 0;
+  }
+
+  // 屬性：轉化狀態（kind:'element'）存在時暫時覆蓋，到期自動還原。
+  // 影響所有讀 element 的結算：剋制、天氣光環、where 過濾、侵蝕豁免。
+  get element() {
+    const override = this.buffs?.find((b) => b.kind === 'element');
+    return override?.element ?? this._baseElement;
   }
 
   get isFront() {

@@ -1,7 +1,7 @@
 // src/battle/effects.js
 // 效果原語：技能由多個 effect 組成，每個 effect 依 type 套用到 scope 解析出的目標。
 import { computeDamage } from './damage.js';
-import { elementMultiplier } from '../data/elements.js';
+import { elementMultiplier, COUNTERS } from '../data/elements.js';
 import { applyBuff, summarizeBuffs, dispelBuffs, isNegative, resolve } from './buffs.js';
 
 // power 的基準：預設 caster.effAtk（含 buff 加成）；basis:'targetMaxHp' 用目標 maxHp。
@@ -203,6 +203,13 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
           ctx.emit('energy', { unit: u, value: 0 });
           emitBuffs(u);
         }
+        break;
+      case 'transmute': // 屬性轉化：把目標轉成「施放者剋制的屬性」（穩吃 1.5 剋制），到期還原
+        applyBuff(u, {
+          kind: 'element', element: COUNTERS[caster.element],
+          duration: effect.duration, key: defaultKey('transmute'),
+        });
+        emitBuffs(u);
         break;
       case 'castDrain': // 靈壓干擾：掛身期間敵方施法 → 其餘敵人能量被抽
         applyBuff(u, {

@@ -96,6 +96,7 @@ export function summarizeBuffs(unit) {
 
 export function isNegative(b) {
   if (b.kind === 'dot') return true;
+  if (b.kind === 'element') return true; // 被轉化屬性＝減益（可被淨化解除）
   if (b.kind === 'shield') return false;
   if (b.kind === 'control') return b.control !== 'taunt'; // 嘲諷是自己開的戰術狀態
   if (b.kind === 'stat') {

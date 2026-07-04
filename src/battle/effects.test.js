@@ -263,6 +263,31 @@ describe('新原語：HoT / 驅散淨化 / 復活', () => {
   });
 });
 
+describe('屬性轉化（transmute）', () => {
+  it('轉成施放者剋制的屬性、剋制倍率生效、到期還原', () => {
+    const caster = makeUnit({ team: 0, pos: 1, element: 'fire', atk: 100 });
+    const foe = makeUnit({ team: 1, pos: 1, element: 'water' }); // 水剋火（施放者原本被剋）
+    const ctx = ctxFor(caster, [caster], [foe]);
+    applyEffect({ type: 'transmute', duration: 2, scope: 'target' }, caster, [foe], ctx, 'flameShift');
+    expect(foe.element).toBe('wind'); // 火剋風 → 目標被轉成風
+    // 到期還原
+    const ov = foe.buffs.find((b) => b.kind === 'element');
+    ov.duration = 0;
+    foe.buffs = foe.buffs.filter((b) => b.duration == null || b.duration > 0);
+    expect(foe.element).toBe('water');
+  });
+
+  it('轉化是減益：可被淨化解除', () => {
+    const caster = makeUnit({ team: 0, pos: 1, element: 'water' });
+    const foe = makeUnit({ team: 1, pos: 1, element: 'wind' });
+    const ctx = ctxFor(caster, [caster], [foe]);
+    applyEffect({ type: 'transmute', duration: 2, scope: 'target' }, caster, [foe], ctx);
+    expect(foe.element).toBe('fire'); // 水剋火
+    applyEffect({ type: 'dispel', what: 'debuff', count: 1, scope: 'target' }, foe, [foe], ctx);
+    expect(foe.element).toBe('wind'); // 淨化後還原
+  });
+});
+
 describe('DoT 身分規則：同人延長、異人獨立', () => {
   it('同一施放者同技能再上火：不疊層、剩餘回合 +1、傷害更新', () => {
     const caster = makeUnit({ team: 0, pos: 1, atk: 100 });

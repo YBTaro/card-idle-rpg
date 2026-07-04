@@ -477,6 +477,7 @@ export class BattleScene {
     if (b.kind === 'thorns') return '🌿';
     if (b.kind === 'counter') return '↩';
     if (b.kind === 'castDrain') return '🌀';
+    if (b.kind === 'element') return '🔮';
     if (b.kind === 'control') {
       return b.control === 'stun' ? '💫' : b.control === 'silence' ? '🤫' : b.control === 'freeze' ? '❄' : '🎯';
     }

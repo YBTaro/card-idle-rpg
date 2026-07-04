@@ -54,16 +54,15 @@ describe('天氣（烈日/暴雨）', () => {
 });
 
 describe('場地', () => {
-  it('湧能磁場：啟動時全體 +50 能量、光屬集氣 +20% 且承傷 -15%', () => {
+  it('湧能磁場：光屬集氣 +20% 且承傷 -15%（啟動能量已取消）', () => {
     const light = makeUnit({ team: 0, pos: 1, element: 'light' });
     const fire = makeUnit({ team: 1, pos: 1, element: 'fire' });
     const e = new BattleEngine([light], [fire], { rng: new Rng(1), env: { weather: null, terrain: 'surge' } });
     e.step();
-    expect(light.energy).toBeGreaterThanOrEqual(50); // 開場 +50（行動可能再加）
-    expect(fire.energy).toBeGreaterThanOrEqual(50);
     expect(resolve(light, 'energyGain', 1)).toBeCloseTo(1.2);
     expect(resolve(light, 'dmgTaken', 1)).toBeCloseTo(0.85);
     expect(resolve(fire, 'energyGain', 1)).toBe(1);
+    expect(resolve(fire, 'dmgTaken', 1)).toBe(1);
   });
 
   it('侵蝕之地：非暗屬每回合流失 10%、暗屬豁免且暴擊率 +10%', () => {
@@ -90,15 +89,15 @@ describe('場地', () => {
     expect(resolve(b, 'dotTaken', 1)).toBeCloseTo(1.2);
   });
 
-  it('技能中途換場地：晨曲開湧能磁場並立即全體充能', () => {
+  it('技能中途換場地：晨曲把場地轉為湧能磁場', () => {
     const singer = makeUnit({ team: 0, pos: 1, cardId: 'dawnharpist', class: 'support', energy: 100 });
     const ally = makeUnit({ team: 0, pos: 2 });
     const foe = makeUnit({ team: 1, pos: 1, hp: 99999 });
     const e = new BattleEngine([singer, ally], [foe], { rng: new Rng(1) });
     e.step(); // 普攻 → 中斷
-    e.step(); // 晨曲：surge 啟動 +50、群體充能 25+…
+    e.step(); // 晨曲：開湧能磁場 + 我方群體充能
     expect(e.terrainId).toBe('surge');
-    expect(foe.energy).toBeGreaterThanOrEqual(50); // 敵方也吃啟動能量
+    expect(ally.energy).toBeGreaterThanOrEqual(25); // 晨曲自己的充能效果（只給我方）
   });
 });
 

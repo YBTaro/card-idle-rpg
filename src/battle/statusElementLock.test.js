@@ -39,6 +39,16 @@ describe('屬性狀態鎖（暫時）', () => {
     }
   });
 
+  it('屬性轉化（transmute）只出現在水/火/風角色技能', () => {
+    for (const { element, skill, cardId } of entries) {
+      for (const fx of skill.effects) {
+        if (fx.type !== 'transmute') continue;
+        expect(['water', 'fire', 'wind']).toContain(element);
+        expect({ cardId, ok: true }).toEqual({ cardId, ok: true });
+      }
+    }
+  });
+
   it('易傷（敵方 dmgTaken 增加）只出現在風屬角色技能', () => {
     for (const { element, skill, cardId } of entries) {
       for (const fx of skill.effects) {
