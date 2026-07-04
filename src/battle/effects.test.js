@@ -112,4 +112,26 @@ describe('control 效果', () => {
     expect(hasControl(foe, 'silence')).toBe(true);
     expect(hasControl(other, 'silence')).toBe(false);
   });
+
+  it('疊加規則：同技能同效果預設不疊加（重施＝刷新），stackable:true 才可疊層', () => {
+    const caster = makeUnit({ team: 0, pos: 1, atk: 100 });
+    const ctx = ctxFor(caster, [caster], []);
+
+    // 預設：重施同一 buff → 只有一層（刷新覆蓋）
+    applyEffect({ type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'self' }, caster, [caster], ctx, 'dawnStrike');
+    if (caster.buffs[0].duration != null) caster.buffs[0].duration = 1; // 模擬時間流逝
+    applyEffect({ type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'self' }, caster, [caster], ctx, 'dawnStrike');
+    const atkBuffs = caster.buffs.filter((b) => b.kind === 'stat' && b.stat === 'atk');
+    expect(atkBuffs.length).toBe(1);
+    expect(atkBuffs[0].duration).toBe(2); // 持續時間被刷新
+
+    // 不同技能的同屬性 buff 互不干擾（各自一層）
+    applyEffect({ type: 'buff', stat: 'atk', op: 'mul', value: 1.1, duration: 2, scope: 'self' }, caster, [caster], ctx, 'otherSkill');
+    expect(caster.buffs.filter((b) => b.kind === 'stat' && b.stat === 'atk').length).toBe(2);
+
+    // 明示 stackable → 可疊層
+    applyEffect({ type: 'dot', power: 0.3, duration: 2, scope: 'self', stackable: true }, caster, [caster], ctx, 'poison');
+    applyEffect({ type: 'dot', power: 0.3, duration: 2, scope: 'self', stackable: true }, caster, [caster], ctx, 'poison');
+    expect(caster.buffs.filter((b) => b.kind === 'dot').length).toBe(2);
+  });
 });

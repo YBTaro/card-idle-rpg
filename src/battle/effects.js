@@ -72,6 +72,9 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
   const targets = effect.where ? units.filter((u) => matchesWhere(u, effect.where)) : units;
   // buff 類效果套用後發布狀態摘要（戰鬥 log / 前端小圖示用）。
   const emitBuffs = (u) => ctx.emit('buffchange', { unit: u, buffs: summarizeBuffs(u) });
+  // 疊加規則：預設「同技能的同一效果」不可疊加——重施＝刷新覆蓋（值與持續時間重設）。
+  // 技能資料可用 key 讓跨技能互斥（如 'guard'），或 stackable:true 明示可疊層。
+  const defaultKey = (kindTag) => effect.key ?? `${skillId}:${kindTag}`;
   for (const u of targets) {
     switch (effect.type) {
       case 'damage':
@@ -85,7 +88,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
       case 'buff':
         applyBuff(u, {
           kind: 'stat', stat: effect.stat, op: effect.op, value: effect.value,
-          duration: effect.duration, key: effect.key, stackable: effect.stackable,
+          duration: effect.duration, key: defaultKey(`buff:${effect.stat}:${effect.op}`), stackable: effect.stackable,
         });
         emitBuffs(u);
         break;
@@ -94,7 +97,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         const damage = Math.round(resolvePower(effect, caster, u) * elem);
         applyBuff(u, {
           kind: 'dot', damage, element: effect.element,
-          duration: effect.duration, key: effect.key, stackable: effect.stackable,
+          duration: effect.duration, key: defaultKey(`dot:${effect.element ?? ''}`), stackable: effect.stackable,
         });
         emitBuffs(u);
         break;
@@ -102,7 +105,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
       case 'shield':
         applyBuff(u, {
           kind: 'shield', amount: Math.round(resolvePower(effect, caster, u)),
-          duration: effect.duration, key: effect.key, stackable: effect.stackable,
+          duration: effect.duration, key: defaultKey('shield'), stackable: effect.stackable,
         });
         emitBuffs(u);
         break;
@@ -113,7 +116,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
       case 'control':
         applyBuff(u, {
           kind: 'control', control: effect.control,
-          duration: effect.duration, key: effect.key, stackable: effect.stackable,
+          duration: effect.duration, key: defaultKey(`control:${effect.control}`), stackable: effect.stackable,
         });
         emitBuffs(u);
         break;
