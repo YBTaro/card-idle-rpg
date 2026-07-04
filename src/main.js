@@ -56,7 +56,13 @@ async function main() {
   nav.register('tower', document.getElementById('screen-tower'), tower);
   nav.register('shop', document.getElementById('screen-shop'), shop);
   nav.register('battle', document.getElementById('screen-battle'), null);
+
+  // 效能：戰鬥畫布被其他頁蓋住時降頻渲染（掛機模擬照跑、進度照推），
+  // 回到戰役頁恢復不限幀（RAF 同步 60+）。避免背景 WebGL 全速渲染搶走 DOM 頁的主執行緒。
+  const throttleBattle = (id) => { app.ticker.maxFPS = id === 'battle' ? 0 : 10; };
+  nav.onChange(throttleBattle);
   nav.go('home');
+  throttleBattle('home');
 
   // 前後端分離：背景登入（裝置帳號），失敗＝離線模式（競技場退機器人）。
   bootAuth().then((ok) => {

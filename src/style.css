@@ -507,7 +507,13 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .hx-scroll::-webkit-scrollbar { width: 4px; }
 .hx-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 .deck { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.6rem, 1fr)); gap: .7rem; }
-.deck-item { position: relative; }
+.deck-item {
+  position: relative;
+  /* 大卡冊效能：離屏的卡整張跳過渲染（原生虛擬化），捲到才畫 */
+  content-visibility: auto;
+  contain-intrinsic-size: 7.6rem 10.6rem;
+}
+.deck-item.hidden { display: none; }
 .deck-item .flag {
   position: absolute; top: 0; right: 0; z-index: 3;
   font-size: .62rem; font-weight: 800; color: #0d2a14;

@@ -139,6 +139,7 @@
   background: rgba(0, 0, 0, 0.3); border-radius: 99px; padding: 3px 12px; margin-bottom: 8px;
 }
 .hx-empty { color: var(--text-dim, #a89f92); font-size: 13px; text-align: center; padding: 40px 0; grid-column: 1 / -1; }
+.hx-empty.hidden { display: none; }
 .hx-main .hx-scroll { position: static; flex: 1; overflow-y: auto; }
 /* 卡格 hover 浮起 */
 .deck-item { transition: transform 0.16s ease, filter 0.16s ease; }
