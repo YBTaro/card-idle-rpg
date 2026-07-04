@@ -64,9 +64,194 @@ export const SKILLS = {
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'buff', stat: 'atk', op: 'mul', value: 0.7, duration: 2, scope: 'allEnemies' },
   ]},
+
+  /* ================= 測試角色技能池（40 招，涵蓋業界常見原型） =================
+     多段連擊 / 可疊層 DoT（stackable）/ 剋種族追打（where）/ 易傷 / 緩速（集氣壓制）/
+     群體充能 / 跨技能互斥減傷罩（key:'guard'）/ 斬殺型高倍率 / 控制鏈 / 攻守交換 */
+
+  // ---- 火 ----
+  cinderCombo: { name: '燼滅', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 1.1, scope: 'target' },
+    { type: 'damage', mult: 1.1, scope: 'target' },
+    { type: 'damage', mult: 1.1, scope: 'target' },
+    { type: 'buff', stat: 'critChance', op: 'add', value: 0.15, duration: 2, scope: 'self' },
+  ]},
+  karmicFire: { name: '業火', target: 'enemyFrontRow', effects: [
+    { type: 'damage', mult: 1.5, scope: 'target' },
+    { type: 'dot', power: 0.35, element: 'fire', duration: 2, scope: 'target', stackable: true }, // 可疊層灼燒
+  ]},
+  emberWarmth: { name: '餘溫', effects: [
+    { type: 'heal', power: 1.2, scope: 'allAllies' },
+    { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.15, duration: 2, scope: 'allAllies' },
+  ]},
+  shellAegis: { name: '殼護', effects: [
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'shield', power: 2.2, duration: 3, scope: 'self' },
+    { type: 'buff', stat: 'def', op: 'mul', value: 1.3, duration: 2, scope: 'self' },
+  ]},
+  fireArrow: { name: '火矢', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 2.0, scope: 'target' },
+    { type: 'dot', power: 0.5, element: 'fire', duration: 2, scope: 'target' },
+  ]},
+  detonate: { name: '爆燃', target: 'enemyColumn', effects: [
+    { type: 'damage', mult: 1.7, scope: 'target' },
+    { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target' },
+  ]},
+  warBanner: { name: '軍威', effects: [
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies' },
+    { type: 'energy', amount: 15, scope: 'allAllies' },
+  ]},
+  lionRoar: { name: '獅吼', target: 'enemyFrontRow', effects: [
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'buff', stat: 'atk', op: 'mul', value: 0.8, duration: 2, scope: 'target' },
+  ]},
+
+  // ---- 風 ----
+  thunderCut: { name: '雷切', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 2.4, scope: 'target' },
+    { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.3, duration: 2, scope: 'self' },
+  ]},
+  phantomEdge: { name: '殘影', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 1.3, scope: 'target' },
+    { type: 'damage', mult: 1.3, scope: 'target' },
+    { type: 'buff', stat: 'critMult', op: 'add', value: 0.4, duration: 2, scope: 'self' },
+  ]},
+  huntFeather: { name: '獵翎', target: 'enemyBackRow', effects: [
+    { type: 'damage', mult: 1.9, scope: 'target' },
+    { type: 'buff', stat: 'energyGain', op: 'mul', value: 0.7, duration: 2, scope: 'target' }, // 緩速：壓制集氣
+  ]},
+  gentleBreeze: { name: '和風', effects: [
+    { type: 'heal', power: 0.9, scope: 'allAllies' },
+    { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies' },
+  ]},
+  thunderMark: { name: '雷紋', effects: [
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 1.2, duration: 2, scope: 'allEnemies' }, // 全體易傷
+  ]},
+  cloudPiercer: { name: '貫雲', target: 'enemyColumn', effects: [
+    { type: 'damage', mult: 2.0, scope: 'target' },
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.15, duration: 2, scope: 'self' },
+  ]},
+  forestWard: { name: '林護', effects: [
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'buff', stat: 'def', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies' },
+  ]},
+  galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 0.9, scope: 'target' },
+    { type: 'damage', mult: 0.9, scope: 'target' },
+    { type: 'damage', mult: 0.9, scope: 'target' },
+    { type: 'energy', amount: 20, scope: 'self' },
+  ]},
+
+  // ---- 水 ----
+  frostThorns: { name: '冰棘', effects: [
+    { type: 'damage', mult: 1.1, scope: 'allEnemies' },
+    { type: 'buff', stat: 'energyGain', op: 'mul', value: 0.75, duration: 2, scope: 'allEnemies' }, // 全體霜緩
+  ]},
+  tideHymn: { name: '潮頌', target: 'lowestHpAlly', effects: [
+    { type: 'heal', power: 2.6, scope: 'target' },
+    { type: 'heal', power: 0.8, scope: 'alliesExceptTarget' },
+  ]},
+  glacialArmor: { name: '冰甲', effects: [
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'shield', power: 2.4, duration: 3, scope: 'self' },
+    { type: 'shield', power: 0.8, duration: 3, scope: 'allAllies' },
+  ]},
+  abyssBite: { name: '淵噬', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 2.2, scope: 'target' },
+    { type: 'buff', stat: 'def', op: 'mul', value: 0.75, duration: 2, scope: 'target' }, // 破甲
+  ]},
+  mistBlades: { name: '霧刃', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 1.4, scope: 'target' },
+    { type: 'damage', mult: 1.4, scope: 'target' },
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.8, duration: 2, scope: 'self' },
+  ]},
+  springSurge: { name: '湧泉', effects: [
+    { type: 'heal', power: 1.4, scope: 'allAllies' },
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.85, duration: 2, scope: 'allAllies' },
+  ]},
+  tsunami: { name: '海嘯', target: 'allEnemies', effects: [
+    { type: 'damage', mult: 1.35, scope: 'target' }, // 全場大 AoE
+  ]},
+  pearlBulwark: { name: '貝盾', effects: [
+    { type: 'shield', power: 1.0, duration: 3, scope: 'allAllies' },
+    { type: 'buff', stat: 'def', op: 'mul', value: 1.2, duration: 2, scope: 'self' },
+  ]},
+
+  // ---- 光 ----
+  sacredShield: { name: '聖盾', effects: [
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.75, duration: 2, key: 'guard', scope: 'allAllies' }, // 與守護/龍護互斥
+  ]},
+  crystalGleam: { name: '晶輝', effects: [
+    { type: 'buff', stat: 'critChance', op: 'add', value: 0.15, duration: 2, scope: 'allAllies' },
+    { type: 'buff', stat: 'critMult', op: 'add', value: 0.3, duration: 2, scope: 'allAllies' },
+  ]},
+  holyVerdict: { name: '審判', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 2.6, scope: 'target' },
+    { type: 'damage', mult: 1.0, scope: 'target', where: { race: '不死' } }, // 剋不死追打
+  ]},
+  morningSong: { name: '晨曲', effects: [
+    { type: 'energy', amount: 25, scope: 'allAllies' }, // 群體充能
+    { type: 'heal', power: 0.7, scope: 'allAllies' },
+  ]},
+  luminousWall: { name: '聖壁', effects: [
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'shield', power: 2.6, duration: 3, scope: 'self' },
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.8, duration: 2, scope: 'self' },
+  ]},
+  starfall: { name: '星隕', target: 'enemyBackRow', effects: [
+    { type: 'damage', mult: 1.8, scope: 'target' },
+    { type: 'control', control: 'silence', duration: 1, scope: 'target' },
+  ]},
+  silverThrust: { name: '聖刺', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 1.5, scope: 'target' },
+    { type: 'damage', mult: 1.5, scope: 'target' },
+    { type: 'buff', stat: 'critChance', op: 'add', value: 0.2, duration: 1, scope: 'self' },
+  ]},
+  foxGlow: { name: '狐光', target: 'lowestHpAlly', effects: [
+    { type: 'heal', power: 2.2, scope: 'target' },
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'target' },
+  ]},
+
+  // ---- 暗 ----
+  plagueSpread: { name: '瘟疫', target: 'allEnemies', effects: [
+    { type: 'damage', mult: 0.8, scope: 'target' },
+    { type: 'dot', power: 0.3, duration: 2, scope: 'target', stackable: true }, // 可疊層劇毒
+  ]},
+  mindGnaw: { name: '蝕心', effects: [
+    { type: 'buff', stat: 'atk', op: 'mul', value: 0.82, duration: 2, scope: 'allEnemies' },
+    { type: 'heal', power: 0.6, scope: 'allAllies' },
+  ]},
+  boneRampart: { name: '骨牆', effects: [
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'shield', power: 2.0, duration: 3, scope: 'self' },
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.15, duration: 2, scope: 'self' },
+  ]},
+  dreamEater: { name: '噬夢', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 2.1, scope: 'target' },
+    { type: 'buff', stat: 'energyGain', op: 'mul', value: 0.6, duration: 1, scope: 'target' },
+    { type: 'energy', amount: 15, scope: 'self' }, // 汲取式回能
+  ]},
+  voidBurst: { name: '虛爆', target: 'enemyColumn', effects: [
+    { type: 'damage', mult: 1.6, scope: 'target' },
+    { type: 'dot', power: 0.35, duration: 2, scope: 'target' },
+  ]},
+  webBind: { name: '縛絲', target: 'singleEnemyByColumn', effects: [
+    { type: 'damage', mult: 1.8, scope: 'target' },
+    { type: 'control', control: 'stun', duration: 1, scope: 'target' },
+  ]},
+  duskVeil: { name: '暮幕', effects: [
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.8, duration: 2, key: 'guard', scope: 'allAllies' },
+  ]},
+  requiem: { name: '安魂', effects: [
+    { type: 'heal', power: 1.1, scope: 'allAllies' },
+    { type: 'heal', power: 0.6, scope: 'allAllies', where: { race: '不死' } }, // 不死族額外治療
+    { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies' },
+  ]},
 };
 
-// cardId → skillId（Task 2 填入 10 招）
+// cardId → skillId
 export const CARD_SKILLS = {
   ifrit: 'infernoNova',
   emberguard: 'moltenBulwark',
@@ -78,6 +263,47 @@ export const CARD_SKILLS = {
   dawnblade: 'dawnStrike',
   nightreaper: 'shadowExecute',
   gravewarden: 'gravePact',
+  // ---- 測試角色（40）----
+  cinderblade: 'cinderCombo',
+  pyrelord: 'karmicFire',
+  ashpriest: 'emberWarmth',
+  magmaturtle: 'shellAegis',
+  flarearcher: 'fireArrow',
+  emberwitch: 'detonate',
+  warbanner: 'warBanner',
+  redlion: 'lionRoar',
+  stormblade: 'thunderCut',
+  galeninja: 'phantomEdge',
+  tempesthawk: 'huntFeather',
+  windsister: 'gentleBreeze',
+  thundertotem: 'thunderMark',
+  skylancer: 'cloudPiercer',
+  grovekeeper: 'forestWard',
+  zephyrmonk: 'galeKicks',
+  frostmage: 'frostThorns',
+  tidesinger: 'tideHymn',
+  glacierknight: 'glacialArmor',
+  abysshunter: 'abyssBite',
+  mistdancer: 'mistBlades',
+  coralshaman: 'springSurge',
+  leviathan: 'tsunami',
+  pearlguard: 'pearlBulwark',
+  paladin: 'sacredShield',
+  lightweaver: 'crystalGleam',
+  suninquisitor: 'holyVerdict',
+  dawnharpist: 'morningSong',
+  radiantgolem: 'luminousWall',
+  stargazer: 'starfall',
+  holyfencer: 'silverThrust',
+  lumenfox: 'foxGlow',
+  plaguelord: 'plagueSpread',
+  shadowpriest: 'mindGnaw',
+  boneknight: 'boneRampart',
+  nightmare: 'dreamEater',
+  voidcaller: 'voidBurst',
+  cryptwidow: 'webBind',
+  duskwarden: 'duskVeil',
+  soulorganist: 'requiem',
 };
 
 export function skillFor(unit) {

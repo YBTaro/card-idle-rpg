@@ -8,7 +8,7 @@ import { CARDS } from '../data/cards.js';
 import { CLASSES } from '../data/classes.js';
 import { ELEMENT_LABEL } from '../data/elements.js';
 import { artFor } from '../data/assets.js';
-import { deriveStats } from '../core/stats.js';
+import { deriveStats, MAX_STARS, STAR_STAT_BONUS, STAR_MILESTONES } from '../core/stats.js';
 import { levelUp, levelUpCost, canLevelUp, MAX_LEVEL } from '../systems/leveling.js';
 import { isInFormation, toggleFormation, MAX_FORMATION } from '../systems/formation.js';
 import { skillInfoForCard, passiveInfoForCard } from '../battle/skillText.js';
@@ -141,10 +141,12 @@ class HeroSheet {
     const affordable = canLevelUp(inst);
     const inForm = isInFormation(inst.instanceId);
 
-    // 身分名牌同步（屬性徽章 + 名字）
+    // 身分名牌同步（屬性徽章 + 名字 + 星級）
+    const stars = inst.stars ?? 0;
     clear(this.idBar);
     this.idBar.appendChild(el('span', { class: `el el-${card.element}`, text: ELEMENT_LABEL[card.element] }));
     this.idBar.appendChild(el('span', { class: 'nm', text: card.name }));
+    this.idBar.appendChild(el('span', { class: 'hs-stars', text: '★'.repeat(stars) + '☆'.repeat(MAX_STARS - stars) }));
 
     const p = this.panel;
     clear(p);
@@ -178,6 +180,18 @@ class HeroSheet {
       );
     }
     p.appendChild(stats);
+
+    // 星級（重複卡自動升星；每星三圍加成 + 里程碑）
+    p.appendChild(el('div', { class: 'hs-ribbon', text: '星級' }));
+    const starLine = el('div', { class: 'hs-starline' });
+    starLine.appendChild(el('span', { class: 'hs-stars big', text: '★'.repeat(stars) + '☆'.repeat(MAX_STARS - stars) }));
+    starLine.appendChild(el('span', { class: 'st-note', text: `每星 三圍 +${Math.round(STAR_STAT_BONUS * 100)}%（重複抽到自動升星）` }));
+    for (const [star, m] of Object.entries(STAR_MILESTONES)) {
+      starLine.appendChild(
+        el('span', { class: `st-mile${stars >= Number(star) ? ' on' : ''}`, text: `${star}★ ${m.desc}` })
+      );
+    }
+    p.appendChild(starLine);
 
     // 技能
     p.appendChild(el('div', { class: 'hs-ribbon', text: '技能' }));

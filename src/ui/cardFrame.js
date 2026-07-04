@@ -9,11 +9,12 @@ import { artFor, portraitFor, elementGradient } from '../data/assets.js';
 // 職業符號沿用 battleScene 的 CLASS_GLYPH，保持卡圖 / 棋子一致。
 const CLASS_GLYPH = { tank: '🛡', dps: '⚔', support: '✚' };
 
-// cardFrame(card, { level, size }) → HTMLElement
+// cardFrame(card, { level, size, stars }) → HTMLElement
 //   card：CARDS 內的卡定義（含 id / name / element / class）
 //   level：有值才顯示右上等級章（傳 'MAX' 或數字皆可）
 //   size：'full'（roster 卡格 / 抽卡結算）或 'mini'（編隊格，約 48px 方形）
-export function cardFrame(card, { level, size = 'full' } = {}) {
+//   stars：升星數（>0 才顯示名牌上方的星帶）
+export function cardFrame(card, { level, size = 'full', stars } = {}) {
   const element = card.element;
   const frame = el('div', {
     class: `cardframe ${size}${' cardframe-' + element}`,
@@ -26,6 +27,11 @@ export function cardFrame(card, { level, size = 'full' } = {}) {
   // 底部名牌：漸層遮罩上疊名字（mini 尺寸太小則省略文字，只留頭像）。
   if (size !== 'mini') {
     frame.appendChild(el('div', { class: 'cardframe-name', text: card.name }));
+  }
+
+  // 星帶（名牌上方）：升星數 > 0 才顯示。
+  if (size !== 'mini' && stars > 0) {
+    frame.appendChild(el('div', { class: 'cardframe-stars', text: '★'.repeat(stars) }));
   }
 
   // 右上等級章（有 level 才顯示）。

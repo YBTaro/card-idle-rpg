@@ -425,6 +425,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   border-top: 1px solid rgba(248, 203, 92, .35);
   padding: .25rem .5rem; font-size: .75rem; font-weight: 800;
 }
+.tcard .lvpanel .tstars { font-size: .62rem; color: #ffd781; letter-spacing: .05em; text-shadow: 0 0 4px rgba(255, 215, 129, .5); }
 .tcard .lvpanel .sk {
   width: 1.3rem; height: 1.3rem; border-radius: 99px; flex: none;
   background: radial-gradient(circle at 35% 30%, #5a648f, #2b3150);
@@ -555,6 +556,14 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, .55) 50%, transparent 100%);
   transform: skewX(-18deg); animation: cardShine 1s ease-in-out .25s 1 both; pointer-events: none;
 }
+/* 升星星帶（名牌上方） */
+.cardframe-stars {
+  position: absolute; left: 0; right: 0; bottom: 1.55rem;
+  text-align: center; font-size: .7rem; letter-spacing: .1em;
+  color: #ffd781; text-shadow: 0 1px 2px #000, 0 0 6px rgba(255, 215, 129, .6);
+  pointer-events: none;
+}
+
 @keyframes cardPop { 0% { transform: scale(.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 @keyframes cardShine { 0% { left: -70%; } 100% { left: 130%; } }
 
@@ -610,6 +619,17 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .hs-stats .st .k { color: var(--dim); font-weight: 700; }
 .hs-stats .st .v { font-weight: 900; }
 .hs-stats .st .v small { color: var(--hp); font-weight: 900; font-size: .7rem; }
+/* 星級 */
+.hs-stars { font-size: .95rem; color: #ffd781; text-shadow: 0 0 6px rgba(255, 215, 129, .5); letter-spacing: .12em; }
+.hs-stars.big { font-size: 1.1rem; }
+.hs-starline { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .7rem; padding: 0 .4rem; }
+.hs-starline .st-note { font-size: .72rem; color: var(--dim); }
+.hs-starline .st-mile {
+  font-size: .7rem; font-weight: 700; color: var(--dim);
+  border: 1px solid var(--border-soft); border-radius: 99px; padding: .08rem .55rem; opacity: .6;
+}
+.hs-starline .st-mile.on { color: #ffd781; border-color: rgba(255, 215, 129, .5); opacity: 1; background: rgba(255, 215, 129, .08); }
+
 .hs-skills { display: flex; gap: .6rem; align-items: flex-start; padding: 0 .3rem; }
 .hs-sk { display: flex; flex-direction: column; align-items: center; gap: .15rem; flex: none; width: 3rem; }
 .hs-sk .ic {

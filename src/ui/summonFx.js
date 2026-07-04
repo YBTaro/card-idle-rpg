@@ -396,7 +396,7 @@ class SummonStage {
     c.height = 1366;
     const ctx = c.getContext('2d');
     ctx.scale(2, 2);
-    const isCard = result.type === 'card' || result.type === 'duplicate';
+    const isCard = result.type === 'card' || result.type === 'duplicate' || result.type === 'starup';
 
     if (isCard && CARDS[result.cardId]) {
       const card = CARDS[result.cardId];
@@ -427,6 +427,13 @@ class SummonStage {
         ctx.fillStyle = '#4a1206';
         ctx.font = '800 40px "Segoe UI",sans-serif';
         ctx.fillText('NEW', 75, 46);
+      } else if (result.type === 'starup') {
+        // 重複 → 升星：金帶 + 星數
+        ctx.fillStyle = 'rgba(14,8,2,.8)';
+        ctx.fillRect(0, 440, 512, 60);
+        ctx.fillStyle = '#ffd781';
+        ctx.font = '700 40px "Segoe UI","Microsoft JhengHei",sans-serif';
+        ctx.fillText(`升星！${'★'.repeat(result.stars)}${'☆'.repeat(5 - result.stars)}`, 256, 484);
       } else {
         ctx.fillStyle = 'rgba(14,8,2,.8)';
         ctx.fillRect(0, 440, 512, 60);
@@ -600,7 +607,7 @@ class SummonStage {
     // 英雄登場大轉場素材（去背全圖 2× 點陣化 + 名字 + 元素色光暈）
     const splashes = await Promise.all(
       batch.map(async (r) => {
-        const isHero = (r.type === 'card' || r.type === 'duplicate') && CARDS[r.cardId];
+        const isHero = (r.type === 'card' || r.type === 'duplicate' || r.type === 'starup') && CARDS[r.cardId];
         if (!isHero) return null;
         const card = CARDS[r.cardId];
         let artTex = null;
@@ -633,7 +640,7 @@ class SummonStage {
 
     batch.forEach((result, i) => {
       const grp = new THREE.Group();
-      const rare = result.type === 'card' || result.type === 'duplicate';
+      const rare = result.type === 'card' || result.type === 'duplicate' || result.type === 'starup';
       const frontMat = this._track(new THREE.MeshBasicMaterial({ map: fronts[i], transparent: true }));
       const backMat = this._track(new THREE.MeshBasicMaterial({ map: backTex, transparent: true }));
       const front = new THREE.Mesh(geo, frontMat);

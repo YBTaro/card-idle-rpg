@@ -28,3 +28,22 @@ describe('deriveStats 帶出被動', () => {
     expect(z.passives).toEqual([]);
   });
 });
+
+describe('升星', () => {
+  it('每星三圍 +8%，里程碑追加自身被動，舊存檔缺欄位視為 0 星', () => {
+    // zephyr lv10：raw atk = 92 + 11×9 = 191，dps 修正 ×1.8
+    const rawAtk = (92 + 11 * 9) * 1.8;
+    const s0 = deriveStats({ cardId: 'zephyr', level: 10, stars: 0 });
+    const s3 = deriveStats({ cardId: 'zephyr', level: 10, stars: 3 });
+    const s5 = deriveStats({ cardId: 'zephyr', level: 10, stars: 5 });
+    expect(s0.atk).toBe(Math.round(rawAtk));
+    expect(s3.atk).toBe(Math.round(rawAtk * 1.24)); // 3 星 ×1.24
+    expect(s3.stars).toBe(3);
+    // 里程碑：3 星已解鎖 2★（dmgDealt）；5 星 2/4/5★ 全解鎖
+    expect(s3.passives.length).toBe(1);
+    expect(s3.passives[0].effects[0].stat).toBe('dmgDealt');
+    expect(s5.passives.length).toBe(3);
+    // 未帶 stars 欄位（舊存檔）＝ 0 星
+    expect(deriveStats({ cardId: 'zephyr', level: 10 }).atk).toBe(s0.atk);
+  });
+});

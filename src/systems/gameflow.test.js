@@ -15,7 +15,7 @@ describe('抽卡', () => {
     const res = pull(store.state, new Rng(123));
     expect(res.ok).toBe(true);
     expect(store.state.currencies.tickets).toBe(before - 1);
-    expect(['material', 'card', 'duplicate']).toContain(res.type);
+    expect(['material', 'card', 'starup', 'duplicate']).toContain(res.type);
   });
 
   it('沒券時不能抽', () => {

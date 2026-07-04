@@ -35,10 +35,10 @@ export function createNewGame() {
   return state;
 }
 
-// 在 state 上新增一張角色實例，回傳該實例。
+// 在 state 上新增一張角色實例（初始 0 星），回傳該實例。
 export function addCardInstance(state, cardId, level = 1) {
   const instanceId = state.meta.nextInstanceId++;
-  const inst = { instanceId, cardId, level };
+  const inst = { instanceId, cardId, level, stars: 0 };
   state.cards.push(inst);
   return inst;
 }

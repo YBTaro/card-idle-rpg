@@ -24,6 +24,60 @@ export const CARDS = {
   // ---- 暗 ----
   nightreaper: { id: 'nightreaper', name: '暗影收割者', element: 'dark', class: 'dps', attackStyle: 'melee', race: '不死', series: ['影之眷屬'], base: { hp: 500, atk: 98, def: 38 }, growth: { hp: 54, atk: 12, def: 3 }, passives: [{ target: 'self', effects: [{ stat: 'atk', op: 'mul', basePct: 0.05, perCountOf: { side: 'allies', where: { race: '不死' } } }] }] },
   gravewarden: { id: 'gravewarden', name: '幽冥守墓人', element: 'dark', class: 'tank', attackStyle: 'melee', race: '不死', series: ['影之眷屬', '守護者'], base: { hp: 720, atk: 62, def: 72 }, growth: { hp: 82, atk: 6, def: 7 } },
+
+  /* ================= 測試角色池（40 名）=================
+     主動技見 skills.js 同名對應；被動涵蓋：血線觸發（selfHpBelow）、
+     隊伍組成條件（alliesAtLeast）、依場上單位數成長（perCountOf）、全隊光環。 */
+
+  // ---- 火（+8）----
+  cinderblade: { id: 'cinderblade', name: '燼刃劍豪', element: 'fire', class: 'dps', attackStyle: 'melee', race: '人', series: ['燼火'], base: { hp: 495, atk: 96, def: 37 }, growth: { hp: 53, atk: 11, def: 3 }, passives: [{ when: { selfHpBelow: 0.5 }, target: 'self', effects: [{ stat: 'critChance', op: 'add', value: 0.15 }] }] },
+  pyrelord: { id: 'pyrelord', name: '焚天梟雄', element: 'fire', class: 'dps', attackStyle: 'ranged', race: '妖', series: ['燼火', '炎之眷屬'], base: { hp: 510, atk: 93, def: 40 }, growth: { hp: 55, atk: 11, def: 4 }, passives: [{ target: 'self', effects: [{ stat: 'atk', op: 'mul', basePct: 0.04, perCountOf: { side: 'allies', where: { element: 'fire' } } }] }] },
+  ashpriest: { id: 'ashpriest', name: '餘燼祭司', element: 'fire', class: 'support', attackStyle: 'ranged', race: '人', series: ['燼火', '聖歌隊'], base: { hp: 505, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 } },
+  magmaturtle: { id: 'magmaturtle', name: '熔殼巨龜', element: 'fire', class: 'tank', attackStyle: 'melee', race: '獸', series: ['守護者'], base: { hp: 750, atk: 56, def: 76 }, growth: { hp: 85, atk: 5, def: 8 }, passives: [{ when: { selfHpBelow: 0.4 }, target: 'self', effects: [{ stat: 'def', op: 'mul', value: 1.4 }] }] },
+  flarearcher: { id: 'flarearcher', name: '烈焰遊俠', element: 'fire', class: 'dps', attackStyle: 'ranged', race: '精靈', series: ['獵團'], base: { hp: 475, atk: 99, def: 34 }, growth: { hp: 51, atk: 12, def: 3 }, passives: [{ target: 'self', effects: [{ stat: 'atk', op: 'mul', basePct: 0.03, perCountOf: { side: 'enemies' } }] }] },
+  emberwitch: { id: 'emberwitch', name: '燼火魔女', element: 'fire', class: 'dps', attackStyle: 'ranged', race: '人', series: ['燼火'], base: { hp: 480, atk: 97, def: 35 }, growth: { hp: 52, atk: 11, def: 3 } },
+  warbanner: { id: 'warbanner', name: '戰旗軍魂', element: 'fire', class: 'support', attackStyle: 'melee', race: '不死', series: ['鐵壁'], base: { hp: 525, atk: 70, def: 46 }, growth: { hp: 58, atk: 8, def: 5 }, passives: [{ target: 'allAllies', effects: [{ stat: 'atk', op: 'mul', value: 1.05 }] }] },
+  redlion: { id: 'redlion', name: '赤獅騎士', element: 'fire', class: 'tank', attackStyle: 'melee', race: '人', series: ['鐵壁'], base: { hp: 705, atk: 62, def: 70 }, growth: { hp: 79, atk: 6, def: 7 } },
+
+  // ---- 風（+8）----
+  stormblade: { id: 'stormblade', name: '蒼雷劍聖', element: 'wind', class: 'dps', attackStyle: 'melee', race: '人', series: ['蒼雷'], base: { hp: 500, atk: 100, def: 36 }, growth: { hp: 53, atk: 12, def: 3 }, passives: [{ when: { selfHpBelow: 0.5 }, target: 'self', effects: [{ stat: 'atk', op: 'mul', value: 1.25 }] }] },
+  galeninja: { id: 'galeninja', name: '風隱忍者', element: 'wind', class: 'dps', attackStyle: 'melee', race: '人', series: ['疾風'], base: { hp: 470, atk: 95, def: 34 }, growth: { hp: 50, atk: 11, def: 3 } },
+  tempesthawk: { id: 'tempesthawk', name: '暴風鷹匠', element: 'wind', class: 'dps', attackStyle: 'ranged', race: '精靈', series: ['獵團', '疾風'], base: { hp: 485, atk: 94, def: 36 }, growth: { hp: 52, atk: 11, def: 3 }, passives: [{ when: { alliesAtLeast: { count: 2, where: { series: '獵團' } } }, target: 'self', effects: [{ stat: 'critChance', op: 'add', value: 0.12 }] }] },
+  windsister: { id: 'windsister', name: '風之雙子', element: 'wind', class: 'support', attackStyle: 'ranged', race: '精靈', series: ['星詠'], base: { hp: 500, atk: 71, def: 43 }, growth: { hp: 55, atk: 8, def: 4 } },
+  thundertotem: { id: 'thundertotem', name: '雷圖騰師', element: 'wind', class: 'support', attackStyle: 'ranged', race: '獸', series: ['大地'], base: { hp: 515, atk: 74, def: 45 }, growth: { hp: 57, atk: 8, def: 4 }, passives: [{ target: 'allEnemies', effects: [{ stat: 'def', op: 'mul', value: 0.95 }] }] },
+  skylancer: { id: 'skylancer', name: '天嵐槍騎', element: 'wind', class: 'dps', attackStyle: 'melee', race: '龍', series: ['蒼雷'], base: { hp: 520, atk: 92, def: 42 }, growth: { hp: 56, atk: 11, def: 4 } },
+  grovekeeper: { id: 'grovekeeper', name: '林守巨熊', element: 'wind', class: 'tank', attackStyle: 'melee', race: '獸', series: ['秘林', '守護者'], base: { hp: 740, atk: 58, def: 72 }, growth: { hp: 84, atk: 6, def: 7 }, passives: [{ target: 'allAllies', effects: [{ stat: 'def', op: 'mul', value: 1.08 }] }] },
+  zephyrmonk: { id: 'zephyrmonk', name: '迅風武僧', element: 'wind', class: 'dps', attackStyle: 'melee', race: '人', series: ['疾風'], base: { hp: 490, atk: 90, def: 38 }, growth: { hp: 53, atk: 10, def: 4 }, passives: [{ target: 'self', effects: [{ stat: 'energyGain', op: 'mul', value: 1.15 }] }] },
+
+  // ---- 水（+8）----
+  frostmage: { id: 'frostmage', name: '霜語法師', element: 'water', class: 'dps', attackStyle: 'ranged', race: '人', series: ['霜語'], base: { hp: 485, atk: 95, def: 36 }, growth: { hp: 52, atk: 11, def: 3 }, passives: [{ when: { alliesAtLeast: { count: 2, where: { series: '霜語' } } }, target: 'self', effects: [{ stat: 'atk', op: 'mul', value: 1.2 }] }] },
+  tidesinger: { id: 'tidesinger', name: '潮音歌者', element: 'water', class: 'support', attackStyle: 'ranged', race: '人', series: ['潮汐', '星詠'], base: { hp: 510, atk: 73, def: 44 }, growth: { hp: 56, atk: 8, def: 4 } },
+  glacierknight: { id: 'glacierknight', name: '冰川重騎', element: 'water', class: 'tank', attackStyle: 'melee', race: '人', series: ['霜語', '鐵壁'], base: { hp: 745, atk: 57, def: 75 }, growth: { hp: 84, atk: 5, def: 8 } },
+  abysshunter: { id: 'abysshunter', name: '深淵獵手', element: 'water', class: 'dps', attackStyle: 'melee', race: '妖', series: ['深淵'], base: { hp: 495, atk: 97, def: 37 }, growth: { hp: 53, atk: 11, def: 3 }, passives: [{ target: 'self', effects: [{ stat: 'atk', op: 'mul', basePct: 0.04, perCountOf: { side: 'allies', where: { series: '深淵' } } }] }] },
+  mistdancer: { id: 'mistdancer', name: '霧舞者', element: 'water', class: 'dps', attackStyle: 'melee', race: '精靈', series: ['霜語'], base: { hp: 480, atk: 93, def: 36 }, growth: { hp: 51, atk: 11, def: 3 }, passives: [{ when: { selfHpBelow: 0.5 }, target: 'self', effects: [{ stat: 'dmgTaken', op: 'mul', value: 0.8 }] }] },
+  coralshaman: { id: 'coralshaman', name: '珊瑚祭巫', element: 'water', class: 'support', attackStyle: 'ranged', race: '獸', series: ['潮汐'], base: { hp: 520, atk: 72, def: 46 }, growth: { hp: 57, atk: 8, def: 5 } },
+  leviathan: { id: 'leviathan', name: '滄海巨蛇', element: 'water', class: 'dps', attackStyle: 'melee', race: '龍', series: ['深淵', '潮汐'], base: { hp: 530, atk: 91, def: 43 }, growth: { hp: 57, atk: 11, def: 4 }, passives: [{ when: { selfHpBelow: 0.6 }, target: 'self', effects: [{ stat: 'dmgDealt', op: 'mul', value: 1.15 }] }] },
+  pearlguard: { id: 'pearlguard', name: '珠貝衛士', element: 'water', class: 'tank', attackStyle: 'melee', race: '機械', series: ['潮汐', '守護者'], base: { hp: 730, atk: 59, def: 73 }, growth: { hp: 82, atk: 6, def: 7 } },
+
+  // ---- 光（+8）----
+  paladin: { id: 'paladin', name: '晨曦聖騎', element: 'light', class: 'tank', attackStyle: 'melee', race: '人', series: ['光輝', '鐵壁'], base: { hp: 735, atk: 60, def: 74 }, growth: { hp: 83, atk: 6, def: 8 }, passives: [{ target: 'allAllies', effects: [{ stat: 'def', op: 'mul', value: 1.1 }] }] },
+  lightweaver: { id: 'lightweaver', name: '織光晶靈', element: 'light', class: 'support', attackStyle: 'ranged', race: '精靈', series: ['星詠', '光輝'], base: { hp: 495, atk: 70, def: 42 }, growth: { hp: 54, atk: 8, def: 4 } },
+  suninquisitor: { id: 'suninquisitor', name: '燦陽審判官', element: 'light', class: 'dps', attackStyle: 'melee', race: '人', series: ['光輝'], base: { hp: 505, atk: 96, def: 40 }, growth: { hp: 54, atk: 11, def: 4 } },
+  dawnharpist: { id: 'dawnharpist', name: '曙光琴師', element: 'light', class: 'support', attackStyle: 'ranged', race: '人', series: ['聖歌隊', '星詠'], base: { hp: 515, atk: 73, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'allAllies', effects: [{ stat: 'energyGain', op: 'mul', value: 1.08 }] }] },
+  radiantgolem: { id: 'radiantgolem', name: '輝光魔像', element: 'light', class: 'tank', attackStyle: 'melee', race: '機械', series: ['守護者'], base: { hp: 755, atk: 55, def: 77 }, growth: { hp: 86, atk: 5, def: 8 }, passives: [{ when: { selfHpBelow: 0.35 }, target: 'self', effects: [{ stat: 'dmgTaken', op: 'mul', value: 0.75 }] }] },
+  stargazer: { id: 'stargazer', name: '觀星者', element: 'light', class: 'dps', attackStyle: 'ranged', race: '人', series: ['星詠'], base: { hp: 480, atk: 98, def: 34 }, growth: { hp: 51, atk: 12, def: 3 }, passives: [{ when: { alliesAtLeast: { count: 3, where: { series: '星詠' } } }, target: 'allAllies', effects: [{ stat: 'critChance', op: 'add', value: 0.08 }] }] },
+  holyfencer: { id: 'holyfencer', name: '聖銀劍士', element: 'light', class: 'dps', attackStyle: 'melee', race: '人', series: ['光輝'], base: { hp: 500, atk: 94, def: 40 }, growth: { hp: 54, atk: 11, def: 4 } },
+  lumenfox: { id: 'lumenfox', name: '流光靈狐', element: 'light', class: 'support', attackStyle: 'ranged', race: '妖', series: ['星詠'], base: { hp: 505, atk: 74, def: 43 }, growth: { hp: 55, atk: 8, def: 4 } },
+
+  // ---- 暗（+8）----
+  plaguelord: { id: 'plaguelord', name: '瘟疫領主', element: 'dark', class: 'dps', attackStyle: 'ranged', race: '不死', series: ['影之眷屬'], base: { hp: 510, atk: 92, def: 39 }, growth: { hp: 55, atk: 11, def: 4 }, passives: [{ target: 'self', effects: [{ stat: 'atk', op: 'mul', basePct: 0.05, perCountOf: { side: 'allies', where: { race: '不死' } } }] }] },
+  shadowpriest: { id: 'shadowpriest', name: '暗影祭司', element: 'dark', class: 'support', attackStyle: 'ranged', race: '人', series: ['深淵'], base: { hp: 500, atk: 72, def: 43 }, growth: { hp: 55, atk: 8, def: 4 } },
+  boneknight: { id: 'boneknight', name: '白骨騎士', element: 'dark', class: 'tank', attackStyle: 'melee', race: '不死', series: ['影之眷屬', '鐵壁'], base: { hp: 725, atk: 61, def: 71 }, growth: { hp: 81, atk: 6, def: 7 }, passives: [{ when: { selfHpBelow: 0.35 }, target: 'self', effects: [{ stat: 'dmgTaken', op: 'mul', value: 0.8 }] }] },
+  nightmare: { id: 'nightmare', name: '夢魘', element: 'dark', class: 'dps', attackStyle: 'melee', race: '妖', series: ['深淵'], base: { hp: 490, atk: 99, def: 35 }, growth: { hp: 52, atk: 12, def: 3 } },
+  voidcaller: { id: 'voidcaller', name: '虛空喚者', element: 'dark', class: 'dps', attackStyle: 'ranged', race: '人', series: ['深淵'], base: { hp: 485, atk: 95, def: 36 }, growth: { hp: 52, atk: 11, def: 3 }, passives: [{ when: { alliesAtLeast: { count: 2, where: { series: '深淵' } } }, target: 'self', effects: [{ stat: 'dmgDealt', op: 'mul', value: 1.12 }] }] },
+  cryptwidow: { id: 'cryptwidow', name: '墓穴寡婦', element: 'dark', class: 'dps', attackStyle: 'melee', race: '不死', series: ['影之眷屬'], base: { hp: 495, atk: 96, def: 37 }, growth: { hp: 53, atk: 11, def: 3 } },
+  duskwarden: { id: 'duskwarden', name: '薄暮守望', element: 'dark', class: 'tank', attackStyle: 'melee', race: '精靈', series: ['秘林'], base: { hp: 715, atk: 60, def: 71 }, growth: { hp: 80, atk: 6, def: 7 } },
+  soulorganist: { id: 'soulorganist', name: '亡魂琴師', element: 'dark', class: 'support', attackStyle: 'ranged', race: '不死', series: ['影之眷屬', '聖歌隊'], base: { hp: 520, atk: 71, def: 45 }, growth: { hp: 57, atk: 8, def: 5 }, passives: [{ target: 'allAllies', effects: [{ stat: 'atk', op: 'mul', basePct: 0.02, perCountOf: { side: 'allies', where: { race: '不死' } } }] }] },
 };
 
 export const CARD_LIST = Object.values(CARDS);

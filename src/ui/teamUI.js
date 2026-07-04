@@ -128,6 +128,7 @@ export class TeamUI {
     node.appendChild(
       el('div', { class: 'lvpanel' }, [
         el('span', { text: `Lv${inst.level}` }),
+        (inst.stars ?? 0) > 0 ? el('span', { class: 'tstars', text: '★'.repeat(inst.stars) }) : null,
         el('span', { class: 'sk', text: CLASS_GLYPH[card.class] || '✦' }),
       ])
     );
@@ -280,7 +281,7 @@ export class TeamUI {
     const sorted = [...bench].sort((a, b) => b.level - a.level);
     for (const inst of sorted) {
       const card = CARDS[inst.cardId];
-      const item = el('div', { class: 'swap-item pressable' }, [cardFrame(card, { level: inst.level, size: 'full' })]);
+      const item = el('div', { class: 'swap-item pressable' }, [cardFrame(card, { level: inst.level, size: 'full', stars: inst.stars })]);
       longPress(item, () => this._openSheet(inst.instanceId), {
         onTap: () => {
           // 點一下：有指定格（從空格開的）→ 入該格並收抽屜；否則放第一個空位

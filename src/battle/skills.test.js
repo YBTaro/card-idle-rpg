@@ -1,6 +1,7 @@
 // src/battle/skills.test.js
 import { describe, it, expect } from 'vitest';
 import { normalAttack, castSkill, skillFor, SKILLS, CARD_SKILLS } from './skills.js';
+import { CARDS } from '../data/cards.js';
 import { makeUnit } from './testHelpers.js';
 import { hasControl } from './buffs.js';
 import { Rng } from '../core/rng.js';
@@ -54,7 +55,7 @@ describe('castSkill 資料驗證', () => {
 describe('每卡專屬技', () => {
   it('每張卡的專屬技都存在於 SKILLS', () => {
     const ids = Object.values(CARD_SKILLS);
-    expect(ids.length).toBe(10);
+    expect(Object.keys(CARD_SKILLS).length).toBe(Object.keys(CARDS).length); // 每張卡都有專屬技
     for (const id of ids) expect(SKILLS[id]).toBeTruthy();
   });
 

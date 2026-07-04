@@ -101,7 +101,7 @@ export class HeroesUI {
     for (const inst of list) {
       const card = CARDS[inst.cardId];
       const item = el('div', { class: 'deck-item' });
-      const frame = cardFrame(card, { level: inst.level, size: 'full' });
+      const frame = cardFrame(card, { level: inst.level, size: 'full', stars: inst.stars });
       frame.classList.add(`bd-${card.element}`);
       item.appendChild(frame);
       if (isInFormation(inst.instanceId)) item.appendChild(el('span', { class: 'flag', text: '出戰中' }));
@@ -119,7 +119,7 @@ export class HeroesUI {
     for (const card of CARD_LIST) {
       const owned = s.cards.find((c) => c.cardId === card.id);
       const item = el('div', { class: `deck-item${owned ? '' : ' silhouette'}` });
-      const frame = cardFrame(card, owned ? { level: owned.level, size: 'full' } : { size: 'full' });
+      const frame = cardFrame(card, owned ? { level: owned.level, size: 'full', stars: owned.stars } : { size: 'full' });
       if (owned) frame.classList.add(`bd-${card.element}`);
       item.appendChild(frame);
       if (!owned) item.appendChild(el('span', { class: 'lockmark', text: '🔒' }));

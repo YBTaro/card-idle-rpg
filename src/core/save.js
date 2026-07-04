@@ -39,6 +39,7 @@ function migrate(data) {
     data.inventory.materials.essence = Math.max(data.inventory.materials.essence || 0, DEV_RESOURCES.essence);
   }
   // v3：手遊要素欄位（玩家檔案 / 掛機箱 / 簽到 / 每日任務 / FTUE 旗標）。
+  for (const c of data.cards) c.stars ??= 0; // 升星欄位
   data.player ??= { name: '指揮官' };
   data.idle ??= { lastClaim: Date.now() };
   data.daily.streak ??= 0;
