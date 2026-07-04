@@ -18,23 +18,31 @@ const MULTI_TARGETS = new Set(['enemyFrontRow', 'enemyBackRow', 'enemyColumn', '
 // ---- 絕技演出節奏：依技能資料派生（不同技能不同演出時間）----
 //   castDelay：施放 → 第一次命中的間隔（director 的 ultimate 延遲）
 //   impactTail：每次命中後的餘韻（聚光燈收燈計時）
+//   hold：聚光燈保底窗長。純輔助技沒有 damage/heal 事件可刷新餘韻，
+//         hold 必須「貼著演出長度」收燈，否則特效播完還在黑畫面乾等。
 export function ultTiming(skillId) {
   const def = SKILLS[skillId];
-  if (!def) return { castDelay: 0.7, impactTail: 0.5 };
+  if (!def) return { castDelay: 0.7, impactTail: 0.5, hold: 1.3 };
   const types = new Set(def.effects.map((e) => e.type));
   const isMulti = MULTI_TARGETS.has(def.target);
   const single = def.target === 'singleEnemyByColumn';
+  const hasHits = types.has('damage') || types.has('heal'); // 會產生可刷新餘韻的事件
+
+  // 純輔助（護盾/嘲諷/增益）：演出＝護罩穹頂/光旋 ~1s，燈跟著收，不留黑等
+  if (!hasHits) {
+    return { castDelay: 0.45, impactTail: 0.35, hold: 1.05 };
+  }
 
   let castDelay;
   if (types.has('damage')) {
-    castDelay = isMulti ? 0.9 : 0.55; // 大範圍要留橫掃束的施展時間；單體快狠準
+    castDelay = isMulti ? 0.9 : 0.55; // 大範圍要留施展時間；單體快狠準
   } else {
-    castDelay = 0.72; // 治療 / 護盾 / 增益
+    castDelay = 0.72; // 治療
   }
   if (def.effects.some((e) => e.type === 'control' || e.type === 'dot')) castDelay += 0.12;
 
   const impactTail = single ? 0.6 : 0.38; // 單體一擊的餘韻重；多段命中每下短促
-  return { castDelay, impactTail };
+  return { castDelay, impactTail, hold: castDelay + 0.6 };
 }
 
 function safeDestroy(cont) {

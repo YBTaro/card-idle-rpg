@@ -58,10 +58,9 @@ const DEPTH_SCALE = [0.8, 0.92, 1.04];
 const ENTRANCE_S = 0.4; // 進場滑入
 const ENTRANCE_STAGGER_S = 0.08;
 // 絕技聚光燈演出（參考原型：全場壓暗、只亮施放者與目標，技能名小標籤貼施放者旁）
-// 收燈為事件/計時混合驅動：施放後保底（castDelay+緩衝）；每次命中把「餘韻計時」
-// 重設為該技能的 impactTail（skillVfx.ultTiming 依技能資料派生——不同技能不同節奏），
-// 最後一擊的特效播完才收燈；收燈前 director gate 擋住下一個單位的回合。
-const ULT_CAST_BUFFER_S = 0.6; // 保底窗＝castDelay + 此緩衝
+// 收燈為事件/計時混合驅動：施放後保底 hold；每次命中把「餘韻計時」重設為該技能的
+// impactTail（skillVfx.ultTiming 依技能資料派生——不同技能不同節奏；純輔助技 hold
+// 貼演出長度收燈，不留黑等）；收燈前 director gate 擋住下一個單位的回合。
 const ULT_DIM_ALPHA = 0.66; // 壓暗層不透明度
 const ULT_DIM_IN_S = 0.16;
 const ULT_DIM_OUT_S = 0.35;
@@ -515,7 +514,7 @@ export class BattleScene {
         // 聚光燈演出：全場壓暗、施放者置頂 + 施法法陣 + 技能名小標籤（貼施放者旁）
         const timing = ultTiming(skill);
         this._ultTail = timing.impactTail; // 每技能不同的命中餘韻
-        this._beginUltSpotlight(s, color, SKILLS[skill]?.name ?? skill, timing.castDelay + ULT_CAST_BUFFER_S);
+        this._beginUltSpotlight(s, color, SKILLS[skill]?.name ?? skill, timing.hold);
         if (targetUid != null) this._spotlightTarget(this.sprites.get(targetUid));
         this._ultColor = color;
         ultPulse(s, s._body, color);
