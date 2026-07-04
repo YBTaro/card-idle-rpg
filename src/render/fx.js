@@ -2,16 +2,35 @@
 // 編排原則（療癒手遊風）：預備→爆發→回彈的三段節奏、back/elastic 彈性 ease、
 // 打擊瞬間用 additive 粒子與短促位移擠出「打擊感」。
 import { gsap } from 'gsap';
-import { Container, Graphics, Sprite, Text } from 'pixi.js';
-import { STAGE_H } from './pixiApp.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
+
+// ---- 特效全域速度：與戰鬥倍速同步（×2/×3 時特效跟著加速，打擊點才對得上）----
+let _fxSpeed = 1;
+export function setFxSpeed(v) {
+  _fxSpeed = Math.max(0.5, v || 1);
+}
+export function getFxSpeed() {
+  return _fxSpeed;
+}
+// 戰鬥特效一律用這組建 tween/timeline/延時（自動套 timeScale）。
+export function fxTl(vars) {
+  return gsap.timeline(vars).timeScale(_fxSpeed);
+}
+export function fxTo(target, vars) {
+  const t = gsap.to(target, vars);
+  t.timeScale(_fxSpeed);
+  return t;
+}
+export function fxDelay(seconds, cb) {
+  return gsap.delayedCall(seconds / _fxSpeed, cb);
+}
 
 // 攻擊突刺：後搖預備 → 衝刺 + 前傾 → 彈回。dir = +1（向右）/ -1（向左）
 export function lunge(sprite, dir) {
   const baseX = sprite._homeX ?? sprite.x;
   sprite._homeX = baseX;
   gsap.killTweensOf(sprite, 'x,rotation');
-  gsap
-    .timeline()
+  fxTl()
     .to(sprite, { x: baseX - dir * 10, rotation: -dir * 0.05, duration: 0.08, ease: 'power1.in' })
     .to(sprite, { x: baseX + dir * 46, rotation: dir * 0.09, duration: 0.11, ease: 'power3.out' })
     .to(sprite, { x: baseX, rotation: 0, duration: 0.26, ease: 'power2.inOut' });
@@ -20,8 +39,7 @@ export function lunge(sprite, dir) {
 // 受擊：閃白紅 + 朝攻擊反方向擊退再彈回。body 為角色主體（Graphics 或卡圖 Sprite）。
 export function hitFlash(sprite, body, dir = 0) {
   gsap.killTweensOf(body, 'tint');
-  gsap
-    .timeline()
+  fxTl()
     .set(body, { tint: 0xff5555 })
     .to(body, { tint: 0xffffff, duration: 0.28, ease: 'power1.out' });
 
@@ -31,13 +49,11 @@ export function hitFlash(sprite, body, dir = 0) {
   sprite._homeY = baseY;
   gsap.killTweensOf(sprite, 'x,y');
   if (dir) {
-    gsap
-      .timeline()
+    fxTl()
       .to(sprite, { x: baseX + dir * 12, duration: 0.06, ease: 'power2.out' })
       .to(sprite, { x: baseX, duration: 0.42, ease: 'elastic.out(1, 0.45)' });
   } else {
-    gsap
-      .timeline()
+    fxTl()
       .to(sprite, { y: baseY - 4, duration: 0.05 })
       .to(sprite, { y: baseY, duration: 0.2, ease: 'elastic.out(1, 0.4)' });
   }
@@ -47,13 +63,11 @@ export function hitFlash(sprite, body, dir = 0) {
 export function ultPulse(sprite, body, color) {
   const base = sprite._baseScale ?? 1;
   gsap.killTweensOf(sprite.scale);
-  gsap
-    .timeline()
+  fxTl()
     .to(sprite.scale, { x: base * 1.28, y: base * 1.28, duration: 0.16, ease: 'back.out(2)' })
     .to(sprite.scale, { x: base, y: base, duration: 0.4, ease: 'power2.out' });
   if (body && color != null) {
-    gsap
-      .timeline()
+    fxTl()
       .set(body, { tint: color })
       .to(body, { tint: 0xffffff, duration: 0.5 });
   }
@@ -74,7 +88,7 @@ export function spark(layer, x, y, color, dotTexture, count = 9) {
     for (const c of cont.children) gsap.killTweensOf(c);
     if (!cont.destroyed) cont.destroy({ children: true });
   };
-  const tl = gsap.timeline({ onComplete: finish });
+  const tl = fxTl({ onComplete: finish });
 
   for (let i = 0; i < count; i += 1) {
     const p = new Sprite(dotTexture);
@@ -115,8 +129,7 @@ export function shockwave(layer, x, y, color) {
     gsap.killTweensOf(ring.scale);
     if (!ring.destroyed) ring.destroy();
   };
-  gsap
-    .timeline({ onComplete: finish })
+  fxTl({ onComplete: finish })
     .to(ring.scale, { x: 2.6, y: 2.6, duration: 0.5, ease: 'power2.out' }, 0)
     .to(ring, { alpha: 0, duration: 0.5, ease: 'power1.in' }, 0.08);
 }
@@ -133,8 +146,7 @@ export function floatText(layer, x, y, textObj) {
     gsap.killTweensOf(textObj.scale);
     if (!textObj.destroyed) textObj.destroy();
   };
-  gsap
-    .timeline({ onComplete: done })
+  fxTl({ onComplete: done })
     .to(textObj.scale, { x: 1, y: 1, duration: 0.18, ease: 'back.out(2.2)' }, 0)
     .to(textObj, { y: y - 46, duration: 0.7, ease: 'power1.out' }, 0)
     .to(textObj, { alpha: 0, duration: 0.45, ease: 'power1.in' }, 0.32);
@@ -175,9 +187,8 @@ export function castCircle(parent, color, { radius = 46, duration = 1.25 } = {})
     gsap.killTweensOf(dashed);
     if (!cont.destroyed) cont.destroy({ children: true });
   };
-  gsap.to(dashed, { rotation: Math.PI * 1.5, duration, ease: 'none' });
-  gsap
-    .timeline({ onComplete: finish })
+  fxTo(dashed, { rotation: Math.PI * 1.5, duration, ease: 'none' });
+  fxTl({ onComplete: finish })
     .to(cont, { alpha: 1, duration: 0.16, ease: 'power1.out' }, 0)
     .to(cont.scale, { x: 1, y: 0.38, duration: 0.3, ease: 'back.out(1.6)' }, 0)
     .to(cont, { alpha: 0, duration: 0.3, ease: 'power1.in' }, duration - 0.3);
@@ -196,8 +207,8 @@ export function lightPillar(parent, color) {
   cont.addChild(core);
   cont.scale.set(1, 0);
   parent.addChildAt(cont, Math.min(1, parent.children.length)); // 影之上、立繪之後
-  gsap.to(cont.scale, { y: 1, duration: 0.28, ease: 'power3.out' });
-  gsap.to(cont, { alpha: 0.75, duration: 0.5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  fxTo(cont.scale, { y: 1, duration: 0.28, ease: 'power3.out' });
+  fxTo(cont, { alpha: 0.75, duration: 0.5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   return cont;
 }
 
@@ -242,7 +253,7 @@ export function impactBurst(layer, x, y, color, dotTexture) {
     }
     if (!cont.destroyed) cont.destroy({ children: true });
   };
-  const tl = gsap.timeline({ onComplete: finish });
+  const tl = fxTl({ onComplete: finish });
   tl.to(ringA.scale, { x: 1.6, y: 1.6, duration: 0.5, ease: 'power2.out' }, 0)
     .to(ringA, { alpha: 0, duration: 0.5, ease: 'power1.in' }, 0.1)
     .to(ringB.scale, { x: 1.1, y: 1.1, duration: 0.42, ease: 'power2.out' }, 0.06)
@@ -282,7 +293,7 @@ export function screenShake(container, strength = 6) {
   container._homeY = homeY;
   gsap.killTweensOf(container);
   const shakes = 4 + Math.floor(Math.random() * 2); // 4~5 下
-  const tl = gsap.timeline({
+  const tl = fxTl({
     onComplete: () => {
       container.x = homeX;
       container.y = homeY;
@@ -310,14 +321,14 @@ export function killFx(container) {
 export function deathFade(sprite, greyFilter) {
   const base = sprite._baseScale ?? 1;
   if (greyFilter) sprite.filters = [greyFilter];
-  gsap.to(sprite, {
+  fxTo(sprite, {
     alpha: 0.28,
     rotation: 0.14,
     y: (sprite._homeY ?? sprite.y) + 8,
     duration: 0.5,
     ease: 'power2.in',
   });
-  gsap.to(sprite.scale, { x: base * 0.85, y: base * 0.85, duration: 0.5 });
+  fxTo(sprite.scale, { x: base * 0.85, y: base * 0.85, duration: 0.5 });
 }
 
 // 復活/重置時還原視覺，還原到景深基準 _baseScale。

@@ -9,6 +9,9 @@ import { store } from '../core/state.js';
 import { saveGame } from '../core/save.js';
 import { Rng } from '../core/rng.js';
 import { trackQuest } from '../systems/quests.js';
+import { setFxSpeed } from './fx.js';
+import { ultTiming } from './skillVfx.js';
+import { DELAYS } from './animationDirector.js';
 
 export const WIN_GOLD = 60; // 勝利掛機獎勵（佔位）
 const RESTART_DELAY_WIN = 1.8; // 勝利橫幅停留
@@ -20,6 +23,7 @@ export class BattleController {
     this.app = app;
     this.overlay = overlay;
     this.speed = 2;
+    setFxSpeed(this.speed); // 特效時長與倍速同步
     this.replayer = null;
     this.director = null;
     this.scene = null;
@@ -47,7 +51,10 @@ export class BattleController {
     this._setup = sim.setup;
     this.replayer = new Replayer(sim.setup, sim.log);
     this.scene = new BattleScene(this.app, sim.setup, this.replayer);
-    this.director = new AnimationDirector(this.replayer);
+    this.director = new AnimationDirector(this.replayer, {
+      // 絕技的施放停頓依技能不同（單體快、範圍長、治療居中）——見 skillVfx.ultTiming
+      delays: { ...DELAYS, ultimate: (entry) => ultTiming(entry.skill).castDelay },
+    });
     this.director.speed = this.speed;
     // 絕技聚光燈演出未收燈前，不放行下一個單位的回合（要等特效放完才下一個動作）。
     this.director.gate = (entry) => this.scene?.gateEvent?.(entry) ?? false;
@@ -63,6 +70,7 @@ export class BattleController {
 
   setSpeed(x) {
     this.speed = x;
+    setFxSpeed(x); // 之後新建的特效跟上倍速
     if (this.director) this.director.speed = x;
   }
 

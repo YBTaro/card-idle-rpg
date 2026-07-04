@@ -25,7 +25,9 @@ export class AnimationDirector {
         return;
       }
       const entry = this.replayer.step();
-      this._wait += this.delays[entry.type] ?? 0;
+      const d = this.delays[entry.type];
+      // 延遲可為函式（依事件內容決定，例：絕技依技能不同有不同演出時間）
+      this._wait += typeof d === 'function' ? d(entry) : (d ?? 0);
     }
   }
 }

@@ -5,6 +5,7 @@
 import { gsap } from 'gsap';
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { SKILLS } from '../battle/skills.js';
+import { fxTl, fxTo } from './fx.js';
 
 const HEAL_COLOR = 0x8ef2ae;
 const SHIELD_COLOR = 0x9adcff;
@@ -13,6 +14,28 @@ const EMBER_COLOR = 0xff9a5c;
 const STUN_COLOR = 0xbb8cff;
 
 const MULTI_TARGETS = new Set(['enemyFrontRow', 'enemyBackRow', 'enemyColumn', 'allEnemies']);
+
+// ---- 絕技演出節奏：依技能資料派生（不同技能不同演出時間）----
+//   castDelay：施放 → 第一次命中的間隔（director 的 ultimate 延遲）
+//   impactTail：每次命中後的餘韻（聚光燈收燈計時）
+export function ultTiming(skillId) {
+  const def = SKILLS[skillId];
+  if (!def) return { castDelay: 0.7, impactTail: 0.5 };
+  const types = new Set(def.effects.map((e) => e.type));
+  const isMulti = MULTI_TARGETS.has(def.target);
+  const single = def.target === 'singleEnemyByColumn';
+
+  let castDelay;
+  if (types.has('damage')) {
+    castDelay = isMulti ? 0.9 : 0.55; // 大範圍要留橫掃束的施展時間；單體快狠準
+  } else {
+    castDelay = 0.72; // 治療 / 護盾 / 增益
+  }
+  if (def.effects.some((e) => e.type === 'control' || e.type === 'dot')) castDelay += 0.12;
+
+  const impactTail = single ? 0.6 : 0.38; // 單體一擊的餘韻重；多段命中每下短促
+  return { castDelay, impactTail };
+}
 
 function safeDestroy(cont) {
   for (const c of cont.children) {
@@ -42,8 +65,7 @@ export function slashArc(parent, color, { big = false } = {}) {
     g.scale.set(0.4);
     g.alpha = 0;
     cont.addChild(g);
-    gsap
-      .timeline({ delay: i * 0.09, onComplete: i === n - 1 ? () => safeDestroy(cont) : undefined })
+    fxTl({ delay: i * 0.09, onComplete: i === n - 1 ? () => safeDestroy(cont) : undefined })
       .to(g, { alpha: 1, duration: 0.05 }, 0)
       .to(g.scale, { x: 1.15, y: 1.15, duration: 0.22, ease: 'power3.out' }, 0)
       .to(g, { rotation: g.rotation + 0.5, alpha: 0, duration: 0.24, ease: 'power1.in' }, 0.12);
@@ -70,8 +92,7 @@ export function beamSweep(fxLayer, fromX, fromY, dir, color, dotTex) {
     cont.addChild(g);
   }
   cont.rotation = dir > 0 ? 0 : Math.PI;
-  const tl = gsap
-    .timeline({ onComplete: () => safeDestroy(cont) })
+  const tl = fxTl({ onComplete: () => safeDestroy(cont) })
     .to([core.scale, halo.scale, edge.scale], { x: 1, duration: 0.16, ease: 'power3.out' }, 0)
     .to([core, halo, edge], { alpha: 0, duration: 0.32, ease: 'power1.in' }, 0.3)
     .to(core, { y: -2, duration: 0.1, yoyo: true, repeat: 3, ease: 'sine.inOut' }, 0);
@@ -110,8 +131,7 @@ export function healRise(parent, dotTex, color = HEAL_COLOR) {
   column.blendMode = 'add';
   column.alpha = 0;
   cont.addChild(column);
-  gsap
-    .timeline({ onComplete: () => safeDestroy(cont) })
+  fxTl({ onComplete: () => safeDestroy(cont) })
     .to(column, { alpha: 1, duration: 0.18 }, 0)
     .to(column, { alpha: 0, duration: 0.4 }, 0.5);
   if (dotTex) {
@@ -124,7 +144,7 @@ export function healRise(parent, dotTex, color = HEAL_COLOR) {
       p.x = Math.random() * 44 - 22;
       p.y = -6;
       cont.addChild(p);
-      gsap.to(p, {
+      fxTo(p, {
         y: -110 - Math.random() * 40,
         alpha: 0,
         duration: 0.55 + Math.random() * 0.3,
@@ -144,8 +164,7 @@ export function shieldDome(parent, color = SHIELD_COLOR) {
   g.scale.set(0.3);
   g.alpha = 0;
   parent.addChild(g);
-  gsap
-    .timeline({ onComplete: () => safeDestroy(g) })
+  fxTl({ onComplete: () => safeDestroy(g) })
     .to(g, { alpha: 1, duration: 0.12 }, 0)
     .to(g.scale, { x: 1, y: 1, duration: 0.3, ease: 'back.out(2)' }, 0)
     .to(g, { alpha: 0, duration: 0.35, ease: 'power1.in' }, 0.65);
@@ -171,7 +190,7 @@ export function swirl(parent, dotTex, color) {
   // 注意：補間目標是 state 物件（不在顯示樹上），場景拆除的 killFx 掃不到它——
   // onUpdate 需自我防衛：容器已銷毀就自殺，否則會對 null position 寫入。
   let tw = null;
-  tw = gsap.to(state, {
+  tw = fxTo(state, {
     t: 1,
     duration: 0.9,
     ease: 'power1.out',
@@ -206,7 +225,7 @@ export function emberFall(parent, dotTex, color = EMBER_COLOR) {
     p.x = Math.random() * 56 - 28;
     p.y = -150 - Math.random() * 30;
     cont.addChild(p);
-    gsap.to(p, {
+    fxTo(p, {
       y: -8,
       alpha: 0,
       duration: 0.4 + Math.random() * 0.25,

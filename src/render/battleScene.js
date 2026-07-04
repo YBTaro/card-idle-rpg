@@ -32,8 +32,11 @@ import {
   deathFade,
   resetVisual,
   killFx,
+  fxTl,
+  fxTo,
+  fxDelay,
 } from './fx.js';
-import { casterVfx, targetVfx } from './skillVfx.js';
+import { casterVfx, targetVfx, ultTiming } from './skillVfx.js';
 import { playVoice } from './audio.js';
 
 // 與 style.css 的 --fire/--wind/--water/--light/--dark 同色值。
@@ -55,10 +58,10 @@ const DEPTH_SCALE = [0.8, 0.92, 1.04];
 const ENTRANCE_S = 0.4; // 進場滑入
 const ENTRANCE_STAGGER_S = 0.08;
 // 絕技聚光燈演出（參考原型：全場壓暗、只亮施放者與目標，技能名小標籤貼施放者旁）
-// 收燈為事件/計時混合驅動：施放後保底 CAST 秒；每次命中把「餘韻計時」重設為 IMPACT 秒，
+// 收燈為事件/計時混合驅動：施放後保底（castDelay+緩衝）；每次命中把「餘韻計時」
+// 重設為該技能的 impactTail（skillVfx.ultTiming 依技能資料派生——不同技能不同節奏），
 // 最後一擊的特效播完才收燈；收燈前 director gate 擋住下一個單位的回合。
-const ULT_HOLD_CAST_S = 1.9; // 施放後（尚無命中）保底窗長
-const ULT_HOLD_IMPACT_S = 0.85; // 每次命中後的餘韻（特效播完的時間）
+const ULT_CAST_BUFFER_S = 0.6; // 保底窗＝castDelay + 此緩衝
 const ULT_DIM_ALPHA = 0.66; // 壓暗層不透明度
 const ULT_DIM_IN_S = 0.16;
 const ULT_DIM_OUT_S = 0.35;
@@ -118,9 +121,19 @@ export class BattleScene {
   }
 
   _drawBackground() {
-    // ---- 靜態層（cacheAsTexture）：天幕 / 遠山兩層 / 地面 / 地平線微光 ----
-    const bgStatic = new Container();
-    bgStatic.zIndex = -1000;
+    // ---- 靜態層：烤成 app 層級共用材質（每場重建場景不重烤，開場不卡幀）----
+    if (!this.app._bgTexture) {
+      this.app._bgTexture = this._bakeBackgroundTexture();
+    }
+    const bgSprite = new Sprite(this.app._bgTexture);
+    bgSprite.zIndex = -1000;
+    this.root.addChild(bgSprite);
+
+    this._addAmbientLayers();
+  }
+
+  // 天幕 / 遠山兩層 / 地面 / 地平線微光 → 一張材質。
+  _bakeBackgroundTexture() {
     const bg = new Graphics();
 
     const sky = new FillGradient({
@@ -176,12 +189,16 @@ export class BattleScene {
         .stroke({ color: 0x8a80a8, width: 1, alpha: 0.07 });
     }
 
-    bgStatic.addChild(bg);
-    bgStatic.cacheAsTexture(true);
-    this.root.addChild(bgStatic);
-    this._bgStatic = bgStatic;
+    const tex = this.app.renderer.generateTexture({
+      target: bg,
+      frame: new Rectangle(0, 0, STAGE_W, STAGE_H),
+    });
+    bg.destroy();
+    return tex;
+  }
 
-    // ---- 動態層：雙方元素色柔光 + 微塵粒子 ----
+  // ---- 動態層：雙方元素色柔光 + 微塵粒子 ----
+  _addAmbientLayers() {
     const teamColorOf = (team) => {
       const u = this.setup.find((s) => s.team === team);
       return (u && ELEMENT_COLOR[u.element]) || (team === 0 ? 0xff7d5c : 0x6cb2ff);
@@ -450,12 +467,18 @@ export class BattleScene {
       const g = sprite._bars;
       const hp = this.replayer.hpOf(uid);
       const energy = this.replayer.energyOf(uid);
-      const hpRatio = info.maxHp > 0 ? hp / info.maxHp : 0;
-      const hpColor = hpRatio > 0.5 ? 0x57d77a : hpRatio > 0.25 ? 0xf5c451 : 0xff6b6b;
       const full = energy >= ENERGY_MAX;
-      g.clear();
-      this._bar(g, 0, hpRatio, hpColor, 0x232d26);
-      this._bar(g, 8, Math.min(1, energy / ENERGY_MAX), 0xf5c451, 0x2e2a1c, full ? this._pulse.v : 0);
+      // 條只在數值變化時重繪（能量滿格的脈衝光暈需逐幀）——省掉每幀全場 Graphics 重建
+      const bs = (sprite._barState ??= { hp: -1, energy: -1 });
+      if (hp !== bs.hp || energy !== bs.energy || full) {
+        bs.hp = hp;
+        bs.energy = energy;
+        const hpRatio = info.maxHp > 0 ? hp / info.maxHp : 0;
+        const hpColor = hpRatio > 0.5 ? 0x57d77a : hpRatio > 0.25 ? 0xf5c451 : 0xff6b6b;
+        g.clear();
+        this._bar(g, 0, hpRatio, hpColor, 0x232d26);
+        this._bar(g, 8, Math.min(1, energy / ENERGY_MAX), 0xf5c451, 0x2e2a1c, full ? this._pulse.v : 0);
+      }
 
       const buffs = this.replayer.buffsOf(uid);
       const buffKey = buffs.map((b) => `${b.kind}:${b.stat || b.control || b.element || ''}:${b.neg ? 1 : 0}`).join(',');
@@ -490,7 +513,9 @@ export class BattleScene {
         const info = s._info;
         const color = ELEMENT_COLOR[info.element] ?? 0xffffff;
         // 聚光燈演出：全場壓暗、施放者置頂 + 施法法陣 + 技能名小標籤（貼施放者旁）
-        this._beginUltSpotlight(s, color, SKILLS[skill]?.name ?? skill);
+        const timing = ultTiming(skill);
+        this._ultTail = timing.impactTail; // 每技能不同的命中餘韻
+        this._beginUltSpotlight(s, color, SKILLS[skill]?.name ?? skill, timing.castDelay + ULT_CAST_BUFFER_S);
         if (targetUid != null) this._spotlightTarget(this.sprites.get(targetUid));
         this._ultColor = color;
         ultPulse(s, s._body, color);
@@ -508,7 +533,7 @@ export class BattleScene {
           this._spotlightTarget(s);
           if (skill && skill !== 'normal') targetVfx({ dotTex: this._dotTex }, s, skill, this._ultColor ?? 0xffffff);
           impactBurst(this.fxLayer, s.x, s.y, this._ultColor ?? 0xff8a6a, this._dotTex);
-          this._refreshUltTimer(ULT_HOLD_IMPACT_S);
+          this._refreshUltTimer(this._ultTail ?? 0.5);
         }
         const pushDir = s._info.team === 0 ? -1 : 1;
         hitFlash(s, s._body, pushDir);
@@ -539,7 +564,7 @@ export class BattleScene {
         if (this._ultDim) {
           this._spotlightTarget(s);
           targetVfx({ dotTex: this._dotTex }, s, null, 0x8ef2ae, { heal: true });
-          this._refreshUltTimer(ULT_HOLD_IMPACT_S);
+          this._refreshUltTimer(this._ultTail ?? 0.5);
         }
         spark(this.fxLayer, s.x, this._chestY(s), 0x8ef2ae, this._dotTex, 6);
         const txt = new Text({
@@ -575,14 +600,14 @@ export class BattleScene {
     return !!this._ultDim && entry.type === 'turn';
   }
 
-  // 重設收燈計時（施放時保底 / 每次命中後餘韻）。
+  // 重設收燈計時（施放時保底 / 每次命中後餘韻）；隨戰鬥倍速縮放。
   _refreshUltTimer(delayS) {
     this._ultTimer?.kill();
-    this._ultTimer = gsap.delayedCall(delayS, () => this._endUltSpotlight());
+    this._ultTimer = fxDelay(delayS, () => this._endUltSpotlight());
   }
 
   // ---- 絕技聚光燈：全場壓暗（Z_DIM），施放者/被打目標抬到壓暗層之上 ----
-  _beginUltSpotlight(casterSprite, color, skillName) {
+  _beginUltSpotlight(casterSprite, color, skillName, holdS = 1.5) {
     this._endUltSpotlight(true); // 前一發未收尾就先收
 
     const dim = new Graphics();
@@ -590,7 +615,7 @@ export class BattleScene {
     dim.alpha = 0;
     dim.zIndex = Z_DIM;
     this.root.addChild(dim);
-    gsap.to(dim, { alpha: ULT_DIM_ALPHA, duration: ULT_DIM_IN_S, ease: 'power1.out' });
+    fxTo(dim, { alpha: ULT_DIM_ALPHA, duration: ULT_DIM_IN_S, ease: 'power1.out' });
     this._ultDim = dim;
     this._ultRaised = new Set();
 
@@ -620,12 +645,11 @@ export class BattleScene {
     tag.scale.set(0.6);
     this.fxLayer.addChild(tag);
     this._ultTag = tag;
-    gsap
-      .timeline()
+    fxTl()
       .to(tag, { alpha: 1, duration: 0.14, ease: 'power1.out' }, 0)
       .to(tag.scale, { x: 1, y: 1, duration: 0.24, ease: 'back.out(1.8)' }, 0);
 
-    this._refreshUltTimer(ULT_HOLD_CAST_S);
+    this._refreshUltTimer(holdS);
   }
 
   // 窗內把目標抬到壓暗層之上（施放者保持最上）。
@@ -687,7 +711,7 @@ export class BattleScene {
       if (instant) {
         if (!dim.destroyed) dim.destroy();
       } else {
-        gsap.to(dim, {
+        fxTo(dim, {
           alpha: 0,
           duration: ULT_DIM_OUT_S,
           ease: 'power1.in',
@@ -720,7 +744,6 @@ export class BattleScene {
     }
     killFx(this.fxLayer);
     gsap.killTweensOf(this.root);
-    this._bgStatic?.cacheAsTexture(false);
     this.root.destroy({ children: true });
     this.fxLayer.destroy({ children: true });
     this._dotTex = null; // 共享材質不銷毀（掛在 app 上，跨場景復用）

@@ -91,12 +91,29 @@ export class BattleOverlay {
     this.hideResult();
   }
 
-  // 每 tick 更新（controller 驅動）。
+  // 每 tick 呼叫，但只在值變化時寫 DOM（避免每幀 style/layout 重算、
+  // 也避免血量條的 CSS transition 被連續重啟而永遠走不完）。
   update({ round, hpRatio0, hpRatio1, aliveA, aliveB }) {
-    this.roundEl.textContent = `R${round}`;
-    this.gaugeLeft.style.width = `${Math.max(0, hpRatio0 * 100)}%`;
-    this.gaugeRight.style.width = `${Math.max(0, hpRatio1 * 100)}%`;
-    this.ticker.textContent = `我方 ${aliveA} vs 敵方 ${aliveB}`;
+    const c = (this._cache ??= {});
+    if (round !== c.round) {
+      c.round = round;
+      this.roundEl.textContent = `R${round}`;
+    }
+    const w0 = Math.max(0, Math.round(hpRatio0 * 1000) / 10);
+    if (w0 !== c.w0) {
+      c.w0 = w0;
+      this.gaugeLeft.style.width = `${w0}%`;
+    }
+    const w1 = Math.max(0, Math.round(hpRatio1 * 1000) / 10);
+    if (w1 !== c.w1) {
+      c.w1 = w1;
+      this.gaugeRight.style.width = `${w1}%`;
+    }
+    if (aliveA !== c.aliveA || aliveB !== c.aliveB) {
+      c.aliveA = aliveA;
+      c.aliveB = aliveB;
+      this.ticker.textContent = `我方 ${aliveA} vs 敵方 ${aliveB}`;
+    }
   }
 
   setNotice(text) {
