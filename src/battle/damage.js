@@ -2,7 +2,7 @@
 import { elementMultiplier } from '../data/elements.js';
 
 export const DAMAGE_VARIANCE = 0.1; // ±10% 浮動
-export const DAMAGE_GLOBAL = 1; // 全域傷害係數（調整戰鬥節奏，越高戰鬥越快；依玩家指示調回 1）
+export const DAMAGE_GLOBAL = 1.4; // 全域傷害係數（調整戰鬥節奏，越高戰鬥越快）
 export const CRIT_CHANCE = 0.05; // 暴擊率 5%
 export const CRIT_MULT = 1.5; // 暴擊傷害 1.5x
 export const DEF_SOFTCAP = 120; // 防禦軟上限 K：承傷比例 = K / (K + def)，def = K 時傷害減半

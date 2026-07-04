@@ -71,6 +71,18 @@ export const CARD_ART = {
   lumenvessel: { art: 'assets/cards/lumenvessel.svg', portrait: P },
   voidshade: { art: 'assets/cards/voidshade.svg', portrait: P },
   mireweaver: { art: 'assets/cards/mireweaver.svg', portrait: P },
+  // ---- 機制專職 4 隻 ----
+  veilwalker: { art: 'assets/cards/veilwalker.svg', portrait: P },
+  hawkoracle: { art: 'assets/cards/hawkoracle.svg', portrait: P },
+  terrorweaver: { art: 'assets/cards/terrorweaver.svg', portrait: P },
+  fluxreaver: { art: 'assets/cards/fluxreaver.svg', portrait: P },
+  // ---- 種族號令與補位 6 隻 ----
+  bonemarshal: { art: 'assets/cards/bonemarshal.svg', portrait: P },
+  sylvanqueen: { art: 'assets/cards/sylvanqueen.svg', portrait: P },
+  abysstyrant: { art: 'assets/cards/abysstyrant.svg', portrait: P },
+  rageclaw: { art: 'assets/cards/rageclaw.svg', portrait: P },
+  dawnmother: { art: 'assets/cards/dawnmother.svg', portrait: P },
+  knellwitch: { art: 'assets/cards/knellwitch.svg', portrait: P },
 };
 
 // portrait 焦點 x/y 為 0..1，zoom 為倍率。
