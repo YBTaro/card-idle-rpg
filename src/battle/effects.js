@@ -40,6 +40,7 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
   ctx.emit('damage', {
     source: caster, target, amount: dealt, skill,
     isAdvantage: res.isAdvantage, isDisadvantage: res.isDisadvantage, isCrit: res.isCrit,
+    trueDmg: !!opts.ignoreDef, execute: !!opts.execute, // 演出用旗標（真傷/處決）
   });
   if (!target.alive) ctx.emit('death', { unit: target });
 
@@ -108,14 +109,16 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
       case 'damage': {
         // 處決：目標血量比例低於 executeBelow → 倍率乘 executeBonus
         let mult = effect.mult;
+        let executed = false;
         if (effect.executeBelow != null && u.hpRatio < effect.executeBelow) {
           mult *= effect.executeBonus ?? 1.5;
+          executed = true;
         }
-        const dealt = dealDamage(caster, u, mult, ctx, skillId, { ignoreDef: effect.ignoreDef });
+        const dealt = dealDamage(caster, u, mult, ctx, skillId, { ignoreDef: effect.ignoreDef, execute: executed });
         // 吸血：實際傷害的一定比例回復施放者
         if (effect.lifesteal && dealt > 0 && caster.alive) {
           const healed = caster.heal(Math.round(dealt * effect.lifesteal));
-          if (healed > 0) ctx.emit('heal', { source: caster, target: caster, amount: healed });
+          if (healed > 0) ctx.emit('heal', { source: caster, target: caster, amount: healed, kind: 'lifesteal' });
         }
         break;
       }
@@ -134,7 +137,10 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
       case 'dispel': {
         // what:'debuff' 淨化減益（用在隊友）/ 'buff' 驅散增益（用在敵人）
         const removed = dispelBuffs(u, { negative: effect.what !== 'buff', count: effect.count ?? Infinity });
-        if (removed > 0) emitBuffs(u);
+        if (removed > 0) {
+          ctx.emit('dispel', { unit: u, what: effect.what === 'buff' ? 'buff' : 'debuff', count: removed });
+          emitBuffs(u);
+        }
         break;
       }
       case 'revive':

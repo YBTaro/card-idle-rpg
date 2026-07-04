@@ -39,7 +39,8 @@ import {
   fxTo,
   fxDelay,
 } from './fx.js';
-import { casterVfx, targetVfx, ultTiming } from './skillVfx.js';
+import { casterVfx, targetVfx, ultTiming, thornsBurst, executeSlash, pierceFlash, drainMotes, purifyBurst } from './skillVfx.js';
+import { syncStatusAuras } from './statusAuras.js';
 import { playVoice } from './audio.js';
 
 // 與 style.css 的 --fire/--wind/--water/--light/--dark 同色值。
@@ -530,6 +531,8 @@ export class BattleScene {
         sprite._buffKey = buffKey;
         this._rebuildBuffIcons(sprite, buffs);
       }
+      // 狀態常駐體表特效（護盾罩/荊棘/餘燼…）：死亡或瞬時模式全拆
+      syncStatusAuras(sprite, this._instant || !this.replayer.aliveOf(uid) ? [] : buffs, this._dotTex);
 
       // 跳過/瞬時模式：沒有 death 事件動畫，補終局視覺。
       if (this._instant && !this.replayer.aliveOf(uid) && !this._dead.has(uid)) {
@@ -601,7 +604,7 @@ export class BattleScene {
         playVoice(s._info.cardId, 'ultimate'); // 絕技語音（無音檔＝靜默）
         screenShake(this.root);
       }),
-      rp.on('damage', ({ targetUid, amount, skill, isCrit, isAdvantage, isDisadvantage }) => {
+      rp.on('damage', ({ targetUid, amount, skill, isCrit, isAdvantage, isDisadvantage, trueDmg, execute }) => {
         if (this._instant) return;
         const s = this.sprites.get(targetUid);
         if (!s) return;
@@ -618,11 +621,35 @@ export class BattleScene {
         let text;
         let size;
         let color;
-        if (isCrit) {
+        if (execute) {
+          // 處決：血紅大 X 斬 + 重拍
+          executeSlash(s);
+          text = `處決 ${amount}`;
+          size = 32;
+          color = 0xff4d4d;
+          screenShake(this.root, 6);
+        } else if (isCrit) {
           text = `暴擊 ${amount}`;
           size = 30;
           color = 0xffa940;
           screenShake(this.root, 4);
+        } else if (skill === 'thorns') {
+          // 荊棘反傷：綠刺爆射，浮字標明來源
+          thornsBurst(s);
+          text = `荊棘 ${amount}`;
+          size = 20;
+          color = 0x9dde6a;
+        } else if (skill === 'counter') {
+          // 反擊回敬：亮橙小標
+          text = `反擊 ${amount}`;
+          size = 22;
+          color = 0xffb066;
+        } else if (trueDmg) {
+          // 真實傷害：金白貫穿針
+          pierceFlash(s);
+          text = `${amount}`;
+          size = 24;
+          color = 0xfff2c8;
         } else {
           color = isAdvantage ? 0xffd54a : isDisadvantage ? 0x9aa3b8 : 0xff6b6b;
           size = isAdvantage ? 26 : 20;
@@ -634,21 +661,48 @@ export class BattleScene {
         });
         floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
       }),
-      rp.on('heal', ({ targetUid, amount }) => {
+      rp.on('heal', ({ targetUid, amount, kind }) => {
         if (this._instant) return;
         const s = this.sprites.get(targetUid);
         if (!s) return;
         if (this._ultDim) {
           this._spotlightTarget(s);
-          targetVfx({ dotTex: this._dotTex }, s, null, 0x8ef2ae, { heal: true });
+          if (kind !== 'hot') targetVfx({ dotTex: this._dotTex }, s, null, 0x8ef2ae, { heal: true });
           this._refreshUltTimer(this._ultTail ?? 0.5);
         }
-        spark(this.fxLayer, s.x, this._chestY(s), 0x8ef2ae, this._dotTex, 6);
+        let fill = 0x6bdc8a;
+        let size = 20;
+        if (kind === 'lifesteal') {
+          // 吸血：血色光點收束入體，浮字帶血色
+          drainMotes(s, this._dotTex);
+          fill = 0xe0567a;
+        } else if (kind === 'hot') {
+          // 持續回復跳字：小而輕，不搶普通治療的戲
+          size = 15;
+          spark(this.fxLayer, s.x, this._chestY(s), 0x8ef2ae, this._dotTex, 3);
+        }
+        if (kind !== 'hot') spark(this.fxLayer, s.x, this._chestY(s), kind === 'lifesteal' ? 0xe0567a : 0x8ef2ae, this._dotTex, 6);
         const txt = new Text({
           text: `+${amount}`,
-          style: { fontSize: 20, fill: 0x6bdc8a, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
+          style: { fontSize: size, fill, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
         });
         floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
+      }),
+      rp.on('dispel', ({ uid, what }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(uid);
+        if (!s) return;
+        // 淨化（洗隊友減益）＝白光環；驅散（拆敵方增益）＝紫光環
+        purifyBurst(s, this._dotTex, { hostile: what === 'buff' });
+        if (this._ultDim) {
+          this._spotlightTarget(s);
+          this._refreshUltTimer(this._ultTail ?? 0.5);
+        }
+        const txt = new Text({
+          text: what === 'buff' ? '驅散' : '淨化',
+          style: { fontSize: 18, fill: what === 'buff' ? 0xc9a7ff : 0xf4fbff, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
+        });
+        floatText(this.fxLayer, s.x, this._chestY(s) - 32, txt);
       }),
       rp.on('stunned', ({ uid }) => {
         if (this._instant) return;
@@ -680,6 +734,9 @@ export class BattleScene {
         this._dead.delete(uid);
         resetVisual(s); // 清灰階/傾倒/透明
         if (s._ghost) { s._ghost.hp = this.replayer.hpOf(uid); s._ghost.lastHp = s._ghost.hp; }
+        // 復活演出：金色光柱 + 腳底法陣 + 光屑（比一般治療隆重一級）
+        lightPillar(s, 0xffe3a0);
+        castCircle(s, 0xffd27a, { radius: 40 });
         spark(this.fxLayer, s.x, this._chestY(s), 0x8ef2ae, this._dotTex, 12);
         const txt = new Text({
           text: '復活！',

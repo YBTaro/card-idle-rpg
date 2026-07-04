@@ -2,7 +2,7 @@
 // 動畫節奏層：把 replayer 的事件流按型別時間預算播出。純邏輯，不碰 pixi/gsap。
 export const DELAYS = {
   turn: 0.1, attack: 0.25, ultimate: 1.05, damage: 0.18,
-  heal: 0.15, death: 0.25, stunned: 0.25, revive: 0.45,
+  heal: 0.15, death: 0.25, stunned: 0.25, revive: 0.45, dispel: 0.25,
 };
 
 export class AnimationDirector {

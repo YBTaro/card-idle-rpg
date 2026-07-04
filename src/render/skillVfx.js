@@ -12,6 +12,10 @@ const SHIELD_COLOR = 0x9adcff;
 const TAUNT_COLOR = 0xffd27a;
 const EMBER_COLOR = 0xff9a5c;
 const STUN_COLOR = 0xbb8cff;
+const THORNS_COLOR = 0x9dde6a;
+const COUNTER_COLOR = 0xffb066;
+const EXEC_COLOR = 0xff4d4d;
+const DRAIN_COLOR = 0xe0567a;
 
 const MULTI_TARGETS = new Set(['enemyFrontRow', 'enemyBackRow', 'enemyColumn', 'allEnemies']);
 
@@ -340,6 +344,151 @@ export function emberFall(parent, dotTex, color = EMBER_COLOR) {
   }
 }
 
+// 荊棘爆刺：受擊反傷——綠刺自單位周圍向外彈射。
+export function thornsBurst(parent, color = THORNS_COLOR) {
+  const cont = new Container();
+  cont.y = -60;
+  parent.addChild(cont);
+  const N = 6;
+  for (let i = 0; i < N; i += 1) {
+    const g = new Graphics();
+    g.moveTo(0, -6).lineTo(30, 0).lineTo(0, 6).closePath().fill({ color, alpha: 0.95 });
+    g.moveTo(4, -2.5).lineTo(22, 0).lineTo(4, 2.5).closePath().fill({ color: 0xeaffd0, alpha: 0.9 });
+    g.blendMode = 'add';
+    const a = (i / N) * Math.PI * 2 + Math.random() * 0.5;
+    g.rotation = a;
+    g.x = Math.cos(a) * 16;
+    g.y = Math.sin(a) * 12;
+    g.alpha = 0;
+    cont.addChild(g);
+    fxTl({ onComplete: i === N - 1 ? () => safeDestroy(cont) : undefined })
+      .to(g, { alpha: 1, duration: 0.05 }, 0)
+      .to(g, { x: Math.cos(a) * 52, y: Math.sin(a) * 40, duration: 0.22, ease: 'power3.out' }, 0)
+      .to(g, { alpha: 0, duration: 0.16, ease: 'power1.in' }, 0.18);
+  }
+}
+
+// 處決斬：血紅大 X 交叉斬 + 暗紅震圈——低血補刀的重拍。
+export function executeSlash(parent) {
+  const cont = new Container();
+  cont.y = -70;
+  parent.addChild(cont);
+  const ring = new Graphics();
+  ring.circle(0, 0, 46).stroke({ width: 5, color: EXEC_COLOR, alpha: 0.8 });
+  ring.blendMode = 'add';
+  ring.scale.set(0.3);
+  cont.addChild(ring);
+  for (let i = 0; i < 2; i += 1) {
+    const g = new Graphics();
+    g.roundRect(-64, -6, 128, 12, 6).fill({ color: EXEC_COLOR, alpha: 0.95 });
+    g.roundRect(-52, -2.5, 104, 5, 2.5).fill({ color: 0xffe3d0, alpha: 0.95 });
+    g.blendMode = 'add';
+    g.rotation = i === 0 ? -0.7 : 0.7;
+    g.scale.set(0, 1);
+    cont.addChild(g);
+    fxTl({ delay: i * 0.08, onComplete: i === 1 ? () => safeDestroy(cont) : undefined })
+      .to(g.scale, { x: 1.15, duration: 0.14, ease: 'power4.out' }, 0)
+      .to(g, { alpha: 0, duration: 0.22, ease: 'power1.in' }, 0.16);
+  }
+  fxTl()
+    .to(ring.scale, { x: 1.3, y: 1.3, duration: 0.3, ease: 'power2.out' }, 0.06)
+    .to(ring, { alpha: 0, duration: 0.22 }, 0.18);
+}
+
+// 貫穿閃：真實傷害——金白細針穿透體，無視防禦的「穿甲感」。
+export function pierceFlash(parent) {
+  const cont = new Container();
+  cont.y = -66;
+  parent.addChild(cont);
+  for (let i = 0; i < 3; i += 1) {
+    const g = new Graphics();
+    g.moveTo(-70, 0).lineTo(56, -3).lineTo(70, 0).lineTo(56, 3).closePath().fill({ color: 0xfff2c8, alpha: 0.95 });
+    g.blendMode = 'add';
+    g.rotation = -0.2 + i * 0.2;
+    g.y = (i - 1) * 14;
+    g.scale.set(0, 1);
+    g.pivot.x = -70;
+    g.x = -70;
+    cont.addChild(g);
+    fxTl({ delay: i * 0.05, onComplete: i === 2 ? () => safeDestroy(cont) : undefined })
+      .to(g.scale, { x: 1, duration: 0.1, ease: 'power4.out' }, 0)
+      .to(g, { alpha: 0, x: -40, duration: 0.2, ease: 'power1.in' }, 0.1);
+  }
+}
+
+// 汲取光點：吸血——血色光點自外圈收束進體內（swirl 的反向）。
+export function drainMotes(parent, dotTex, color = DRAIN_COLOR) {
+  if (!dotTex) return;
+  const cont = new Container();
+  cont.y = -64;
+  parent.addChild(cont);
+  const N = 8;
+  const state = { t: 0 };
+  const dots = [];
+  for (let i = 0; i < N; i += 1) {
+    const p = new Sprite(dotTex);
+    p.anchor.set(0.5);
+    p.blendMode = 'add';
+    p.tint = i % 2 ? color : 0xffb8c8;
+    p.scale.set(0.35);
+    cont.addChild(p);
+    dots.push(p);
+  }
+  let tw = null;
+  tw = fxTo(state, {
+    t: 1,
+    duration: 0.55,
+    ease: 'power2.in',
+    onUpdate: () => {
+      if (cont.destroyed) { tw?.kill(); return; }
+      dots.forEach((p, i) => {
+        const a = (i / N) * Math.PI * 2 + state.t * 1.6;
+        const r = 78 * (1 - state.t);
+        p.x = Math.cos(a) * r;
+        p.y = Math.sin(a) * r * 0.6;
+        p.alpha = 0.3 + state.t * 0.7;
+      });
+    },
+    onComplete: () => safeDestroy(cont),
+  });
+}
+
+// 淨化/驅散：白環擴散 + 紫白光屑飛散——把狀態「洗掉」的一瞬。
+export function purifyBurst(parent, dotTex, { hostile = false } = {}) {
+  const color = hostile ? 0xc9a7ff : 0xf4fbff; // 驅散敵增益＝紫、淨化隊友＝白
+  const cont = new Container();
+  cont.y = -62;
+  parent.addChild(cont);
+  const ring = new Graphics();
+  ring.circle(0, 0, 40).stroke({ width: 4, color, alpha: 0.9 });
+  ring.circle(0, 0, 28).stroke({ width: 2, color: 0xffffff, alpha: 0.7 });
+  ring.blendMode = 'add';
+  ring.scale.set(0.2);
+  cont.addChild(ring);
+  fxTl({ onComplete: () => safeDestroy(cont) })
+    .to(ring.scale, { x: 1.5, y: 1.2, duration: 0.32, ease: 'power2.out' }, 0)
+    .to(ring, { alpha: 0, duration: 0.24, ease: 'power1.in' }, 0.16);
+  if (dotTex) {
+    for (let i = 0; i < 6; i += 1) {
+      const p = new Sprite(dotTex);
+      p.anchor.set(0.5);
+      p.blendMode = 'add';
+      p.tint = color;
+      p.scale.set(0.3);
+      p.x = Math.random() * 40 - 20;
+      p.y = Math.random() * 20 - 10;
+      cont.addChild(p);
+      fxTo(p, {
+        x: p.x * 3.2,
+        y: p.y * 2 - 46,
+        alpha: 0,
+        duration: 0.4 + Math.random() * 0.2,
+        ease: 'power1.out',
+      });
+    }
+  }
+}
+
 /* ---------------- 派生器 ---------------- */
 
 // 施放端特效（絕技事件時呼叫）。依「目標樣式」選招式，並瞄準實際目標：
@@ -365,7 +514,10 @@ export function casterVfx({ fxLayer, dotTex, rowMidY = 340, rowSpan = 240 }, spr
     }
   }
   if (types.has('heal')) healRise(sprite, dotTex);
+  if (types.has('hot')) swirl(sprite, dotTex, HEAL_COLOR); // 持續回復：綠色光旋（再生感）
   if (types.has('shield')) shieldDome(sprite);
+  if (types.has('thorns')) shieldDome(sprite, THORNS_COLOR); // 荊棘姿態：綠棘護罩
+  if (types.has('counter')) slashArc(sprite, COUNTER_COLOR, { big: true }); // 反擊姿態：亮橙備斬
   if (def.effects.some((e) => e.control === 'taunt')) shieldDome(sprite, TAUNT_COLOR);
   if (types.has('buff') && !types.has('damage')) swirl(sprite, dotTex, color);
 }

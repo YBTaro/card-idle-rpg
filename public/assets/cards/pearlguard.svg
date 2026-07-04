@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="880" viewBox="0 0 640 880">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#122a4a"/>
+      <stop offset="0.55" stop-color="#2b5a8f"/>
+      <stop offset="1" stop-color="#122a4a"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.42" r="0.55">
+      <stop offset="0" stop-color="#7cc4ff" stop-opacity="0.55"/>
+      <stop offset="0.55" stop-color="#7cc4ff" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#7cc4ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="blade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.5" stop-color="#7cc4ff"/>
+      <stop offset="1" stop-color="#2b5a8f"/>
+    </linearGradient>
+    <linearGradient id="cloak" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#221a3c"/>
+      <stop offset="1" stop-color="#120e22"/>
+    </linearGradient>
+    <radialGradient id="vig" cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0.6" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.55"/>
+    </radialGradient>
+    <filter id="glowF" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowS" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+
+  <rect width="640" height="880" fill="url(#bg)"/>
+  <path d="M0 610 L150 470 L300 600 L450 480 L640 615 Z" fill="#000" opacity="0.28"/>
+  <ellipse cx="320" cy="400" rx="250" ry="270" fill="url(#halo)"/>
+
+  <!-- 地面霧光 -->
+  <ellipse cx="320" cy="712" rx="300" ry="58" fill="#7cc4ff" opacity="0.1" filter="url(#soft)"/>
+
+  <!-- 人物剪影 -->
+  <g>
+    <path d="M320 268 C246 284 210 356 200 470 C190 588 206 648 228 672 L412 672 C434 648 450 588 440 470 C430 356 394 284 320 268 Z"
+          fill="url(#cloak)"/>
+    <path d="M376 262 C416 310 442 386 440 470 C438 520 432 560 424 592"
+          stroke="#7cc4ff" stroke-width="7" fill="none" opacity="0.5" filter="url(#glowS)" stroke-linecap="round"/>
+    
+    <ellipse cx="232" cy="352" rx="42" ry="30" fill="#241b3d"/>
+    <ellipse cx="408" cy="352" rx="42" ry="30" fill="#241b3d"/>
+    <ellipse cx="232" cy="352" rx="42" ry="30" fill="none" stroke="#7cc4ff" stroke-width="3" opacity="0.4"/>
+    <ellipse cx="408" cy="352" rx="42" ry="30" fill="none" stroke="#7cc4ff" stroke-width="3" opacity="0.4"/>
+    <circle cx="320" cy="298" r="60" fill="url(#cloak)"/>
+    <ellipse cx="320" cy="312" rx="42" ry="47" fill="#0c0918"/>
+    <rect x="288" y="306" width="64" height="12" rx="6" fill="#7cc4ff" filter="url(#glowF)"/>
+    
+      <rect x="316" y="200" width="8" height="44" rx="4" fill="#241b3d"/>
+      <circle cx="320" cy="196" r="9" fill="#7cc4ff" filter="url(#glowF)"/>
+      <rect x="286" y="336" width="68" height="5" rx="2.5" fill="#7cc4ff" opacity="0.45"/>
+  </g>
+  
+    <g>
+      <path d="M320 470 L408 505 L408 600 C408 665 370 706 320 726 C270 706 232 665 232 600 L232 505 Z"
+            fill="#2b5a8f" stroke="#b3e6ff" stroke-width="8"/>
+      <path d="M320 492 L390 520 L390 598 C390 650 360 684 320 700 C280 684 250 650 250 598 L250 520 Z"
+            fill="#141024" opacity="0.55"/>
+      <circle cx="320" cy="588" r="30" fill="#7cc4ff" opacity="0.9" filter="url(#glowF)"/>
+      <circle cx="320" cy="588" r="14" fill="#b3e6ff"/>
+    </g>
+  <circle cx="468" cy="469" r="3.0" fill="#b3e6ff" opacity="0.44"/><circle cx="58" cy="593" r="1.6" fill="#b3e6ff" opacity="0.53"/><circle cx="240" cy="695" r="4.3" fill="#b3e6ff" opacity="0.19"/><circle cx="525" cy="248" r="1.8" fill="#b3e6ff" opacity="0.37"/><circle cx="527" cy="460" r="1.5" fill="#b3e6ff" opacity="0.58"/><circle cx="87" cy="172" r="2.9" fill="#b3e6ff" opacity="0.35"/><circle cx="510" cy="541" r="2.1" fill="#b3e6ff" opacity="0.44"/><circle cx="542" cy="243" r="2.0" fill="#b3e6ff" opacity="0.34"/><circle cx="418" cy="238" r="2.1" fill="#b3e6ff" opacity="0.20"/><circle cx="586" cy="111" r="4.5" fill="#b3e6ff" opacity="0.54"/><circle cx="336" cy="556" r="4.2" fill="#b3e6ff" opacity="0.21"/><circle cx="579" cy="296" r="2.3" fill="#b3e6ff" opacity="0.62"/><circle cx="584" cy="520" r="3.6" fill="#b3e6ff" opacity="0.50"/><circle cx="501" cy="623" r="2.8" fill="#b3e6ff" opacity="0.42"/>
+  <rect width="640" height="880" fill="url(#vig)"/>
+</svg>

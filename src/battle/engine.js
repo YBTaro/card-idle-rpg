@@ -137,7 +137,7 @@ export class BattleEngine {
     if (!u.alive) return;
     for (const hot of hotEntries(u)) {
       const healed = u.heal(hot.amount);
-      if (healed > 0) ctx.emit('heal', { source: null, target: u, amount: healed });
+      if (healed > 0) ctx.emit('heal', { source: null, target: u, amount: healed, kind: 'hot' });
     }
     this.emit('turn', { unit: u });
     if (hasControl(u, 'stun')) {
