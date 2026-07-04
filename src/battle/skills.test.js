@@ -11,15 +11,15 @@ const ctxFor = (caster, allies, enemies, events = []) => ({
   emit: (event, payload) => events.push({ event, payload }),
 });
 
-describe('普攻集氣（2026-07 調降後：約每 3 回合一輪絕技）', () => {
-  it('輸出普攻自身 +18、被擊坦克 +12、隊友輔助 +5', () => {
+describe('普攻集氣（2026-07 定案：坦/輔 15、輸出 25、坦受擊 +5、輔隊友 +3）', () => {
+  it('輸出普攻自身 +25、被擊坦克 +5、隊友輔助 +3', () => {
     const dps = makeUnit({ team: 0, pos: 1, class: 'dps' });
     const support = makeUnit({ team: 0, pos: 5, class: 'support' });
     const foeTank = makeUnit({ team: 1, pos: 1, class: 'tank', hp: 99999 });
     normalAttack(dps, ctxFor(dps, [dps, support], [foeTank]));
-    expect(dps.energy).toBe(18);
-    expect(support.energy).toBe(5);
-    expect(foeTank.energy).toBe(12);
+    expect(dps.energy).toBe(25);
+    expect(support.energy).toBe(3);
+    expect(foeTank.energy).toBe(5);
   });
 });
 
