@@ -564,7 +564,8 @@ export class BattleScene {
           s.zIndex = 800;
           meleeDash(s, t.x, t.y, dir);
           fxDelay(0.85, () => {
-            if (!s.destroyed) s.zIndex = s._homeY ?? s.y;
+            // 聚光燈期間被點亮者不在此覆蓋（收燈時會統一還原）
+            if (!s.destroyed && !this._ultRaised?.has(s)) s.zIndex = s._homeY ?? s.y;
           });
         }
       }),
@@ -712,6 +713,11 @@ export class BattleScene {
     this._ultDim = dim;
     this._ultRaised = new Set();
 
+    // 其他單位一律壓回景深層級（突進攻擊的臨時 zIndex=800 可能還沒還原，
+    // 否則上一個攻擊者會浮在壓暗層之上跟著發光）
+    for (const sp of this.sprites.values()) {
+      if (sp !== casterSprite && !sp.destroyed) sp.zIndex = sp._homeY ?? sp.y;
+    }
     casterSprite.zIndex = Z_SPOT_CASTER;
     this._ultRaised.add(casterSprite);
 
