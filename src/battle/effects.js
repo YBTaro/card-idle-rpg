@@ -66,19 +66,29 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
   return dealt;
 }
 
-// DoT：套用預存 damage，直接扣 hp（不吃護盾、不吃暴擊）。
-// 吃 dotTaken 易傷（「增加受到的灼燒傷害%」型 debuff）。
-export function dealDot(target, dot, ctx) {
-  if (!target.alive) return 0;
-  const amount = Math.round(dot.damage * resolve(target, 'dotTaken', 1));
-  const dealt = Math.min(target.hp, amount);
+// ---- 直接傷害（唯一入口）：DoT / 引爆 / 環境侵蝕共用 ----
+// 語義：繞過護盾、不吃暴擊、不觸發受擊回能與反傷。只需要 ctx.emit。
+// 新的「繞盾扣血」效果一律走這裡，不要再開新的 hp -= 路徑。
+export function dealDirect(target, amount, ctx, { skill = 'dot', source = null, flags = {} } = {}) {
+  if (!target.alive || amount <= 0) return 0;
+  const dealt = Math.min(target.hp, Math.round(amount));
   target.hp -= dealt;
   ctx.emit('damage', {
-    source: null, target, amount: dealt, skill: 'dot',
-    isAdvantage: false, isDisadvantage: false, isCrit: false,
+    source, target, amount: dealt, skill,
+    isAdvantage: false, isDisadvantage: false, isCrit: false, ...flags,
   });
   if (!target.alive) ctx.emit('death', { unit: target });
   return dealt;
+}
+
+// ---- 治療量結算（唯一入口）：環境規則 healMul 只在這裡生效 ----
+export function healAmount(ctx, amount) {
+  return Math.round(amount * (ctx.rules?.healMul ?? 1));
+}
+
+// DoT：套用預存 damage。吃 dotTaken 易傷（「增加受到的灼燒傷害%」型 debuff）。
+export function dealDot(target, dot, ctx) {
+  return dealDirect(target, dot.damage * resolve(target, 'dotTaken', 1), ctx, { skill: 'dot' });
 }
 
 // where 條件過濾：series 成員判斷、其餘等值；多鍵 AND；無 where → true。
@@ -125,16 +135,15 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
           executed = true;
         }
         const dealt = dealDamage(caster, u, mult, ctx, skillId, { ignoreDef: effect.ignoreDef, execute: executed });
-        // 吸血：實際傷害的一定比例回復施放者（吃環境治療倍率）
+        // 吸血：實際傷害的一定比例回復施放者
         if (effect.lifesteal && dealt > 0 && caster.alive) {
-          const healed = caster.heal(Math.round(dealt * effect.lifesteal * (ctx.rules?.healMul ?? 1)));
+          const healed = caster.heal(healAmount(ctx, dealt * effect.lifesteal));
           if (healed > 0) ctx.emit('heal', { source: caster, target: caster, amount: healed, kind: 'lifesteal' });
         }
         break;
       }
       case 'heal': {
-        // 環境規則：枯寂遺跡治療減半
-        const healed = u.heal(Math.round(resolvePower(effect, caster, u) * (ctx.rules?.healMul ?? 1)));
+        const healed = u.heal(healAmount(ctx, resolvePower(effect, caster, u)));
         if (healed > 0) ctx.emit('heal', { source: caster, target: u, amount: healed });
         break;
       }
@@ -171,14 +180,8 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         for (const b of targets) total += b.damage * Math.max(1, b.duration ?? 1);
         u.buffs = u.buffs.filter((b) => !targets.includes(b));
         emitBuffs(u);
-        total = Math.round(total * (effect.mult ?? 1) * resolve(u, 'dotTaken', 1));
-        const dealt = Math.min(u.hp, total);
-        u.hp -= dealt;
-        ctx.emit('damage', {
-          source: caster, target: u, amount: dealt, skill: skillId,
-          isAdvantage: false, isDisadvantage: false, isCrit: false, detonate: true,
-        });
-        if (!u.alive) ctx.emit('death', { unit: u });
+        total = total * (effect.mult ?? 1) * resolve(u, 'dotTaken', 1);
+        dealDirect(u, total, ctx, { skill: skillId, source: caster, flags: { detonate: true } });
         break;
       }
       case 'dispel': {

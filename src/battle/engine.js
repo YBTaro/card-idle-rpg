@@ -1,12 +1,48 @@
 // src/battle/engine.js
 // 回合制戰鬥引擎（純邏輯）：固定位置出手序列 + 普攻輪↔技能階段。
+//
+// ═══════════════ 結算順序總表（單一真相來源；改順序＝改這裡＋補測試）═══════════════
+//
+// 【開場】（首次 step，_start）
+//   1. 關卡預設環境宣告（weather → terrain；湧能磁場啟動能量在此觸發）
+//   2. 進場被動照行動序 TURN_SEQUENCE（我1→敵1→我2→敵2…）依序開天氣/場地，後者覆蓋
+//
+// 【每一步】（step）
+//   1. recomputePassives：清全部 aura → 依存活單位被動重建（無累積誤差）
+//   2. applyEnvAuras：當前天氣/場地光環（同為 aura，被覆蓋即換）
+//   3. 進入 普攻輪(_stepNormal) 或 技能階段(_stepSkill)
+//
+// 【回合換算】（普攻輪繞回序列開頭時）
+//   round+1 → 回合上限判定 → 侵蝕之地全體結算（可帶走本動行動者）
+//
+// 【普攻回合】（_act normal；只有普攻算回合）
+//   DoT 結算（可致死→跳過行動）→ HoT 結算 → turn 事件 → 暈眩判定 →
+//   普攻 → 全 buff duration -1、到期移除 → buffchange 同步
+//
+// 【技能施放】（_act skill；免費行動：不結算 DoT/HoT、不遞減 duration）
+//   能量歸零 → castSkill：效果陣列「依序」結算（作者寫的順序＝結算順序，
+//   例：先引爆舊灼燒→再傷害→再點新火）→ 靈壓干擾（castDrain）結算
+//   ＊同時滿氣多人：照 TURN_SEQUENCE 掃描，先掃到先放
+//
+// 【傷害路徑】（只有兩條，不要開第三條）
+//   dealDamage：完整公式＋護盾＋受擊回能＋荊棘/反擊觸發（反傷自身不再連鎖）
+//   dealDirect：繞盾直傷（DoT/引爆/侵蝕共用；不暴擊、不回能、不觸發反傷）
+//
+// 【治療路徑】heal/lifesteal/HoT 全部經 healAmount()（環境 healMul 唯一入口）
+//
+// 【觸發器掛點】（新增觸發型 buff 先看這裡有沒有現成掛點）
+//   受直接攻擊時 → dealDamage 內（thorns/counter）
+//   敵方施放技能後 → _act skill 分支尾（castDrain）
+//   行動前 → _act normal 頭（dot/hot）
+//   回合開始 → _stepNormal 回合換算處（環境侵蝕）
+// ═══════════════════════════════════════════════════════════════════
 import { EventEmitter } from '../core/events.js';
 import { Rng } from '../core/rng.js';
 import { ENERGY_MAX } from './unit.js';
 import { TURN_SEQUENCE } from './positions.js';
 import { normalAttack, castSkill, skillFor } from './skills.js';
 import { tickBuffs, dotEntries, hotEntries, hasControl, summarizeBuffs } from './buffs.js';
-import { dealDot } from './effects.js';
+import { dealDot, dealDirect, healAmount } from './effects.js';
 import { recomputePassives, applyEnvAuras } from './passives.js';
 import { envAurasOf, envRulesOf, TERRAINS } from './environments.js';
 
@@ -124,17 +160,14 @@ export class BattleEngine {
       this.round += 1;
       this.emit('round', { round: this.round });
       if (this.round >= MAX_ROUNDS) { this._endByHp(); return { type: 'timeout', unit }; }
-      // 特殊規則：侵蝕之地——每回合非豁免屬性流失最大生命 %（繞過護盾，與 DoT 同語義）
+      // 特殊規則：侵蝕之地——每回合非豁免屬性流失最大生命 %（走 dealDirect：繞盾直傷唯一入口）
       const decay = this.rules.roundDecay;
       if (decay) {
+        const ctx = { emit: (event, payload) => this.emit(event, payload) };
         for (const u of this.units) {
           if (!u.alive) continue;
           if (decay.exemptElement && u.element === decay.exemptElement) continue;
-          const dmg = Math.max(1, Math.round(u.maxHp * decay.pct));
-          const dealt = Math.min(u.hp, dmg);
-          u.hp -= dealt;
-          this.emit('damage', { source: null, target: u, amount: dealt, skill: 'env', isAdvantage: false, isDisadvantage: false, isCrit: false });
-          if (!u.alive) this.emit('death', { unit: u });
+          dealDirect(u, Math.max(1, u.maxHp * decay.pct), ctx, { skill: 'env' });
         }
         this._checkEnd();
         if (this.over) return { type: 'attack', unit };
@@ -221,7 +254,7 @@ export class BattleEngine {
     for (const dot of dotEntries(u)) dealDot(u, dot, ctx);
     if (!u.alive) return;
     for (const hot of hotEntries(u)) {
-      const healed = u.heal(Math.round(hot.amount * (this.rules.healMul ?? 1)));
+      const healed = u.heal(healAmount(ctx, hot.amount)); // 治療倍率唯一入口
       if (healed > 0) ctx.emit('heal', { source: null, target: u, amount: healed, kind: 'hot' });
     }
     this.emit('turn', { unit: u });
