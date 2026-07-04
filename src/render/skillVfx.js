@@ -72,13 +72,17 @@ export function slashArc(parent, color, { big = false } = {}) {
   }
 }
 
-// 能量橫掃束：從施放者胸口射向敵方陣地的粗光束＋沿束飛散光屑（範圍傷害技）。
-export function beamSweep(fxLayer, fromX, fromY, dir, color, dotTex) {
+// 能量束：從施放者胸口「瞄準目標」射出（打直排用——沿該直排的縱深線）。
+export function beamLane(fxLayer, x0, y0, x1, y1, color, dotTex) {
   const cont = new Container();
-  cont.x = fromX;
-  cont.y = fromY;
+  cont.x = x0;
+  cont.y = y0;
   fxLayer.addChild(cont);
-  const LEN = 620;
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const LEN = Math.hypot(dx, dy) + 130;
+  cont.rotation = Math.atan2(dy, dx);
+
   const core = new Graphics();
   core.roundRect(0, -10, LEN, 20, 10).fill({ color: 0xfff2c8, alpha: 0.9 });
   const halo = new Graphics();
@@ -91,12 +95,10 @@ export function beamSweep(fxLayer, fromX, fromY, dir, color, dotTex) {
     g.scale.set(0, 1);
     cont.addChild(g);
   }
-  cont.rotation = dir > 0 ? 0 : Math.PI;
   const tl = fxTl({ onComplete: () => safeDestroy(cont) })
     .to([core.scale, halo.scale, edge.scale], { x: 1, duration: 0.16, ease: 'power3.out' }, 0)
     .to([core, halo, edge], { alpha: 0, duration: 0.32, ease: 'power1.in' }, 0.3)
     .to(core, { y: -2, duration: 0.1, yoyo: true, repeat: 3, ease: 'sine.inOut' }, 0);
-  // 沿束飛散光屑
   if (dotTex) {
     for (let i = 0; i < 10; i += 1) {
       const p = new Sprite(dotTex);
@@ -119,6 +121,97 @@ export function beamSweep(fxLayer, fromX, fromY, dir, color, dotTex) {
         0.05 + Math.random() * 0.12
       );
     }
+  }
+}
+
+// 火牆：目標縱列升起燃燒之牆（打前排用）——牆體漸層 + 餘燼上竄。
+export function flameWall(fxLayer, x, midY, span, color, dotTex) {
+  const cont = new Container();
+  cont.x = x;
+  cont.y = midY;
+  fxLayer.addChild(cont);
+  const H = span;
+  const W = 74;
+  const wall = new Graphics();
+  wall.roundRect(-W / 2, -H / 2, W, H, W / 2).fill({ color, alpha: 0.28 });
+  wall.roundRect(-W * 0.28, -H / 2 + 10, W * 0.56, H - 20, W * 0.28).fill({ color: 0xfff2c8, alpha: 0.22 });
+  wall.blendMode = 'add';
+  wall.scale.set(1, 0.1);
+  cont.addChild(wall);
+  const tl = fxTl({ onComplete: () => safeDestroy(cont) })
+    .to(wall.scale, { y: 1, duration: 0.22, ease: 'power3.out' }, 0)
+    .to(wall, { alpha: 0, duration: 0.35, ease: 'power1.in' }, 0.45);
+  if (dotTex) {
+    for (let i = 0; i < 10; i += 1) {
+      const p = new Sprite(dotTex);
+      p.anchor.set(0.5);
+      p.blendMode = 'add';
+      p.tint = i % 2 ? color : 0xffd27a;
+      p.scale.set(0.25 + Math.random() * 0.3);
+      p.x = Math.random() * W - W / 2;
+      p.y = H / 2 - Math.random() * H;
+      cont.addChild(p);
+      tl.to(
+        p,
+        { y: p.y - 60 - Math.random() * 60, alpha: 0, duration: 0.4 + Math.random() * 0.3, ease: 'power1.out' },
+        0.06 + Math.random() * 0.15
+      );
+    }
+  }
+}
+
+// 彈幕飛射：拋物線越過前排、砸向後排區域（打後排用）。N 發散射 + 拖尾光點。
+export function volley(fxLayer, x0, y0, x1, y1, color, dotTex) {
+  if (!dotTex) return;
+  const cont = new Container();
+  fxLayer.addChild(cont);
+  const N = 4;
+  let alive = N;
+  for (let i = 0; i < N; i += 1) {
+    const head = new Sprite(dotTex);
+    head.anchor.set(0.5);
+    head.blendMode = 'add';
+    head.tint = 0xfff2c8;
+    head.scale.set(0.7);
+    cont.addChild(head);
+    const trail = new Sprite(dotTex);
+    trail.anchor.set(0.5);
+    trail.blendMode = 'add';
+    trail.tint = color;
+    trail.scale.set(1.1);
+    trail.alpha = 0.45;
+    cont.addChild(trail);
+
+    const tx = x1 + (Math.random() * 90 - 45);
+    const ty = y1 + (Math.random() * 70 - 35);
+    const apexY = Math.min(y0, ty) - 130 - Math.random() * 60; // 拋物線頂點（高過前排）
+    const st = { t: 0 };
+    let tw = null;
+    tw = fxTo(st, {
+      t: 1,
+      duration: 0.38 + Math.random() * 0.1,
+      delay: i * 0.07,
+      ease: 'power1.in',
+      onUpdate: () => {
+        if (cont.destroyed) {
+          tw?.kill();
+          return;
+        }
+        const t = st.t;
+        // 二次貝茲：起點 →（中點上方 apex）→ 落點
+        const mx = (x0 + tx) / 2;
+        const ix = (1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * mx + t * t * tx;
+        const iy = (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * apexY + t * t * ty;
+        trail.x = head.x;
+        trail.y = head.y;
+        head.x = ix;
+        head.y = iy;
+      },
+      onComplete: () => {
+        alive -= 1;
+        if (alive === 0) safeDestroy(cont);
+      },
+    });
   }
 }
 
@@ -241,16 +334,27 @@ export function emberFall(parent, dotTex, color = EMBER_COLOR) {
 
 /* ---------------- 派生器 ---------------- */
 
-// 施放端特效（絕技事件時呼叫）。
-export function casterVfx({ fxLayer, dotTex }, sprite, skillId, color) {
+// 施放端特效（絕技事件時呼叫）。依「目標樣式」選招式，並瞄準實際目標：
+//   直排＝能量束沿縱深線、前排＝目標縱列火牆、後排＝拋物線彈幕越過前排、單體＝突進斬（目標端）。
+// ctx.rowMidY / rowSpan：敵方縱列的視覺中心與跨距（scene 依站位常數提供）。
+export function casterVfx({ fxLayer, dotTex, rowMidY = 340, rowSpan = 240 }, sprite, skillId, color, target = null) {
   const def = SKILLS[skillId];
   if (!def) return;
   const types = new Set(def.effects.map((e) => e.type));
-  const isMulti = MULTI_TARGETS.has(def.target);
 
-  if (types.has('damage') && isMulti) {
+  if (types.has('damage') && MULTI_TARGETS.has(def.target)) {
     const dir = sprite._info.team === 0 ? 1 : -1;
-    beamSweep(fxLayer, sprite.x + dir * 30, sprite.y - 78, dir, color, dotTex);
+    const fromX = sprite.x + dir * 30;
+    const fromY = sprite.y - 78;
+    const tx = target?.x ?? sprite.x + dir * 430;
+    const ty = target ? target.y - 60 : fromY;
+    if (def.target === 'enemyBackRow') {
+      volley(fxLayer, fromX, fromY, tx, rowMidY, color, dotTex);
+    } else if (def.target === 'enemyFrontRow') {
+      flameWall(fxLayer, tx, rowMidY, rowSpan, color, dotTex);
+    } else {
+      beamLane(fxLayer, fromX, fromY, tx + dir * 140, ty, color, dotTex); // 直排 / 全體
+    }
   }
   if (types.has('heal')) healRise(sprite, dotTex);
   if (types.has('shield')) shieldDome(sprite);

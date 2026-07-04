@@ -520,7 +520,19 @@ export class BattleScene {
         this._ultColor = color;
         ultPulse(s, s._body, color);
         castCircle(s, color);
-        casterVfx({ fxLayer: this.fxLayer, dotTex: this._dotTex }, s, skill, color); // 依技能資料派生施放特效
+        // 依技能資料派生施放特效：瞄準主目標；rowMidY/rowSpan＝敵縱列視覺中心/跨距（火牆、彈幕用）
+        casterVfx(
+          {
+            fxLayer: this.fxLayer,
+            dotTex: this._dotTex,
+            rowMidY: GROUND_Y + 40 + 82 - 60,
+            rowSpan: 250,
+          },
+          s,
+          skill,
+          color,
+          targetUid != null ? this.sprites.get(targetUid) : null
+        );
         playVoice(s._info.cardId, 'ultimate'); // 絕技語音（無音檔＝靜默）
         screenShake(this.root);
       }),
