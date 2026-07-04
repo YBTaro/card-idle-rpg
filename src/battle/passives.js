@@ -2,8 +2,9 @@
 import { applyBuff, clearAuras } from './buffs.js';
 import { matchesWhere } from './effects.js';
 
-function countMatching(list, where) {
-  return list.filter((u) => u.alive && matchesWhere(u, where)).length;
+// dead:true → 數陣亡者（不死「亡者之勢」：人越死越強）；預設數存活者。
+function countMatching(list, where, { dead = false } = {}) {
+  return list.filter((u) => (dead ? !u.alive : u.alive) && matchesWhere(u, where)).length;
 }
 
 function conditionHolds(when, owner, teams) {
@@ -30,7 +31,7 @@ function passiveScope(target, owner, teams) {
 function auraValue(effect, owner, teams) {
   if (effect.perCountOf) {
     const list = effect.perCountOf.side === 'enemies' ? teams[owner.team ^ 1] : teams[owner.team];
-    const count = countMatching(list, effect.perCountOf.where);
+    const count = countMatching(list, effect.perCountOf.where, { dead: effect.perCountOf.dead });
     if (effect.op === 'mul') return 1 + (effect.basePct || 0) * count;
     return (effect.valuePer || 0) * count;
   }

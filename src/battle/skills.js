@@ -282,6 +282,25 @@ export const SKILLS = {
     { type: 'damage', mult: 1.6, scope: 'target' },
     { type: 'energySteal', scope: 'target' }, // 奪走全部能量 → 轉給我方能量最低者（可疊出超充）
   ]},
+
+  /* ================= 種族號令與種族補位（種族隊特色承載）=================
+     設計原則：種族限定 buff 數值＞全隊型；每招仍守「一個定位」。 */
+  deathLegion: { name: '亡軍號令', effects: [ // 定位：不死隊長——軍團衝鋒
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies', where: { race: '不死' } },
+    { type: 'energy', amount: 10, scope: 'allAllies', where: { race: '不死' } },
+  ]},
+  sylvanHymn: { name: '森靈頌', effects: [ // 定位：精靈隊長——靈巧（迴避＋集氣＝精靈的種族語言）
+    { type: 'buff', stat: 'dodge', op: 'add', value: 0.15, duration: 2, scope: 'allAllies', where: { race: '精靈' } },
+    { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies', where: { race: '精靈' } },
+  ]},
+  bloodFeast: { name: '血宴', target: 'enemyFrontRow', effects: [ // 定位：妖坦——吸血開席（妖＝汲取）
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'damage', mult: 1.3, scope: 'target', lifesteal: 0.6 },
+  ]},
+  rageRend: { name: '狂怒撕裂', target: 'singleEnemyByColumn', effects: [ // 定位：獸輸出——疊怒（獸＝狂暴）
+    { type: 'damage', mult: 1.6, scope: 'target' },
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.15, duration: 3, scope: 'self', stackable: true }, // 狂怒層：每次施放疊一層
+  ]},
 };
 
 // cardId → skillId
@@ -349,6 +368,11 @@ export const CARD_SKILLS = {
   hawkoracle: 'hawkSight',
   terrorweaver: 'nightTerror',
   fluxreaver: 'energyLeech',
+  // ---- 種族號令與補位（4）----
+  bonemarshal: 'deathLegion',
+  sylvanqueen: 'sylvanHymn',
+  abysstyrant: 'bloodFeast',
+  rageclaw: 'rageRend',
 };
 
 export function skillFor(unit) {

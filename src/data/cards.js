@@ -95,6 +95,17 @@ export const CARDS = {
   hawkoracle: { id: 'hawkoracle', name: '鷹眼哨衛', element: 'light', class: 'support', attackStyle: 'ranged', race: '人', series: ['獵團', '光輝'], base: { hp: 505, atk: 72, def: 43 }, growth: { hp: 55, atk: 8, def: 4 }, passives: [{ target: 'allAllies', effects: [{ stat: 'accuracy', op: 'add', value: 0.05 }] }] },
   terrorweaver: { id: 'terrorweaver', name: '惡夢織主', element: 'dark', class: 'support', attackStyle: 'ranged', race: '妖', series: ['深淵', '影之眷屬'], base: { hp: 505, atk: 73, def: 43 }, growth: { hp: 55, atk: 8, def: 4 }, passives: [{ target: 'allAllies', targetWhere: { race: '妖' }, effects: [{ stat: 'atk', op: 'mul', value: 1.1 }] }] },
   fluxreaver: { id: 'fluxreaver', name: '奪流魅影', element: 'dark', class: 'dps', attackStyle: 'melee', race: '妖', series: ['深淵'], base: { hp: 490, atk: 95, def: 36 }, growth: { hp: 52, atk: 11, def: 3 }, passives: [{ target: 'self', effects: [{ stat: 'energyGain', op: 'mul', value: 1.1 }] }] },
+
+  /* ================= 種族號令與種族補位（4 名）=================
+     種族特色定調（被動與技能圍繞同一個種族語言，不用羈絆系統）：
+       人＝系列協同（吃聖歌隊/鐵壁/光輝等系列紅利，不吃種族紅利）
+       不死＝亡者之勢（人越死越強；同族數量疊加）    精靈＝靈巧（集氣＋迴避）
+       妖＝汲取（吸血/竊能/惡夢）                    獸＝狂暴（低血觸發＋疊怒）
+       機械＝護盾工程、龍＝稀有高壓、神＝稀有輔助（人數不足，之後擴編） */
+  bonemarshal: { id: 'bonemarshal', name: '亡骨元帥', element: 'dark', class: 'support', attackStyle: 'ranged', race: '不死', series: ['影之眷屬', '鐵壁'], base: { hp: 515, atk: 72, def: 45 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'self', effects: [{ stat: 'atk', op: 'mul', basePct: 0.12, perCountOf: { side: 'allies', dead: true } }] }] }, // 亡者之勢：每名陣亡隊友自身攻擊 +12%
+  sylvanqueen: { id: 'sylvanqueen', name: '翠語女王', element: 'wind', class: 'support', attackStyle: 'ranged', race: '精靈', series: ['秘林', '星詠'], base: { hp: 510, atk: 71, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'allAllies', targetWhere: { race: '精靈' }, effects: [{ stat: 'atk', op: 'mul', value: 1.08 }] }] },
+  abysstyrant: { id: 'abysstyrant', name: '魔淵僭主', element: 'dark', class: 'tank', attackStyle: 'melee', race: '妖', series: ['深淵'], base: { hp: 730, atk: 60, def: 71 }, growth: { hp: 82, atk: 6, def: 7 }, passives: [{ target: 'allAllies', targetWhere: { race: '妖' }, effects: [{ stat: 'dmgTaken', op: 'mul', value: 0.95 }] }] },
+  rageclaw: { id: 'rageclaw', name: '裂爪狂熊', element: 'fire', class: 'dps', attackStyle: 'melee', race: '獸', series: ['大地'], base: { hp: 500, atk: 96, def: 36 }, growth: { hp: 54, atk: 11, def: 3 }, passives: [{ when: { selfHpBelow: 0.5 }, target: 'self', effects: [{ stat: 'critChance', op: 'add', value: 0.15 }] }] },
 };
 
 export const CARD_LIST = Object.values(CARDS);

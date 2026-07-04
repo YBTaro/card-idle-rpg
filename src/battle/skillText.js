@@ -205,8 +205,9 @@ export function describePassive(p) {
       if (e.perCountOf) {
         const side = e.perCountOf.side === 'enemies' ? '敵方' : '我方';
         const unitDesc = describeWhere(e.perCountOf.where) || '';
+        const dead = e.perCountOf.dead ? '倒下的' : ''; // 亡者之勢：數陣亡者
         const per = e.op === 'mul' ? `+${pct(e.basePct || 0)}` : `+${pct(e.valuePer || 0)}`;
-        return `${side}每有一名${unitDesc}單位，${who}${statLabel} ${per}`;
+        return `${side}每有一名${dead}${unitDesc}單位，${who}${statLabel} ${per}`;
       }
       return `${who}${statLabel} ${buffDelta(e.op, e.value)}`;
     })
