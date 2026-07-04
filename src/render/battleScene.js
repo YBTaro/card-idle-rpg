@@ -21,6 +21,8 @@ import { SKILLS } from '../battle/skills.js';
 import { cutoutFor } from '../data/assets.js';
 import {
   lunge,
+  meleeDash,
+  bolt,
   hitFlash,
   ultPulse,
   floatText,
@@ -77,6 +79,9 @@ export class BattleScene {
     this._destroyed = false;
     this.root = new Container();
     this.root.sortableChildren = true;
+    // 以畫面中心為軸（終結演出推鏡用；screenShake 的 home 也以此為基準）
+    this.root.pivot.set(STAGE_W / 2, STAGE_H / 2);
+    this.root.position.set(STAGE_W / 2, STAGE_H / 2);
     this.fxLayer = new Container();
     this.sprites = new Map();
     this._unsubs = [];
@@ -445,10 +450,14 @@ export class BattleScene {
     });
   }
 
-  _bar(g, y, ratio, color, bgColor, glow = 0) {
+  _bar(g, y, ratio, color, bgColor, glow = 0, ghostRatio = 0) {
     const x = -BAR_W / 2;
     g.roundRect(x - 1, y - 1, BAR_W + 2, 7, 3.5).fill({ color: 0x0b0d16, alpha: 0.9 });
     g.roundRect(x, y, BAR_W, 5, 2.5).fill(bgColor);
+    // 掉血殘影：剛扣掉的血先以亮白段停留，再追上實際血量（讀傷害量用）
+    if (ghostRatio > ratio) {
+      g.roundRect(x, y, BAR_W * ghostRatio, 5, 2.5).fill({ color: 0xfff0d2, alpha: 0.85 });
+    }
     if (ratio > 0) g.roundRect(x, y, BAR_W * ratio, 5, 2.5).fill(color);
     if (glow > 0) {
       g.roundRect(x - 1, y - 1, BAR_W + 2, 7, 3.5).stroke({ color: 0xffe27a, width: 1.5, alpha: 0.25 + glow * 0.55 });
@@ -461,21 +470,57 @@ export class BattleScene {
   }
 
   renderTick() {
+    // 殘影/預告環需要每幀時間差
+    const now = performance.now();
+    const dt = Math.min(0.05, (now - (this._tickLast ?? now)) / 1000);
+    this._tickLast = now;
+
     for (const [uid, sprite] of this.sprites) {
       const info = sprite._info;
       const g = sprite._bars;
       const hp = this.replayer.hpOf(uid);
       const energy = this.replayer.energyOf(uid);
       const full = energy >= ENERGY_MAX;
-      // 條只在數值變化時重繪（能量滿格的脈衝光暈需逐幀）——省掉每幀全場 Graphics 重建
-      const bs = (sprite._barState ??= { hp: -1, energy: -1 });
-      if (hp !== bs.hp || energy !== bs.energy || full) {
+
+      // 掉血殘影：新傷害 → 殘影停在舊血量 0.28s，再快速追上
+      const gh = (sprite._ghost ??= { hp, hold: 0 });
+      if (hp < gh.hp) {
+        if (gh.hold <= 0) gh.hold = 0.28;
+      } else if (hp > gh.hp) {
+        gh.hp = hp; // 治療直接跟上
+      }
+      if (gh.hold > 0) gh.hold -= dt;
+      else if (gh.hp > hp) gh.hp = Math.max(hp, gh.hp - info.maxHp * 1.8 * dt);
+
+      // 大招預告：能量滿格 → 腳下亮起脈動金環
+      if (full && !sprite._readyRing && this.replayer.aliveOf(uid)) {
+        const ring = new Graphics();
+        ring.ellipse(0, 2, 30, 9).stroke({ width: 2.5, color: 0xffd781, alpha: 0.9 });
+        ring.ellipse(0, 2, 30, 9).fill({ color: 0xffd781, alpha: 0.1 });
+        ring.blendMode = 'add';
+        sprite.addChildAt(ring, 1); // 影之上
+        sprite._readyRing = ring;
+        gsap.to(ring, { alpha: 0.45, duration: 0.5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+        gsap.fromTo(ring.scale, { x: 0.4, y: 0.4 }, { x: 1, y: 1, duration: 0.3, ease: 'back.out(2)' });
+      } else if ((!full || !this.replayer.aliveOf(uid)) && sprite._readyRing) {
+        const ring = sprite._readyRing;
+        sprite._readyRing = null;
+        gsap.killTweensOf(ring);
+        gsap.killTweensOf(ring.scale);
+        if (!ring.destroyed) ring.destroy();
+      }
+
+      // 條只在數值/殘影變化時重繪（能量滿格的脈衝光暈需逐幀）
+      const bs = (sprite._barState ??= { hp: -1, energy: -1, ghost: -1 });
+      if (hp !== bs.hp || energy !== bs.energy || gh.hp !== bs.ghost || full) {
         bs.hp = hp;
         bs.energy = energy;
+        bs.ghost = gh.hp;
         const hpRatio = info.maxHp > 0 ? hp / info.maxHp : 0;
+        const ghostRatio = info.maxHp > 0 ? gh.hp / info.maxHp : 0;
         const hpColor = hpRatio > 0.5 ? 0x57d77a : hpRatio > 0.25 ? 0xf5c451 : 0xff6b6b;
         g.clear();
-        this._bar(g, 0, hpRatio, hpColor, 0x232d26);
+        this._bar(g, 0, hpRatio, hpColor, 0x232d26, 0, ghostRatio);
         this._bar(g, 8, Math.min(1, energy / ENERGY_MAX), 0xf5c451, 0x2e2a1c, full ? this._pulse.v : 0);
       }
 
@@ -498,12 +543,30 @@ export class BattleScene {
   _bindEvents() {
     const rp = this.replayer;
     this._unsubs.push(
-      rp.on('attack', ({ attackerUid }) => {
+      rp.on('attack', ({ attackerUid, targetUid }) => {
         if (this._instant) return;
         const s = this.sprites.get(attackerUid);
         if (!s) return;
-        lunge(s, s._info.team === 0 ? 1 : -1);
+        const dir = s._info.team === 0 ? 1 : -1;
+        const t = targetUid != null ? this.sprites.get(targetUid) : null;
         playVoice(s._info.cardId, 'attack'); // 普攻語音（抽播；無音檔＝靜默）
+        if (!t) {
+          lunge(s, dir);
+          return;
+        }
+        if (s._info.class === 'support') {
+          // 法系/輔助：發射元素光彈（飛行 0.24s，約與 damage 事件同步命中）
+          const color = ELEMENT_COLOR[s._info.element] || 0xffffff;
+          bolt(this.fxLayer, s.x + dir * 24, this._chestY(s), t.x, this._chestY(t), color, this._dotTex);
+          lunge(s, dir);
+        } else {
+          // 近戰：突進到目標面前揮擊（期間抬高 zIndex 蓋過沿路單位）
+          s.zIndex = 800;
+          meleeDash(s, t.x, t.y, dir);
+          fxDelay(0.85, () => {
+            if (!s.destroyed) s.zIndex = s._homeY ?? s.y;
+          });
+        }
       }),
       rp.on('ultimate', ({ casterUid, skill, targetUid }) => {
         if (this._instant) return;
@@ -600,14 +663,33 @@ export class BattleScene {
         if (s && !this._dead.has(uid)) {
           this._dead.add(uid);
           deathFade(s, this._greyFilter);
+          // 終結演出：擊殺最後一名敵人 → hit-stop（事件暫停）+ 推鏡
+          if (s._info.team === 1) {
+            const left = this.setup.filter((u) => u.team === 1 && this.replayer.aliveOf(u.uid)).length;
+            if (left === 0) this._finisher();
+          }
         }
       }),
       rp.on('battleEnd', () => this._endUltSpotlight())
     );
   }
 
-  // director gate：聚光燈亮著時，擋住「下一個單位的回合」——要等特效放完才下一個動作。
+  // 終結演出：凍結事件流 0.85s（gate 全擋）、鏡頭推近再收回——最後一擊的拍點。
+  _finisher() {
+    if (this._finisherHold) return;
+    this._finisherHold = true;
+    this._endUltSpotlight();
+    screenShake(this.root, 9);
+    gsap.to(this.root.scale, { x: 1.12, y: 1.12, duration: 0.45, ease: 'power2.out' });
+    this._finTimer = gsap.delayedCall(0.85, () => {
+      this._finisherHold = false;
+      gsap.to(this.root.scale, { x: 1, y: 1, duration: 0.45, ease: 'power2.inOut' });
+    });
+  }
+
+  // director gate：聚光燈亮著時擋「下一個單位的回合」；終結演出時全擋（hit-stop）。
   gateEvent(entry) {
+    if (this._finisherHold) return true;
     return !!this._ultDim && entry.type === 'turn';
   }
 
@@ -736,12 +818,20 @@ export class BattleScene {
 
   setInstant(v) {
     this._instant = v;
-    if (v) this._endUltSpotlight(true); // 跳過時立即收掉壓暗層
+    if (v) {
+      this._endUltSpotlight(true); // 跳過時立即收掉壓暗層
+      this._finTimer?.kill();
+      this._finisherHold = false;
+      gsap.killTweensOf(this.root.scale);
+      this.root.scale.set(1);
+    }
   }
 
   destroy() {
     this._destroyed = true;
     this._endUltSpotlight(true);
+    this._finTimer?.kill();
+    gsap.killTweensOf(this.root.scale);
     this._unsubs.forEach((fn) => fn());
     this._unsubs = [];
     for (const glow of this._glows) gsap.killTweensOf(glow);

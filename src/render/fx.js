@@ -25,7 +25,74 @@ export function fxDelay(seconds, cb) {
   return gsap.delayedCall(seconds / _fxSpeed, cb);
 }
 
-// 攻擊突刺：後搖預備 → 衝刺 + 前傾 → 彈回。dir = +1（向右）/ -1（向左）
+// 近戰突進：後搖預備 → 衝到目標面前 → 揮擊頓點 → 收招返回。
+// (tx, ty)＝目標腳底；dir＝攻擊朝向。呼叫端負責暫時抬高 zIndex。
+export function meleeDash(sprite, tx, ty, dir) {
+  const hx = sprite._homeX ?? sprite.x;
+  const hy = sprite._homeY ?? sprite.y;
+  sprite._homeX = hx;
+  sprite._homeY = hy;
+  gsap.killTweensOf(sprite, 'x,y,rotation');
+  const ax = tx - dir * 58; // 目標面前一步
+  fxTl()
+    .to(sprite, { x: hx - dir * 14, rotation: -dir * 0.06, duration: 0.09, ease: 'power1.in' }) // 預備後搖
+    .to(sprite, { x: ax, y: ty, rotation: dir * 0.09, duration: 0.16, ease: 'power3.in' }) // 突進
+    .to(sprite, { rotation: -dir * 0.14, duration: 0.07, ease: 'power2.out' }) // 揮擊
+    .to(sprite, { rotation: dir * 0.04, duration: 0.08 }) // 收勢
+    .to(sprite, { x: hx, y: hy, rotation: 0, duration: 0.3, ease: 'power2.inOut' }, '+=0.1'); // 返回
+}
+
+// 遠程光彈：元素色光球（頭+拖尾）自施放者飛向目標，命中時小爆花。
+export function bolt(layer, x0, y0, x1, y1, color, dotTex) {
+  if (!dotTex) return;
+  const head = new Sprite(dotTex);
+  head.anchor.set(0.5);
+  head.blendMode = 'add';
+  head.tint = 0xfff2c8;
+  head.scale.set(0.9);
+  head.x = x0;
+  head.y = y0;
+  const trail = new Sprite(dotTex);
+  trail.anchor.set(0.5);
+  trail.blendMode = 'add';
+  trail.tint = color;
+  trail.scale.set(1.5);
+  trail.alpha = 0.5;
+  trail.x = x0;
+  trail.y = y0;
+  layer.addChild(trail);
+  layer.addChild(head);
+
+  const midY = Math.min(y0, y1) - 26; // 微幅弧線
+  const st = { t: 0 };
+  const finish = () => {
+    gsap.killTweensOf(st);
+    if (!head.destroyed) head.destroy();
+    if (!trail.destroyed) trail.destroy();
+  };
+  fxTo(st, {
+    t: 1,
+    duration: 0.24,
+    ease: 'power1.in',
+    onUpdate: () => {
+      if (head.destroyed) return;
+      const t = st.t;
+      trail.x = head.x;
+      trail.y = head.y;
+      head.x = (1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * ((x0 + x1) / 2) + t * t * x1;
+      head.y = (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * midY + t * t * y1;
+    },
+    onComplete: () => {
+      // 命中小爆花
+      if (!head.destroyed) {
+        spark(layer, x1, y1, color, dotTex, 6);
+      }
+      finish();
+    },
+  });
+}
+
+// 攻擊突刺（後備：找不到目標時的原地前傾）。dir = +1（向右）/ -1（向左）
 export function lunge(sprite, dir) {
   const baseX = sprite._homeX ?? sprite.x;
   sprite._homeX = baseX;
