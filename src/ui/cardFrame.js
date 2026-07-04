@@ -51,6 +51,7 @@ function _artEl(card) {
       src: p.src,
       alt: card.name,
       loading: 'lazy',
+      draggable: 'false', // 擋瀏覽器原生圖片拖曳（否則自訂 pointer 拖曳收不到 move）
       style: `object-position: ${p.x * 100}% ${p.y * 100}%; transform: scale(${p.zoom / 2});`,
     });
     return img;

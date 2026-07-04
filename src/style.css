@@ -46,6 +46,9 @@ html, body {
 
 #app { position: fixed; inset: 0; overflow: hidden; }
 
+/* 全域擋原生圖片拖曳/選取（自訂 pointer 拖曳才收得到事件） */
+img { -webkit-user-drag: none; user-select: none; }
+
 /* ---------- 畫面容器（router 切換） ---------- */
 #screens { position: absolute; inset: 0; }
 .screen { position: absolute; inset: 0; display: none; overflow: hidden; }

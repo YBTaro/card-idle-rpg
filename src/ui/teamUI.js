@@ -185,7 +185,8 @@ export class TeamUI {
 
       const onMove = (ev) => {
         const dy = ev.clientY - sy;
-        if (!ghost && dy < -BENCH_DRAG_UP_PX && Math.abs(dy) > Math.abs(ev.clientX - sx)) {
+        // 只看「有沒有往上拖過閾值」——斜拖也要能起拖（水平位移不設限）
+        if (!ghost && dy < -BENCH_DRAG_UP_PX) {
           ghost = this._makeGhost(item, ev);
         }
         if (ghost) this._moveGhost(ghost, ev);
