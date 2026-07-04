@@ -64,6 +64,13 @@ export const CARD_ART = {
   cryptwidow: { art: 'assets/cards/cryptwidow.svg', portrait: P },
   duskwarden: { art: 'assets/cards/duskwarden.svg', portrait: P },
   soulorganist: { art: 'assets/cards/soulorganist.svg', portrait: P },
+  // ---- 環境使 6 隻 ----
+  sunherald: { art: 'assets/cards/sunherald.svg', portrait: P },
+  rainherald: { art: 'assets/cards/rainherald.svg', portrait: P },
+  galeherald: { art: 'assets/cards/galeherald.svg', portrait: P },
+  lumenvessel: { art: 'assets/cards/lumenvessel.svg', portrait: P },
+  voidshade: { art: 'assets/cards/voidshade.svg', portrait: P },
+  mireweaver: { art: 'assets/cards/mireweaver.svg', portrait: P },
 };
 
 // portrait 焦點 x/y 為 0..1，zoom 為倍率。

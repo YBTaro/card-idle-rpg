@@ -43,12 +43,12 @@ describe('天氣（烈日/暴雨）', () => {
     expect(e.weatherId).toBe('rain');
   });
 
-  it('技能開天氣覆蓋當前（infernoNova 轉烈日）', () => {
-    const caster = makeUnit({ team: 0, pos: 1, cardId: 'ifrit', class: 'dps', energy: 100, element: 'fire' });
+  it('技能開天氣覆蓋當前（曦喚祭司「喚日」轉烈日）', () => {
+    const caster = makeUnit({ team: 0, pos: 1, cardId: 'sunherald', class: 'support', energy: 100, element: 'fire' });
     const foe = makeUnit({ team: 1, pos: 1, hp: 99999 });
     const e = new BattleEngine([caster], [foe], { rng: new Rng(1), env: { weather: 'rain', terrain: null } });
     e.step(); // 普攻（滿氣）→ 中斷
-    e.step(); // 施放焚天 → 天氣轉烈日
+    e.step(); // 喚日 → 天氣轉烈日
     expect(e.weatherId).toBe('sunny');
   });
 });
@@ -89,15 +89,15 @@ describe('場地', () => {
     expect(resolve(b, 'dotTaken', 1)).toBeCloseTo(1.2);
   });
 
-  it('技能中途換場地：晨曲把場地轉為湧能磁場', () => {
-    const singer = makeUnit({ team: 0, pos: 1, cardId: 'dawnharpist', class: 'support', energy: 100 });
-    const ally = makeUnit({ team: 0, pos: 2 });
+  it('技能中途換場地：聚能星使「引磁」把場地轉為湧能磁場', () => {
+    const vessel = makeUnit({ team: 0, pos: 1, cardId: 'lumenvessel', class: 'support', energy: 100, element: 'light' });
+    const ally = makeUnit({ team: 0, pos: 2, element: 'light' });
     const foe = makeUnit({ team: 1, pos: 1, hp: 99999 });
-    const e = new BattleEngine([singer, ally], [foe], { rng: new Rng(1) });
+    const e = new BattleEngine([vessel, ally], [foe], { rng: new Rng(1) });
     e.step(); // 普攻 → 中斷
-    e.step(); // 晨曲：開湧能磁場 + 我方群體充能
+    e.step(); // 引磁：開湧能磁場 + 光屬隊友充能 10
     expect(e.terrainId).toBe('surge');
-    expect(ally.energy).toBeGreaterThanOrEqual(25); // 晨曲自己的充能效果（只給我方）
+    expect(ally.energy).toBeGreaterThanOrEqual(10);
   });
 });
 

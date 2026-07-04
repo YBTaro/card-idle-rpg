@@ -26,7 +26,6 @@ export const SKILLS = {
     ],
   },
   infernoNova: { name: '焚天', target: 'enemyFrontRow', effects: [
-    { type: 'weather', weather: 'sunny' }, // 焚天：天空轉為烈日
     { type: 'damage', mult: 1.8, scope: 'target' },
     { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target' },
   ]},
@@ -40,12 +39,10 @@ export const SKILLS = {
     { type: 'dispel', what: 'buff', count: 1, scope: 'target' },
   ]},
   windsong: { name: '風歌', effects: [
-    { type: 'weather', weather: 'gale' }, // 風歌：喚來颶風
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.5, duration: 3, scope: 'allAllies' },
     { type: 'heal', power: 1.0, scope: 'allAllies' },
   ]},
   tidalPrison: { name: '潮牢', target: 'enemyColumn', effects: [
-    { type: 'weather', weather: 'rain' }, // 潮牢：喚來暴雨
     { type: 'damage', mult: 1.6, scope: 'target' },
     { type: 'control', control: 'freeze', duration: 1, scope: 'target' }, // 困於潮牢：凍結（沉默是光屬專屬，水用凍結）
   ]},
@@ -76,10 +73,9 @@ export const SKILLS = {
      群體充能 / 跨技能互斥減傷罩（key:'guard'）/ 斬殺型高倍率 / 控制鏈 / 攻守交換 */
 
   // ---- 火 ----
-  cinderCombo: { name: '燼滅', target: 'singleEnemyByColumn', effects: [ // 連擊收割：連段後補上處決斬
-    { type: 'damage', mult: 1.0, scope: 'target' },
-    { type: 'damage', mult: 1.0, scope: 'target' },
-    { type: 'damage', mult: 1.0, scope: 'target' },
+  cinderCombo: { name: '燼滅', target: 'singleEnemyByColumn', effects: [ // 連擊收割：雙斬＋處決＋餘燼
+    { type: 'damage', mult: 1.2, scope: 'target' },
+    { type: 'damage', mult: 1.2, scope: 'target' },
     { type: 'damage', mult: 0.8, scope: 'target', executeBelow: 0.3, executeBonus: 2.0 },
     { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target', chance: 0.7 }, // 70% 燃燒 2 回合（同人再上＝回合數疊加）
   ]},
@@ -90,14 +86,12 @@ export const SKILLS = {
   emberWarmth: { name: '餘溫', effects: [
     { type: 'heal', power: 1.2, scope: 'allAllies' },
     { type: 'dispel', what: 'debuff', count: 1, scope: 'allAllies' }, // 淨化
-    { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.15, duration: 2, scope: 'allAllies' },
     { type: 'extend', what: 'dot', element: 'fire', turns: 1, scope: 'allEnemies' }, // 餘燼不熄：敵方灼燒 +1 回合
   ]},
   shellAegis: { name: '殼護', effects: [
     { type: 'thorns', pct: 0.3, duration: 2, scope: 'self' }, // 荊棘反傷
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'shield', power: 2.2, duration: 3, scope: 'self' },
-    { type: 'buff', stat: 'def', op: 'mul', value: 1.3, duration: 2, scope: 'self' },
   ]},
   flameShift: { name: '引火', target: 'enemyColumn', effects: [ // 屬性轉化：敵直排變風屬 → 火隊穩吃剋制
     { type: 'damage', mult: 1.4, scope: 'target' },
@@ -151,14 +145,11 @@ export const SKILLS = {
     { type: 'hot', power: 0.3, duration: 2, scope: 'allAllies' },
     { type: 'buff', stat: 'def', op: 'mul', value: 1.25, duration: 2, scope: 'self' },
   ]},
-  galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [ // 亂舞：每一腿都有一成機率踢暈
+  galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [ // 亂舞三連腿＋終擊 25% 踢暈
     { type: 'damage', mult: 0.9, scope: 'target' },
-    { type: 'control', control: 'stun', duration: 1, scope: 'target', chance: 0.1 },
     { type: 'damage', mult: 0.9, scope: 'target' },
-    { type: 'control', control: 'stun', duration: 1, scope: 'target', chance: 0.1 },
     { type: 'damage', mult: 0.9, scope: 'target' },
-    { type: 'control', control: 'stun', duration: 1, scope: 'target', chance: 0.1 },
-    { type: 'energy', amount: 20, scope: 'self' },
+    { type: 'control', control: 'stun', duration: 1, scope: 'target', chance: 0.25 },
   ]},
 
   // ---- 水 ----
@@ -186,7 +177,6 @@ export const SKILLS = {
   springSurge: { name: '湧泉', effects: [
     { type: 'heal', power: 1.4, scope: 'allAllies' },
     { type: 'hot', power: 0.35, duration: 2, scope: 'allAllies' }, // 持續回復
-    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.85, duration: 2, scope: 'allAllies' },
     { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies', where: { element: 'water' } }, // 水屬共鳴（條件型＞全隊型）
   ]},
   tsunami: { name: '海嘯', target: 'allEnemies', effects: [
@@ -214,7 +204,6 @@ export const SKILLS = {
     { type: 'damage', mult: 1.0, scope: 'target', where: { race: '不死' } }, // 剋不死追打
   ]},
   morningSong: { name: '晨曲', effects: [
-    { type: 'terrain', terrain: 'surge' }, // 晨曲：場地轉為湧能磁場（全體+50能量、光屬集氣+15%）
     { type: 'energy', amount: 25, scope: 'allAllies' }, // 群體充能
     { type: 'energy', amount: 15, scope: 'allAllies', where: { series: '聖歌隊' } }, // 聖歌隊合唱加成
     { type: 'heal', power: 0.7, scope: 'allAllies' },
@@ -240,10 +229,9 @@ export const SKILLS = {
 
   // ---- 暗 ----
   plagueSpread: { name: '瘟疫', target: 'allEnemies', effects: [
-    { type: 'terrain', terrain: 'swamp' }, // 疫沼：場地轉為迷霧沼澤（DoT 加深）
     { type: 'damage', mult: 0.8, scope: 'target' },
     { type: 'damage', mult: 0.6, scope: 'target', where: { race: '人' } }, // 疫病剋人族追打
-    { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 中毒：每跳 15% 最大生命（%HP 制，取消疊層防爆量）
+    { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 中毒：每跳 15% 最大生命
   ]},
   mindGnaw: { name: '蝕心', effects: [
     { type: 'castDrain', amount: 20, duration: 2, scope: 'self', stackable: true }, // 靈壓領域：敵方施法→其餘敵人 -20 能量
@@ -261,7 +249,6 @@ export const SKILLS = {
     { type: 'energy', amount: 15, scope: 'self' }, // 汲取式回能
   ]},
   voidBurst: { name: '虛爆', target: 'enemyColumn', effects: [
-    { type: 'terrain', terrain: 'erosion' }, // 虛空侵蝕：非暗屬每回合流失 10% 最大生命
     { type: 'damage', mult: 1.6, scope: 'target' },
     { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 中毒：每跳 15% 最大生命
   ]},
@@ -279,7 +266,33 @@ export const SKILLS = {
     { type: 'revive', power: 0.35, scope: 'targetIncludingDead' }, // 復活
     { type: 'heal', power: 1.1, scope: 'allAllies' },
     { type: 'heal', power: 0.6, scope: 'allAllies', where: { race: '不死' } }, // 不死族額外治療
-    { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies' },
+  ]},
+
+  /* ================= 環境使專職技（開環境＋至多一個輕量副效果） =================
+     設計原則：開天氣/場地＝戰略級，獨立承載、不與戰鬥效果打包。 */
+  callSun: { name: '喚日', effects: [
+    { type: 'weather', weather: 'sunny' },
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.1, duration: 2, scope: 'allAllies', where: { element: 'fire' } },
+  ]},
+  callRain: { name: '祈雨', effects: [
+    { type: 'weather', weather: 'rain' },
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.1, duration: 2, scope: 'allAllies', where: { element: 'water' } },
+  ]},
+  callGale: { name: '喚風', effects: [
+    { type: 'weather', weather: 'gale' },
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.9, duration: 2, scope: 'allAllies', where: { element: 'wind' } },
+  ]},
+  callSurge: { name: '引磁', effects: [
+    { type: 'terrain', terrain: 'surge' },
+    { type: 'energy', amount: 10, scope: 'allAllies', where: { element: 'light' } },
+  ]},
+  callErosion: { name: '蝕地', target: 'singleEnemyByColumn', effects: [
+    { type: 'terrain', terrain: 'erosion' },
+    { type: 'damage', mult: 1.2, scope: 'target' },
+  ]},
+  callSwamp: { name: '織沼', effects: [
+    { type: 'terrain', terrain: 'swamp' },
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.85, duration: 2, scope: 'self' }, // 匿身霧中
   ]},
 };
 
@@ -336,6 +349,13 @@ export const CARD_SKILLS = {
   cryptwidow: 'webBind',
   duskwarden: 'duskVeil',
   soulorganist: 'requiem',
+  // ---- 環境使（6）----
+  sunherald: 'callSun',
+  rainherald: 'callRain',
+  galeherald: 'callGale',
+  lumenvessel: 'callSurge',
+  voidshade: 'callErosion',
+  mireweaver: 'callSwamp',
 };
 
 export function skillFor(unit) {

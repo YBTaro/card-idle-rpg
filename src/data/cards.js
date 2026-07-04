@@ -78,6 +78,16 @@ export const CARDS = {
   cryptwidow: { id: 'cryptwidow', name: '墓穴寡婦', element: 'dark', class: 'dps', attackStyle: 'melee', race: '不死', series: ['影之眷屬'], base: { hp: 495, atk: 96, def: 37 }, growth: { hp: 53, atk: 11, def: 3 }, passives: [{ target: 'self', effects: [{ stat: 'critChance', op: 'add', valuePer: 0.03, perCountOf: { side: 'allies', where: { race: '不死' } } }] }] },
   duskwarden: { id: 'duskwarden', name: '薄暮守望', element: 'dark', class: 'tank', attackStyle: 'melee', race: '精靈', series: ['秘林'], base: { hp: 715, atk: 60, def: 71 }, growth: { hp: 80, atk: 6, def: 7 }, passives: [{ target: 'allAllies', targetWhere: { race: '精靈' }, effects: [{ stat: 'dmgTaken', op: 'mul', value: 0.92 }] }] },
   soulorganist: { id: 'soulorganist', name: '亡魂琴師', element: 'dark', class: 'support', attackStyle: 'ranged', race: '不死', series: ['影之眷屬', '聖歌隊'], base: { hp: 520, atk: 71, def: 45 }, growth: { hp: 57, atk: 8, def: 5 }, passives: [{ target: 'allAllies', effects: [{ stat: 'atk', op: 'mul', basePct: 0.02, perCountOf: { side: 'allies', where: { race: '不死' } } }] }] },
+
+  /* ================= 環境使（6 名）=================
+     設計原則：開天氣/場地是戰略級效果 → 專職角色承載，技能＝開環境＋至多一個輕量副效果。
+     組隊代價明確：帶環境使＝犧牲一個戰鬥位換整場環境。 */
+  sunherald: { id: 'sunherald', name: '曦喚祭司', element: 'fire', class: 'support', attackStyle: 'ranged', race: '人', series: ['燼火', '聖歌隊'], base: { hp: 510, atk: 70, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'allAllies', targetWhere: { element: 'fire' }, effects: [{ stat: 'atk', op: 'mul', value: 1.08 }] }] },
+  rainherald: { id: 'rainherald', name: '喚雨巫女', element: 'water', class: 'support', attackStyle: 'ranged', race: '人', series: ['潮汐', '星詠'], base: { hp: 510, atk: 70, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'allAllies', targetWhere: { element: 'water' }, effects: [{ stat: 'atk', op: 'mul', value: 1.08 }] }] },
+  galeherald: { id: 'galeherald', name: '喚風行者', element: 'wind', class: 'support', attackStyle: 'ranged', race: '精靈', series: ['疾風', '星詠'], base: { hp: 505, atk: 71, def: 43 }, growth: { hp: 55, atk: 8, def: 4 }, passives: [{ target: 'allAllies', targetWhere: { element: 'wind' }, effects: [{ stat: 'atk', op: 'mul', value: 1.08 }] }] },
+  lumenvessel: { id: 'lumenvessel', name: '聚能星使', element: 'light', class: 'support', attackStyle: 'ranged', race: '神', series: ['星詠', '光輝'], base: { hp: 515, atk: 69, def: 45 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'allAllies', targetWhere: { element: 'light' }, effects: [{ stat: 'energyGain', op: 'mul', value: 1.08 }] }] },
+  voidshade: { id: 'voidshade', name: '蝕域行者', element: 'dark', class: 'dps', attackStyle: 'melee', race: '不死', series: ['深淵', '影之眷屬'], base: { hp: 495, atk: 94, def: 37 }, growth: { hp: 53, atk: 11, def: 3 }, passives: [{ when: { selfHpBelow: 0.5 }, target: 'self', effects: [{ stat: 'dmgDealt', op: 'mul', value: 1.15 }] }] },
+  mireweaver: { id: 'mireweaver', name: '沼澤織者', element: 'dark', class: 'support', attackStyle: 'ranged', race: '妖', series: ['影之眷屬'], base: { hp: 515, atk: 70, def: 45 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'self', effects: [{ stat: 'dmgTaken', op: 'mul', value: 0.9 }] }] },
 };
 
 export const CARD_LIST = Object.values(CARDS);
