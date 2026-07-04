@@ -146,9 +146,13 @@
 
 /* ---- 卡面徽章（TCG 感）：內金線框 + 屬性寶石 + 職業圓章 ---- */
 .cardframe { position: relative; }
-/* 屬性寶石佔左上 → 等級章讓位到右上（deck 卡冊原本把它移到左上，收回） */
-.deck-item .cardframe-lvl { left: auto; right: 0.3rem; top: 1.9rem; }
-.cardframe-lvl { top: 0.3rem; right: 0.3rem; left: auto; }
+/* 等級章：左下名牌上方，與右下職業章對稱（左上讓給屬性寶石、右上讓給出戰緞帶） */
+.cardframe:not(.mini) .cardframe-lvl,
+.deck-item .cardframe-lvl {
+  top: auto; right: auto;
+  left: 5px; bottom: 26px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
 .cardframe-inner {
   position: absolute; inset: 3px; pointer-events: none;
   border: 1px solid rgba(232, 196, 106, 0.28);
