@@ -482,13 +482,12 @@ export class BattleScene {
       const energy = this.replayer.energyOf(uid);
       const full = energy >= ENERGY_MAX;
 
-      // 掉血殘影：新傷害 → 殘影停在舊血量 0.28s，再快速追上
-      const gh = (sprite._ghost ??= { hp, hold: 0 });
-      if (hp < gh.hp) {
-        if (gh.hold <= 0) gh.hold = 0.28;
-      } else if (hp > gh.hp) {
-        gh.hp = hp; // 治療直接跟上
-      }
+      // 掉血殘影：只有「新傷害」（本幀血量比上一幀低）才重置停留 0.28s，
+      // 之後殘影持續收攏直到追上實際血量——不會有白段永遠掛著。
+      const gh = (sprite._ghost ??= { hp, lastHp: hp, hold: 0 });
+      if (hp < gh.lastHp) gh.hold = 0.28;
+      gh.lastHp = hp;
+      if (hp > gh.hp) gh.hp = hp; // 治療直接跟上
       if (gh.hold > 0) gh.hold -= dt;
       else if (gh.hp > hp) gh.hp = Math.max(hp, gh.hp - info.maxHp * 1.8 * dt);
 
