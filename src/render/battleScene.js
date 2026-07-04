@@ -478,6 +478,7 @@ export class BattleScene {
     if (b.kind === 'counter') return '↩';
     if (b.kind === 'castDrain') return '🌀';
     if (b.kind === 'element') return '🔮';
+    if (b.kind === 'nightmare') return '😱';
     if (b.kind === 'control') {
       return b.control === 'silence' ? '🤫' : b.control === 'freeze' ? '❄' : '🎯';
     }
@@ -673,7 +674,7 @@ export class BattleScene {
         playVoice(s._info.cardId, 'ultimate'); // 絕技語音（無音檔＝靜默）
         screenShake(this.root);
       }),
-      rp.on('damage', ({ targetUid, amount, skill, isCrit, isAdvantage, isDisadvantage, trueDmg, execute, detonate }) => {
+      rp.on('damage', ({ targetUid, amount, skill, isCrit, isAdvantage, isDisadvantage, trueDmg, execute, detonate, nightmare }) => {
         if (this._instant) return;
         const s = this.sprites.get(targetUid);
         if (!s) return;
@@ -709,6 +710,11 @@ export class BattleScene {
           size = 30;
           color = 0xffa940;
           screenShake(this.root, 4);
+        } else if (nightmare) {
+          // 惡夢印記加傷：暗紫小標
+          text = `惡夢 ${amount}`;
+          size = 20;
+          color = 0xbb8cff;
         } else if (skill === 'thorns') {
           // 荊棘反傷：綠刺爆射，浮字標明來源
           thornsBurst(s);
@@ -841,6 +847,23 @@ export class BattleScene {
           style: { fontSize: 22, fill: Number(`0x${t.color.slice(1)}`), fontWeight: '800', stroke: { color: 0x000000, width: 4 } },
         });
         floatText(this.fxLayer, STAGE_W / 2, STAGE_H * 0.38, txt);
+      }),
+      rp.on('miss', ({ targetUid }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(targetUid);
+        if (!s) return;
+        // 迴避身體語言：朝後方快速側移再彈回，留一道殘影
+        const dir = s._info.team === 0 ? -1 : 1;
+        gsap.killTweensOf(s, 'x');
+        const x0 = s.x;
+        gsap.timeline()
+          .to(s, { x: x0 + dir * 26, duration: 0.08, ease: 'power2.out' })
+          .to(s, { x: x0, duration: 0.22, ease: 'power2.inOut' });
+        const txt = new Text({
+          text: 'MISS',
+          style: { fontSize: 18, fill: 0xbfe8d8, fontStyle: 'italic', fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
+        });
+        floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
       }),
       rp.on('drain', ({ uid, amount }) => {
         if (this._instant) return;

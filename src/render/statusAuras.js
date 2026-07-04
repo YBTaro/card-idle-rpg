@@ -12,9 +12,11 @@ const COLOR = {
   dotFire: 0xff9a5c,
   dot: 0xc99cff,
   hot: 0x8ef2ae,
-  stun: 0xffd76a,
   silence: 0xbb8cff,
   taunt: 0xffd27a,
+  nightmare: 0x9d7bff,
+  dodge: 0x9be8c0,
+  accuracy: 0xffd76a,
 };
 
 function killTree(cont) {
@@ -159,6 +161,61 @@ function freezeAura() {
   return cont;
 }
 
+// 惡夢印記：三縷暗紫魅影繞頂緩轉——「被夢魘盯上」。
+function nightmareAura() {
+  const cont = new Container();
+  cont.y = -148;
+  const orbit = new Container();
+  cont.addChild(orbit);
+  for (let i = 0; i < 3; i += 1) {
+    const g = new Graphics();
+    g.moveTo(0, -8).bezierCurveTo(5, -3, 5, 3, 0, 8).bezierCurveTo(-5, 3, -5, -3, 0, -8).fill({ color: COLOR.nightmare, alpha: 0.85 });
+    g.blendMode = 'add';
+    const a = (i / 3) * Math.PI * 2;
+    g.x = Math.cos(a) * 26;
+    g.y = Math.sin(a) * 9;
+    orbit.addChild(g);
+  }
+  gsap.to(orbit, { rotation: Math.PI * 2, duration: 3.2, repeat: -1, ease: 'none' });
+  gsap.fromTo(orbit, { alpha: 0.5 }, { alpha: 1, duration: 1.0, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  orbit.scale.y = 0.5;
+  return cont;
+}
+
+// 迴避：身側兩道風痕斜線交替閃現——「抓不到的殘影」。
+function dodgeAura() {
+  const cont = new Container();
+  cont.y = -66;
+  for (let i = 0; i < 2; i += 1) {
+    const g = new Graphics();
+    const side = i === 0 ? -1 : 1;
+    g.moveTo(side * 34, -22).lineTo(side * 46, 6).stroke({ width: 3, color: COLOR.dodge, alpha: 0.85 });
+    g.moveTo(side * 40, -14).lineTo(side * 50, 10).stroke({ width: 2, color: 0xf4fbff, alpha: 0.6 });
+    g.blendMode = 'add';
+    cont.addChild(g);
+    gsap.fromTo(g, { alpha: 0.15 }, { alpha: 0.95, duration: 0.5, yoyo: true, repeat: -1, delay: i * 0.5, ease: 'sine.inOut' });
+  }
+  return cont;
+}
+
+// 命中：頭頂金色瞄準環（圓 + 十字刻度）緩轉——「無所遁形」。
+function accuracyAura() {
+  const cont = new Container();
+  cont.y = -152;
+  const g = new Graphics();
+  g.circle(0, 0, 12).stroke({ width: 2, color: COLOR.accuracy, alpha: 0.9 });
+  for (const a of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) {
+    g.moveTo(Math.cos(a) * 8, Math.sin(a) * 8).lineTo(Math.cos(a) * 15, Math.sin(a) * 15)
+      .stroke({ width: 2, color: COLOR.accuracy, alpha: 0.9 });
+  }
+  g.circle(0, 0, 2.5).fill({ color: 0xfff2c8, alpha: 0.95 });
+  g.blendMode = 'add';
+  cont.addChild(g);
+  gsap.to(g, { rotation: Math.PI * 2, duration: 5, repeat: -1, ease: 'none' });
+  gsap.fromTo(g, { alpha: 0.5 }, { alpha: 1, duration: 0.9, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  return cont;
+}
+
 // 嘲諷：腳底金色挑釁環脈動。
 function tauntAura() {
   const cont = new Container();
@@ -184,6 +241,9 @@ function auraKeysOf(buffs) {
     else if (b.kind === 'dot') keys.add(b.element === 'fire' ? 'dot:fire' : 'dot');
     else if (b.kind === 'hot') keys.add('hot');
     else if (b.kind === 'castDrain') keys.add('castDrain');
+    else if (b.kind === 'nightmare') keys.add('nightmare');
+    else if (b.kind === 'stat' && b.stat === 'dodge' && !b.neg) keys.add('dodge');
+    else if (b.kind === 'stat' && b.stat === 'accuracy' && !b.neg) keys.add('accuracy');
     else if (b.kind === 'control') keys.add(`control:${b.control}`);
   }
   return keys;
@@ -198,6 +258,9 @@ function buildAura(key, sprite, dotTex) {
     case 'dot': return risingMotes(dotTex, COLOR.dot, { speed: 1.3 });
     case 'hot': return risingMotes(dotTex, COLOR.hot);
     case 'castDrain': return castDrainAura();
+    case 'nightmare': return nightmareAura();
+    case 'dodge': return dodgeAura();
+    case 'accuracy': return accuracyAura();
     case 'control:freeze': return freezeAura();
     case 'control:silence': return silenceAura();
     case 'control:taunt': return tauntAura();

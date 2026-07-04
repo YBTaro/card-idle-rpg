@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 import { SKILLS } from './skills.js';
 
 // 會掛在單位身上、持續存在的效果型別（傷害/治療/能量等瞬發不計）
-const STATUS_TYPES = new Set(['buff', 'dot', 'hot', 'shield', 'control', 'thorns', 'counter', 'castDrain', 'transmute']);
+const STATUS_TYPES = new Set(['buff', 'dot', 'hot', 'shield', 'control', 'thorns', 'counter', 'castDrain', 'transmute', 'nightmare']);
 
 describe('技能治理', () => {
   it('環境技專職：開天氣/場地的技能，副效果最多 1 條', () => {

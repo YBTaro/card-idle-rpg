@@ -16,22 +16,26 @@
 //   round+1 → 回合上限判定 → 侵蝕之地全體結算（可帶走本動行動者）
 //
 // 【普攻回合】（_act normal；只有普攻算回合）
-//   DoT 結算（可致死→跳過行動）→ HoT 結算 → turn 事件 → 暈眩判定 →
-//   普攻 → 全 buff duration -1、到期移除 → buffchange 同步
+//   DoT 結算（可致死→跳過行動）→ HoT 結算 → turn 事件 → 沉默判定 →
+//   普攻（過命中判定）→ 全 buff duration -1、到期移除 → buffchange 同步
 //
 // 【技能施放】（_act skill；免費行動：不結算 DoT/HoT、不遞減 duration）
 //   能量歸零 → castSkill：效果陣列「依序」結算（作者寫的順序＝結算順序，
 //   例：先引爆舊灼燒→再傷害→再點新火）→ 靈壓干擾（castDrain）結算
 //   ＊同時滿氣多人：照 TURN_SEQUENCE 掃描，先掃到先放
 //
+// 【命中判定】（effects.rollHit 唯一入口）
+//   敵對的攻擊與上狀態效果「每段」獨立判定：機率 = 1 ＋ 施放者命中 − 目標迴避（夾 0..1）
+//   對我方效果恆 100%；DoT 跳傷/荊棘/反擊/侵蝕/瞬發操作（dispel/extend/引爆）不判定
+//
 // 【傷害路徑】（只有兩條，不要開第三條）
-//   dealDamage：完整公式＋護盾＋受擊回能＋荊棘/反擊觸發（反傷自身不再連鎖）
-//   dealDirect：繞盾直傷（DoT/引爆/侵蝕共用；不暴擊、不回能、不觸發反傷）
+//   dealDamage：完整公式＋護盾＋受擊回能＋惡夢印記加傷＋荊棘/反擊觸發（反傷自身不再連鎖）
+//   dealDirect：繞盾直傷（DoT/引爆/侵蝕/惡夢共用；不暴擊、不回能、不觸發反傷）
 //
 // 【治療路徑】heal/lifesteal/HoT 全部經 healAmount()（環境 healMul 唯一入口）
 //
 // 【觸發器掛點】（新增觸發型 buff 先看這裡有沒有現成掛點）
-//   受直接攻擊時 → dealDamage 內（thorns/counter）
+//   受直接攻擊時 → dealDamage 內（thorns/counter/nightmare 惡夢印記）
 //   敵方施放技能後 → _act skill 分支尾（castDrain）
 //   行動前 → _act normal 頭（dot/hot）
 //   回合開始 → _stepNormal 回合換算處（環境侵蝕）

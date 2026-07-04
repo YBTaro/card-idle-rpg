@@ -1,7 +1,7 @@
 // src/battle/skills.js
 // 技能即資料：SKILLS registry + castSkill。普攻與傷害共用 effects.dealDamage。
 import { singleEnemyByColumn, SELECTORS } from './targeting.js';
-import { dealDamage, resolveScope, applyEffect } from './effects.js';
+import { dealDamage, resolveScope, applyEffect, rollHit } from './effects.js';
 
 // 技能資料（占位平衡值）。所有 power = % × 施放者 effAtk（見 spec 數值約定）。
 export const SKILLS = {
@@ -266,6 +266,18 @@ export const SKILLS = {
     { type: 'terrain', terrain: 'swamp' },
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.85, duration: 2, scope: 'self' }, // 匿身霧中
   ]},
+
+  /* ================= 迴避／命中／惡夢 專職（機制承載卡） ================= */
+  mirageVeil: { name: '蜃影', effects: [ // 定位：全隊迴避——敵方攻擊與上狀態每段 20% 落空
+    { type: 'buff', stat: 'dodge', op: 'add', value: 0.2, duration: 2, scope: 'allAllies' },
+  ]},
+  hawkSight: { name: '鷹眼', effects: [ // 定位：反迴避 counter-pick——抵銷敵方迴避
+    { type: 'buff', stat: 'accuracy', op: 'add', value: 0.3, duration: 2, scope: 'allAllies' },
+  ]},
+  nightTerror: { name: '惡夢烙印', target: 'singleEnemyByColumn', effects: [ // 定位：單體永久印記（可淨化）
+    { type: 'damage', mult: 1.5, scope: 'target' },
+    { type: 'nightmare', pct: 0.05, scope: 'target' }, // 受普攻/技能直傷時額外損失 5% 最大生命
+  ]},
 };
 
 // cardId → skillId
@@ -328,6 +340,10 @@ export const CARD_SKILLS = {
   lumenvessel: 'callSurge',
   voidshade: 'callErosion',
   mireweaver: 'callSwamp',
+  // ---- 機制專職（3）----
+  veilwalker: 'mirageVeil',
+  hawkoracle: 'hawkSight',
+  terrorweaver: 'nightTerror',
 };
 
 export function skillFor(unit) {
@@ -351,7 +367,11 @@ export function normalAttack(caster, ctx) {
   const target = singleEnemyByColumn(caster, ctx.enemies);
   if (!target) return;
   ctx.emit('attack', { attacker: caster, target, skill: 'normal' });
-  dealDamage(caster, target, 1.0, ctx, 'normal');
+  if (rollHit(caster, target, ctx)) {
+    dealDamage(caster, target, 1.0, ctx, 'normal');
+  } else {
+    ctx.emit('miss', { source: caster, target, skill: 'normal' }); // 迴避：整次普攻無效（仍照常回能）
+  }
   caster.gainEnergy(caster.classDef.energyOnAction);
   ctx.emit('energy', { unit: caster, value: caster.energy });
   for (const ally of ctx.allies) {

@@ -36,6 +36,8 @@ const STAT_LABEL = {
   dmgTaken: '承受傷害',
   dotTaken: '受到的持續傷害',
   energyGain: '集氣速度',
+  dodge: '迴避率',
+  accuracy: '命中率',
 };
 
 const CONTROL_LABEL = { taunt: '嘲諷', silence: '沉默（無法行動）', freeze: '凍結（無法回能）' };
@@ -108,6 +110,9 @@ function describeEffect(effect, targetLabel) {
       break;
     case 'transmute':
       text = `將${who}轉化為自身剋制的屬性${dur(effect.duration)}`;
+      break;
+    case 'nightmare':
+      text = `對${who}烙上惡夢印記（受到普攻或技能直接傷害時，額外損失 ${pct(effect.pct ?? 0.05)} 最大生命；永久，可被淨化）`;
       break;
     case 'castDrain':
       text = `展開靈壓領域（敵方施放技能時，其餘敵人能量 -${effect.amount ?? 20}${dur(effect.duration)}）`;

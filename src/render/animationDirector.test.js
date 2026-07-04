@@ -52,7 +52,7 @@ describe('AnimationDirector', () => {
     expect(DELAYS).toEqual({
       turn: 0.1, attack: 0.25, ultimate: 1.05, damage: 0.18,
       heal: 0.15, death: 0.25, stunned: 0.25, revive: 0.45, dispel: 0.25,
-      weather: 0.55, terrain: 0.55, drain: 0.12,
+      weather: 0.55, terrain: 0.55, drain: 0.12, miss: 0.22,
     });
   });
 });

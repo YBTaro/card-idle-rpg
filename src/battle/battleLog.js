@@ -20,12 +20,13 @@ export function simulateBattle(teamA, teamB, { rng, env = null } = {}) {
   engine.on('energy', ({ unit, value }) => log.push({ type: 'energy', uid: uidOf(unit), value }));
   engine.on('attack', ({ attacker, target, skill }) => log.push({ type: 'attack', attackerUid: uidOf(attacker), targetUid: uidOf(target), skill }));
   engine.on('ultimate', ({ caster, skill, target }) => log.push({ type: 'ultimate', casterUid: uidOf(caster), skill, targetUid: uidOf(target) }));
-  engine.on('damage', (p) => log.push({ type: 'damage', sourceUid: uidOf(p.source), targetUid: uidOf(p.target), amount: p.amount, skill: p.skill, isAdvantage: !!p.isAdvantage, isDisadvantage: !!p.isDisadvantage, isCrit: !!p.isCrit, trueDmg: !!p.trueDmg, execute: !!p.execute, detonate: !!p.detonate }));
+  engine.on('damage', (p) => log.push({ type: 'damage', sourceUid: uidOf(p.source), targetUid: uidOf(p.target), amount: p.amount, skill: p.skill, isAdvantage: !!p.isAdvantage, isDisadvantage: !!p.isDisadvantage, isCrit: !!p.isCrit, trueDmg: !!p.trueDmg, execute: !!p.execute, detonate: !!p.detonate, nightmare: !!p.nightmare }));
   engine.on('heal', (p) => log.push({ type: 'heal', sourceUid: uidOf(p.source), targetUid: uidOf(p.target), amount: p.amount, kind: p.kind ?? null }));
   engine.on('dispel', (p) => log.push({ type: 'dispel', uid: uidOf(p.unit), what: p.what, count: p.count }));
   engine.on('death', ({ unit }) => log.push({ type: 'death', uid: uidOf(unit) }));
   engine.on('revive', ({ unit, hp }) => log.push({ type: 'revive', uid: uidOf(unit), hp }));
   engine.on('stunned', ({ unit, reason }) => log.push({ type: 'stunned', uid: uidOf(unit), reason: reason ?? 'silence' }));
+  engine.on('miss', ({ source, target, skill }) => log.push({ type: 'miss', sourceUid: uidOf(source), targetUid: uidOf(target), skill }));
   engine.on('buffchange', ({ unit, buffs }) => log.push({ type: 'buffchange', uid: uidOf(unit), buffs: buffs ?? [] }));
   engine.on('battleEnd', ({ winner }) => log.push({ type: 'battleEnd', winner }));
 

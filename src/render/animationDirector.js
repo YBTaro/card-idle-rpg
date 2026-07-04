@@ -4,6 +4,7 @@ export const DELAYS = {
   turn: 0.1, attack: 0.25, ultimate: 1.05, damage: 0.18,
   heal: 0.15, death: 0.25, stunned: 0.25, revive: 0.45, dispel: 0.25,
   weather: 0.55, terrain: 0.55, drain: 0.12, // 環境宣告要有拍點；能量抽取快速連跳
+  miss: 0.22, // 迴避：側移殘影 + MISS 飄字要看得清
 };
 
 export class AnimationDirector {

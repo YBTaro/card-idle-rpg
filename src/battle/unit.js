@@ -72,6 +72,8 @@ export class Unit {
   get dmgTakenMult() { return resolve(this, 'dmgTaken', 1); }
   get dmgDealtMult() { return resolve(this, 'dmgDealt', 1); }
   get energyGainMult() { return resolve(this, 'energyGain', 1); }
+  get dodge() { return clamp01(resolve(this, 'dodge', 0)); } // 迴避率：基礎 0，只能靠技能/被動
+  get accuracy() { return resolve(this, 'accuracy', 0); } // 命中率加成：抵銷目標迴避
 
   gainEnergy(amount) {
     if (hasControl(this, 'freeze')) return; // 凍結：無法回能（扣能量不受影響）

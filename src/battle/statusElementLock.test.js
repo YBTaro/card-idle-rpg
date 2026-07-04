@@ -49,6 +49,15 @@ describe('屬性狀態鎖（暫時）', () => {
     }
   });
 
+  it('惡夢印記（nightmare）只出現在暗屬角色技能', () => {
+    for (const { element, skill, cardId } of entries) {
+      for (const fx of skill.effects) {
+        if (fx.type !== 'nightmare') continue;
+        expect({ cardId, element }).toEqual({ cardId, element: 'dark' });
+      }
+    }
+  });
+
   it('易傷（敵方 dmgTaken 增加）只出現在風屬角色技能', () => {
     for (const { element, skill, cardId } of entries) {
       for (const fx of skill.effects) {

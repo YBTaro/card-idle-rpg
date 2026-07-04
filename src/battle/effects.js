@@ -30,6 +30,20 @@ export function resolveScope(scope, caster, primary, ctx) {
   }
 }
 
+// ---- 命中判定（唯一入口）----
+// 只對敵對目標判定；命中機率 = 1 ＋ 施放者命中率 − 目標迴避率（夾 0..1）。
+// 對我方的效果永遠 100%。DoT 跳傷/荊棘/反擊/侵蝕不經此判定（狀態已成立或屬反應）。
+export function rollHit(caster, target, ctx) {
+  if (!caster || caster.team === target.team) return true;
+  const chance = Math.max(0, Math.min(1, 1 + resolve(caster, 'accuracy', 0) - resolve(target, 'dodge', 0)));
+  if (chance >= 1) return true;
+  const roll = ctx.rng ? ctx.rng.next() : Math.random();
+  return roll < chance;
+}
+
+// 可被迴避的效果型別：攻擊與「上狀態」；瞬發操作類（dispel/extend/detonateDot/energy）不判定。
+const DODGEABLE = new Set(['damage', 'dot', 'control', 'buff', 'transmute', 'nightmare']);
+
 // 共用傷害：走完整公式、護盾/hp、被擊回能、事件。
 // opts.ignoreDef＝無視防禦；opts.noRetaliate＝不觸發荊棘/反擊（避免連鎖遞迴）。
 export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}) {
@@ -43,6 +57,12 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
     trueDmg: !!opts.ignoreDef, execute: !!opts.execute, // 演出用旗標（真傷/處決）
   });
   if (!target.alive) ctx.emit('death', { unit: target });
+
+  // 惡夢印記：受普攻/技能直接傷害後額外損失 pct 最大生命（DoT/引爆/侵蝕不觸發）
+  if (dealt > 0 && target.alive) {
+    const nm = (target.buffs || []).filter((b) => b.kind === 'nightmare').reduce((s, b) => s + b.pct, 0);
+    if (nm > 0) dealDirect(target, target.maxHp * nm, ctx, { skill: 'nightmare', source: caster, flags: { nightmare: true } });
+  }
 
   // 受擊觸發（直接攻擊才觸發；反傷/反擊本身不再連鎖）
   if (!opts.noRetaliate && dealt > 0 && caster) {
@@ -120,6 +140,11 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
   // 技能資料可用 key 讓跨技能互斥（如 'guard'），或 stackable:true 明示可疊層。
   const defaultKey = (kindTag) => effect.key ?? `${skillId}:${kindTag}`;
   for (const u of targets) {
+    // 命中判定（迴避）：敵對的攻擊與上狀態「每段」獨立判定，閃掉＝該段對此目標無效
+    if (DODGEABLE.has(effect.type) && caster && u.team !== caster.team && !rollHit(caster, u, ctx)) {
+      ctx.emit('miss', { source: caster, target: u, skill: skillId });
+      continue;
+    }
     // 機率觸發：每個目標獨立擲骰，未中則此效果跳過該目標
     if (effect.chance != null) {
       const roll = ctx.rng ? ctx.rng.next() : Math.random();
@@ -277,6 +302,10 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
           kind: 'control', control: effect.control,
           duration: effect.duration, key: defaultKey(`control:${effect.control}`), stackable: effect.stackable,
         });
+        emitBuffs(u);
+        break;
+      case 'nightmare': // 惡夢印記：永久（無 duration、不隨回合消退）、可被淨化；觸發見 dealDamage
+        applyBuff(u, { kind: 'nightmare', pct: effect.pct ?? 0.05, key: defaultKey('nightmare') });
         emitBuffs(u);
         break;
     }
