@@ -111,6 +111,59 @@ export class BattleScene {
     this._drawWeather(this.env?.weather ?? null);
     this._buildUnits();
     this._bindEvents();
+    this._showBattleStart(); // 開場橫幅；director 的 initialDelay 讓開場宣告不搶拍
+  }
+
+  // 開場橫幅：金字大標打入 → 停半拍 → 淡出（director 初始延遲期間播完）。
+  _showBattleStart() {
+    const txt = new Text({
+      text: '⚔ 戰鬥開始',
+      style: { fontSize: 36, fill: 0xffe9b0, fontWeight: '900', letterSpacing: 8, stroke: { color: 0x000000, width: 6 } },
+    });
+    txt.anchor.set(0.5);
+    txt.x = STAGE_W / 2;
+    txt.y = STAGE_H * 0.34;
+    txt.alpha = 0;
+    txt.scale.set(1.6);
+    this.fxLayer.addChild(txt);
+    fxTl({ onComplete: () => { if (!txt.destroyed) txt.destroy(); } })
+      .to(txt, { alpha: 1, duration: 0.16, ease: 'power2.out' }, 0)
+      .to(txt.scale, { x: 1, y: 1, duration: 0.28, ease: 'back.out(2)' }, 0)
+      .to(txt, { alpha: 0, y: txt.y - 26, duration: 0.35, ease: 'power1.in' }, 0.75);
+  }
+
+  // 環境宣告演出：開場進場被動與戰中技能開天氣/場地共用——
+  // 半拍壓暗＋宣告者光柱抬亮＋全場大字橫幅，「看得清是誰開的、蓋掉了什麼」。
+  // 宣告之間的節奏由 DELAYS.weather/terrain（1.25s）拉開，互蓋依事件順序逐一亮相。
+  _envAnnounce(uid, colorHex, title) {
+    const color = Number(`0x${colorHex.slice(1)}`);
+    const dim = new Graphics();
+    dim.rect(0, 0, STAGE_W, STAGE_H).fill({ color: 0x05060c, alpha: 1 });
+    dim.alpha = 0;
+    dim.zIndex = Z_DIM;
+    this.root.addChild(dim);
+    fxTl({ onComplete: () => { if (!dim.destroyed) dim.destroy({ children: true }); } })
+      .to(dim, { alpha: 0.4, duration: 0.16, ease: 'power1.out' }, 0)
+      .to(dim, { alpha: 0, duration: 0.45, ease: 'power1.in' }, 0.72);
+    const s = uid != null ? this.sprites.get(uid) : null;
+    if (s && !s.destroyed) {
+      s.zIndex = Z_SPOT_CASTER; // 宣告者抬到壓暗層之上
+      const pillar = lightPillar(s, color); // 內含 repeat:-1 呼吸——呼叫方負責限時回收
+      fxDelay(1.15, () => {
+        if (!s.destroyed) s.zIndex = s._homeY ?? s.y;
+        if (!pillar.destroyed) {
+          killFx(pillar);
+          gsap.killTweensOf(pillar);
+          gsap.killTweensOf(pillar.scale);
+          pillar.destroy({ children: true });
+        }
+      });
+    }
+    const txt = new Text({
+      text: title,
+      style: { fontSize: 30, fill: color, fontWeight: '900', letterSpacing: 3, stroke: { color: 0x000000, width: 5 } },
+    });
+    floatText(this.fxLayer, STAGE_W / 2, STAGE_H * 0.3, txt);
   }
 
   // 天氣氛圍層：頂部灑下天氣色柔光 + 緩慢飄落/上升的光屑（低調，不搶戰鬥戲）。
@@ -825,7 +878,14 @@ export class BattleScene {
         resetVisual(s); // 清灰階/傾倒/透明
         if (s._ghost) { s._ghost.hp = this.replayer.hpOf(uid); s._ghost.lastHp = s._ghost.hp; }
         // 復活演出：金色光柱 + 腳底法陣 + 光屑（比一般治療隆重一級）
-        lightPillar(s, 0xffe3a0);
+        const pillar = lightPillar(s, 0xffe3a0); // 限時回收（repeat:-1 呼吸不能留到場景結束）
+        fxDelay(1.3, () => {
+          if (pillar.destroyed) return;
+          killFx(pillar);
+          gsap.killTweensOf(pillar);
+          gsap.killTweensOf(pillar.scale);
+          pillar.destroy({ children: true });
+        });
         castCircle(s, 0xffd27a, { radius: 40 });
         spark(this.fxLayer, s.x, this._chestY(s), 0x8ef2ae, this._dotTex, 12);
         const txt = new Text({
@@ -835,26 +895,18 @@ export class BattleScene {
         floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
         if (this._ultDim) this._spotlightTarget(s);
       }),
-      rp.on('weather', ({ id }) => {
+      rp.on('weather', ({ id, uid }) => {
         if (this._instant) return;
         this._drawWeather(id);
         const w = weatherOf(id);
         if (!w) return;
-        const txt = new Text({
-          text: `${w.name}降臨！`,
-          style: { fontSize: 26, fill: Number(`0x${w.color.slice(1)}`), fontWeight: '800', stroke: { color: 0x000000, width: 4 } },
-        });
-        floatText(this.fxLayer, STAGE_W / 2, STAGE_H * 0.3, txt);
+        this._envAnnounce(uid, w.color, `${w.name}降臨！`);
       }),
-      rp.on('terrain', ({ id }) => {
+      rp.on('terrain', ({ id, uid }) => {
         if (this._instant) return;
         const t = terrainOf(id);
         if (!t) return;
-        const txt = new Text({
-          text: `場地：${t.name}`,
-          style: { fontSize: 22, fill: Number(`0x${t.color.slice(1)}`), fontWeight: '800', stroke: { color: 0x000000, width: 4 } },
-        });
-        floatText(this.fxLayer, STAGE_W / 2, STAGE_H * 0.38, txt);
+        this._envAnnounce(uid, t.color, `場地：${t.name}`);
       }),
       rp.on('miss', ({ targetUid }) => {
         if (this._instant) return;
@@ -1082,6 +1134,7 @@ export class BattleScene {
       killFx(s);
     }
     killFx(this.fxLayer);
+    killFx(this.root); // 掃 root 全部子樹（天氣氛圍層的 repeat:-1 光屑、宣告壓暗層等）
     gsap.killTweensOf(this.root);
     this.root.destroy({ children: true });
     this.fxLayer.destroy({ children: true });

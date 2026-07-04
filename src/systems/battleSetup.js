@@ -22,7 +22,8 @@ export function buildPlayerUnits(state = store.state) {
 }
 
 export function buildEnemyUnits(stage = 1, rng = new Rng()) {
-  // 主線成長節奏：敵人等級每 3 關 +1（不再每關升等）；關內難度改由小倍率平滑爬升
+  // 主線成長節奏：敵人等級每 2 關 +1（不再每關升等）；固定 0.85 倍率＝同等級下玩家有明確優勢，
+  // 難度純由等級節奏拉開（模擬驗證：跟上等級勝率約 5~8 成，視敵方隨機陣容浮動）
   const level = 1 + Math.floor((stage - 1) / 2);
   const scale = 0.85;
   const tanks = CARD_LIST.filter((c) => c.class === 'tank');

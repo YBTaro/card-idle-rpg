@@ -81,6 +81,7 @@ export class BattleController {
     this.director = new AnimationDirector(this.replayer, {
       // 絕技的施放停頓依技能不同（單體快、範圍長、治療居中）——見 skillVfx.ultTiming
       delays: { ...DELAYS, ultimate: (entry) => ultTiming(entry.skill).castDelay },
+      initialDelay: 1.0, // 開場橫幅播完再啟動事件流（開場宣告才不會糊成一團）
     });
     this.director.speed = this.speed;
     // 絕技聚光燈演出未收燈前，不放行下一個單位的回合（要等特效放完才下一個動作）。
