@@ -30,12 +30,14 @@ export const SKILLS = {
     { type: 'damage', mult: 1.8, scope: 'target' },
     { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target' },
   ]},
-  moltenBulwark: { name: '熔壁', effects: [
+  moltenBulwark: { name: '熔壁', target: 'enemyFrontRow', effects: [ // 灼熱裝甲：貼近我的人更怕火
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'shield', power: 1.5, duration: 3, scope: 'allAllies' },
+    { type: 'buff', stat: 'dotTaken', op: 'mul', value: 1.3, duration: 2, scope: 'target' },
   ]},
-  galeAssault: { name: '疾襲', target: 'enemyBackRow', effects: [
-    { type: 'damage', mult: 2.2, scope: 'target' },
+  galeAssault: { name: '疾襲', target: 'enemyBackRow', effects: [ // 斬幕：突入後排並撕掉增益
+    { type: 'damage', mult: 2.0, scope: 'target' },
+    { type: 'dispel', what: 'buff', count: 1, scope: 'target' },
   ]},
   windsong: { name: '風歌', effects: [
     { type: 'weather', weather: 'gale' }, // 風歌：喚來颶風
@@ -55,8 +57,9 @@ export const SKILLS = {
     { type: 'heal', power: 3.5, scope: 'target' },
     { type: 'buff', stat: 'critChance', op: 'add', value: 0.2, duration: 2, scope: 'allAllies' },
   ]},
-  dawnStrike: { name: '曙擊', target: 'singleEnemyByColumn', effects: [
+  dawnStrike: { name: '曙擊', target: 'singleEnemyByColumn', effects: [ // 曙光剋暗
     { type: 'damage', mult: 2.8, scope: 'target' },
+    { type: 'damage', mult: 1.0, scope: 'target', where: { element: 'dark' } },
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'self' },
   ]},
   shadowExecute: { name: '影誅', target: 'singleEnemyByColumn', effects: [
@@ -73,11 +76,11 @@ export const SKILLS = {
      群體充能 / 跨技能互斥減傷罩（key:'guard'）/ 斬殺型高倍率 / 控制鏈 / 攻守交換 */
 
   // ---- 火 ----
-  cinderCombo: { name: '燼滅', target: 'singleEnemyByColumn', effects: [
-    { type: 'damage', mult: 1.1, scope: 'target' },
-    { type: 'damage', mult: 1.1, scope: 'target' },
-    { type: 'damage', mult: 1.1, scope: 'target' },
-    { type: 'buff', stat: 'critChance', op: 'add', value: 0.15, duration: 2, scope: 'self' },
+  cinderCombo: { name: '燼滅', target: 'singleEnemyByColumn', effects: [ // 連擊收割：連段後補上處決斬
+    { type: 'damage', mult: 1.0, scope: 'target' },
+    { type: 'damage', mult: 1.0, scope: 'target' },
+    { type: 'damage', mult: 1.0, scope: 'target' },
+    { type: 'damage', mult: 0.8, scope: 'target', executeBelow: 0.3, executeBonus: 2.0 },
   ]},
   karmicFire: { name: '業火', target: 'enemyFrontRow', effects: [
     { type: 'damage', mult: 1.5, scope: 'target' },
@@ -122,10 +125,9 @@ export const SKILLS = {
     { type: 'control', control: 'stun', duration: 1, scope: 'target', chance: 0.3 }, // 機率暈眩
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.3, duration: 2, scope: 'self' },
   ]},
-  phantomEdge: { name: '殘影', target: 'singleEnemyByColumn', effects: [
-    { type: 'damage', mult: 1.3, scope: 'target' },
-    { type: 'damage', mult: 1.3, scope: 'target' },
-    { type: 'buff', stat: 'critMult', op: 'add', value: 0.4, duration: 2, scope: 'self' },
+  phantomEdge: { name: '殘影', target: 'singleEnemyByColumn', effects: [ // 透甲殘影：第二刀無視防禦
+    { type: 'damage', mult: 1.4, scope: 'target' },
+    { type: 'damage', mult: 1.0, scope: 'target', ignoreDef: true },
   ]},
   huntFeather: { name: '獵翎', target: 'enemyBackRow', effects: [
     { type: 'damage', mult: 1.9, scope: 'target' },
@@ -140,18 +142,22 @@ export const SKILLS = {
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 1.2, duration: 2, scope: 'allEnemies' }, // 全體易傷
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies', where: { race: '獸' } }, // 獸魂共鳴
   ]},
-  cloudPiercer: { name: '貫雲', target: 'enemyColumn', effects: [
+  cloudPiercer: { name: '貫雲', target: 'enemyColumn', effects: [ // 乘風：貫穿直排並鼓舞風屬同袍
     { type: 'damage', mult: 2.0, scope: 'target' },
-    { type: 'buff', stat: 'atk', op: 'mul', value: 1.15, duration: 2, scope: 'self' },
+    { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies', where: { element: 'wind' } }, // 條件型＞全隊型
   ]},
-  forestWard: { name: '林護', effects: [
+  forestWard: { name: '林護', effects: [ // 森林再生：嘲諷坦 + 全隊持續回復
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'buff', stat: 'def', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies' },
+    { type: 'hot', power: 0.3, duration: 2, scope: 'allAllies' },
+    { type: 'buff', stat: 'def', op: 'mul', value: 1.25, duration: 2, scope: 'self' },
   ]},
-  galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [
+  galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [ // 亂舞：每一腿都有一成機率踢暈
     { type: 'damage', mult: 0.9, scope: 'target' },
+    { type: 'control', control: 'stun', duration: 1, scope: 'target', chance: 0.1 },
     { type: 'damage', mult: 0.9, scope: 'target' },
+    { type: 'control', control: 'stun', duration: 1, scope: 'target', chance: 0.1 },
     { type: 'damage', mult: 0.9, scope: 'target' },
+    { type: 'control', control: 'stun', duration: 1, scope: 'target', chance: 0.1 },
     { type: 'energy', amount: 20, scope: 'self' },
   ]},
 
@@ -160,9 +166,9 @@ export const SKILLS = {
     { type: 'damage', mult: 1.1, scope: 'allEnemies' },
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 0.75, duration: 2, scope: 'allEnemies' }, // 全體霜緩
   ]},
-  tideHymn: { name: '潮頌', target: 'lowestHpAlly', effects: [
-    { type: 'heal', power: 2.6, scope: 'target' },
-    { type: 'heal', power: 0.8, scope: 'alliesExceptTarget' },
+  tideHymn: { name: '潮頌', target: 'lowestHpAlly', effects: [ // 潮洗：深度淨化單一隊友
+    { type: 'heal', power: 2.8, scope: 'target' },
+    { type: 'dispel', what: 'debuff', scope: 'target' }, // 洗掉全部減益
   ]},
   glacialArmor: { name: '冰甲', effects: [
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
@@ -182,7 +188,7 @@ export const SKILLS = {
     { type: 'heal', power: 1.4, scope: 'allAllies' },
     { type: 'hot', power: 0.35, duration: 2, scope: 'allAllies' }, // 持續回復
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.85, duration: 2, scope: 'allAllies' },
-    { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.15, duration: 2, scope: 'allAllies', where: { element: 'water' } }, // 水屬共鳴
+    { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies', where: { element: 'water' } }, // 水屬共鳴（條件型＞全隊型）
   ]},
   tsunami: { name: '海嘯', target: 'allEnemies', effects: [
     { type: 'damage', mult: 1.35, scope: 'target' }, // 全場大 AoE
@@ -214,23 +220,23 @@ export const SKILLS = {
     { type: 'energy', amount: 15, scope: 'allAllies', where: { series: '聖歌隊' } }, // 聖歌隊合唱加成
     { type: 'heal', power: 0.7, scope: 'allAllies' },
   ]},
-  luminousWall: { name: '聖壁', effects: [
+  luminousWall: { name: '聖壁', effects: [ // 聖光自癒：扛著扛著自己就回滿了
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'shield', power: 2.6, duration: 3, scope: 'self' },
-    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.8, duration: 2, scope: 'self' },
+    { type: 'hot', power: 0.5, duration: 2, scope: 'self' },
   ]},
   starfall: { name: '星隕', target: 'enemyBackRow', effects: [
     { type: 'damage', mult: 1.8, scope: 'target' },
     { type: 'control', control: 'silence', duration: 1, scope: 'target' },
   ]},
-  silverThrust: { name: '聖刺', target: 'singleEnemyByColumn', effects: [
+  silverThrust: { name: '聖刺', target: 'singleEnemyByColumn', effects: [ // 五成機率追刺第三劍
     { type: 'damage', mult: 1.5, scope: 'target' },
     { type: 'damage', mult: 1.5, scope: 'target' },
-    { type: 'buff', stat: 'critChance', op: 'add', value: 0.2, duration: 1, scope: 'self' },
+    { type: 'damage', mult: 1.0, scope: 'target', chance: 0.5 },
   ]},
-  foxGlow: { name: '狐光', target: 'lowestHpAlly', effects: [
+  foxGlow: { name: '狐光', target: 'lowestHpAlly', effects: [ // 狐火渡氣：單體充能電池
     { type: 'heal', power: 2.2, scope: 'target' },
-    { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'target' },
+    { type: 'energy', amount: 30, scope: 'target' },
   ]},
 
   // ---- 暗 ----
@@ -245,10 +251,10 @@ export const SKILLS = {
     { type: 'buff', stat: 'atk', op: 'mul', value: 0.82, duration: 2, scope: 'allEnemies' },
     { type: 'heal', power: 0.6, scope: 'allAllies' },
   ]},
-  boneRampart: { name: '骨牆', effects: [
+  boneRampart: { name: '骨牆', effects: [ // 白骨凝咒：把敵人身上所有壞事都拖長
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'shield', power: 2.0, duration: 3, scope: 'self' },
-    { type: 'buff', stat: 'atk', op: 'mul', value: 1.15, duration: 2, scope: 'self' },
+    { type: 'extend', what: 'negative', turns: 1, scope: 'allEnemies' },
   ]},
   dreamEater: { name: '噬夢', target: 'randomEnemy', effects: [ // 隨機目標
     { type: 'damage', mult: 2.1, scope: 'target', lifesteal: 0.3 }, // 吸血
@@ -264,9 +270,10 @@ export const SKILLS = {
     { type: 'damage', mult: 1.8, scope: 'target' },
     { type: 'control', control: 'stun', duration: 1, scope: 'target' },
   ]},
-  duskVeil: { name: '暮幕', effects: [
+  duskVeil: { name: '暮幕', effects: [ // 入夜：奪走敵人的光（全體驅散）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.8, duration: 2, key: 'guard', scope: 'allAllies' },
+    { type: 'dispel', what: 'buff', count: 1, scope: 'allEnemies' },
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.85, duration: 2, scope: 'self' },
   ]},
   requiem: { name: '安魂', target: 'deadAlly', effects: [
     { type: 'revive', power: 0.35, scope: 'targetIncludingDead' }, // 復活
