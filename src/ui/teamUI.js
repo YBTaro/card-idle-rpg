@@ -131,9 +131,6 @@ export class TeamUI {
         el('span', { class: 'sk', text: CLASS_GLYPH[card.class] || '✦' }),
       ])
     );
-    // 編輯模式：紅色「−」角標＝點一下移出隊伍
-    if (this.drawerOpen) node.appendChild(el('span', { class: 'minus', text: '−' }));
-
     longPress(node, () => this._openSheet(entry.instanceId), {
       onTap: () => {
         if (this.drawerOpen) {
