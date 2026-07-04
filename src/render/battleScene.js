@@ -604,7 +604,7 @@ export class BattleScene {
         playVoice(s._info.cardId, 'ultimate'); // 絕技語音（無音檔＝靜默）
         screenShake(this.root);
       }),
-      rp.on('damage', ({ targetUid, amount, skill, isCrit, isAdvantage, isDisadvantage, trueDmg, execute }) => {
+      rp.on('damage', ({ targetUid, amount, skill, isCrit, isAdvantage, isDisadvantage, trueDmg, execute, detonate }) => {
         if (this._instant) return;
         const s = this.sprites.get(targetUid);
         if (!s) return;
@@ -628,6 +628,13 @@ export class BattleScene {
           size = 32;
           color = 0xff4d4d;
           screenShake(this.root, 6);
+        } else if (detonate) {
+          // 引爆 DoT：橙紅重拍 + 爆點
+          impactBurst(this.fxLayer, s.x, this._chestY(s), 0xff7a3c, this._dotTex);
+          text = `引爆 ${amount}`;
+          size = 28;
+          color = 0xff7a3c;
+          screenShake(this.root, 5);
         } else if (isCrit) {
           text = `暴擊 ${amount}`;
           size = 30;

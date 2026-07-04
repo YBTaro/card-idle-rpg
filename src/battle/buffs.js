@@ -93,12 +93,12 @@ export function summarizeBuffs(unit) {
     }));
 }
 
-function isNegative(b) {
+export function isNegative(b) {
   if (b.kind === 'dot') return true;
   if (b.kind === 'shield') return false;
   if (b.kind === 'control') return b.control !== 'taunt'; // 嘲諷是自己開的戰術狀態
   if (b.kind === 'stat') {
-    const lowerIsGood = b.stat === 'dmgTaken'; // 承傷越低越好
+    const lowerIsGood = b.stat === 'dmgTaken' || b.stat === 'dotTaken'; // 承傷/受 DoT 越低越好
     const up = b.op === 'mul' ? b.value > 1 : b.value > 0;
     return lowerIsGood ? up : !up;
   }

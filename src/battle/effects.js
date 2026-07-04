@@ -2,7 +2,7 @@
 // 效果原語：技能由多個 effect 組成，每個 effect 依 type 套用到 scope 解析出的目標。
 import { computeDamage } from './damage.js';
 import { elementMultiplier } from '../data/elements.js';
-import { applyBuff, summarizeBuffs, dispelBuffs } from './buffs.js';
+import { applyBuff, summarizeBuffs, dispelBuffs, isNegative, resolve } from './buffs.js';
 
 // power 的基準：預設 caster.effAtk（含 buff 加成）；basis:'targetMaxHp' 用目標 maxHp。
 export function resolvePower(effect, caster, target) {
@@ -67,9 +67,11 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
 }
 
 // DoT：套用預存 damage，直接扣 hp（不吃護盾、不吃暴擊）。
+// 吃 dotTaken 易傷（「增加受到的灼燒傷害%」型 debuff）。
 export function dealDot(target, dot, ctx) {
   if (!target.alive) return 0;
-  const dealt = Math.min(target.hp, dot.damage);
+  const amount = Math.round(dot.damage * resolve(target, 'dotTaken', 1));
+  const dealt = Math.min(target.hp, amount);
   target.hp -= dealt;
   ctx.emit('damage', {
     source: null, target, amount: dealt, skill: 'dot',
@@ -134,6 +136,42 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         });
         emitBuffs(u);
         break;
+      case 'extend': {
+        // 延長狀態持續時間：what:'dot'（可配 element 限灼燒）/'control'/'negative'（全部減益）
+        let touched = 0;
+        for (const b of u.buffs ?? []) {
+          if (b.aura || b.duration == null) continue;
+          if (effect.what === 'dot' && b.kind !== 'dot') continue;
+          if (effect.what === 'control' && b.kind !== 'control') continue;
+          if ((effect.what === 'negative' || effect.what == null) && !isNegative(b)) continue;
+          if (effect.element && b.element !== effect.element) continue;
+          b.duration += effect.turns ?? 1;
+          touched += 1;
+        }
+        if (touched) emitBuffs(u);
+        break;
+      }
+      case 'detonateDot': {
+        // 引爆：把目標身上的 DoT（可限 element）一次結算＝每跳傷害×剩餘回合，並移除。
+        // 結算同 DoT 語義（不吃護盾/暴擊），吃 dotTaken 易傷與 effect.mult 加成。
+        const targets = (u.buffs ?? []).filter(
+          (b) => b.kind === 'dot' && (!effect.element || b.element === effect.element)
+        );
+        if (!targets.length) break;
+        let total = 0;
+        for (const b of targets) total += b.damage * Math.max(1, b.duration ?? 1);
+        u.buffs = u.buffs.filter((b) => !targets.includes(b));
+        emitBuffs(u);
+        total = Math.round(total * (effect.mult ?? 1) * resolve(u, 'dotTaken', 1));
+        const dealt = Math.min(u.hp, total);
+        u.hp -= dealt;
+        ctx.emit('damage', {
+          source: caster, target: u, amount: dealt, skill: skillId,
+          isAdvantage: false, isDisadvantage: false, isCrit: false, detonate: true,
+        });
+        if (!u.alive) ctx.emit('death', { unit: u });
+        break;
+      }
       case 'dispel': {
         // what:'debuff' 淨化減益（用在隊友）/ 'buff' 驅散增益（用在敵人）
         const removed = dispelBuffs(u, { negative: effect.what !== 'buff', count: effect.count ?? Infinity });

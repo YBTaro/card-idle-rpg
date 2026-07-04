@@ -263,6 +263,71 @@ describe('新原語：HoT / 驅散淨化 / 復活', () => {
   });
 });
 
+describe('DoT 操作原語：延長 / 易傷 / 引爆', () => {
+  it('extend：延長敵方灼燒 +1 回合（element 過濾、不動增益與光環）', () => {
+    const caster = makeUnit({ team: 0, pos: 1, atk: 100 });
+    const foe = makeUnit({ team: 1, pos: 1 });
+    applyBuff(foe, { kind: 'dot', damage: 20, element: 'fire', duration: 2 });
+    applyBuff(foe, { kind: 'dot', damage: 10, duration: 2 }); // 無屬性毒（不受 element:'fire' 影響）
+    applyBuff(foe, { kind: 'shield', amount: 50, duration: 2 }); // 增益不動
+    applyBuff(foe, { kind: 'stat', stat: 'def', op: 'mul', value: 1.1, duration: null, aura: true }); // 光環不動
+    const ctx = ctxFor(caster, [caster], [foe]);
+    applyEffect({ type: 'extend', what: 'dot', element: 'fire', turns: 1, scope: 'target' }, caster, [foe], ctx);
+    expect(foe.buffs.find((b) => b.element === 'fire').duration).toBe(3);
+    expect(foe.buffs.find((b) => b.kind === 'dot' && !b.element).duration).toBe(2);
+    expect(foe.buffs.find((b) => b.kind === 'shield').duration).toBe(2);
+  });
+
+  it('extend what:negative：所有減益 +1（含控制），嘲諷除外', () => {
+    const caster = makeUnit({ team: 0, pos: 1 });
+    const foe = makeUnit({ team: 1, pos: 1 });
+    applyBuff(foe, { kind: 'control', control: 'stun', duration: 1 });
+    applyBuff(foe, { kind: 'control', control: 'taunt', duration: 2 }); // 嘲諷非減益
+    const ctx = ctxFor(caster, [caster], [foe]);
+    applyEffect({ type: 'extend', what: 'negative', turns: 1, scope: 'target' }, caster, [foe], ctx);
+    expect(foe.buffs.find((b) => b.control === 'stun').duration).toBe(2);
+    expect(foe.buffs.find((b) => b.control === 'taunt').duration).toBe(2);
+  });
+
+  it('dotTaken 易傷：DoT 跳傷吃倍率', () => {
+    const caster = makeUnit({ team: 0, pos: 1, atk: 100 });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 1000, class: 'tank' });
+    applyBuff(foe, { kind: 'stat', stat: 'dotTaken', op: 'mul', value: 1.5, duration: 2 });
+    const ctx = ctxFor(caster, [caster], [foe]);
+    dealDot(foe, { damage: 30 }, ctx);
+    expect(foe.hp).toBe(1000 - 45); // 30 × 1.5
+  });
+
+  it('detonateDot：每跳×剩餘回合一次結算、移除狀態、吃易傷、element 過濾', () => {
+    const caster = makeUnit({ team: 0, pos: 1, atk: 100 });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 1000, class: 'tank' });
+    applyBuff(foe, { kind: 'dot', damage: 20, element: 'fire', duration: 3 }); // 60
+    applyBuff(foe, { kind: 'dot', damage: 15, element: 'fire', duration: 2 }); // 30
+    applyBuff(foe, { kind: 'dot', damage: 50, duration: 2 }); // 無屬性：不引爆
+    const events = [];
+    const ctx = ctxFor(caster, [caster], [foe], events);
+    applyEffect({ type: 'detonateDot', element: 'fire', scope: 'target' }, caster, [foe], ctx, 'detonate');
+    expect(foe.hp).toBe(1000 - 90); // 60 + 30
+    expect(foe.buffs.filter((b) => b.kind === 'dot').length).toBe(1); // 只剩無屬性毒
+    const evt = events.find((e) => e.event === 'damage' && e.payload.detonate);
+    expect(evt.payload.amount).toBe(90);
+    // 身上沒有可引爆的 → 不發事件不扣血
+    const foe2 = makeUnit({ team: 1, pos: 2, hp: 500 });
+    applyEffect({ type: 'detonateDot', element: 'fire', scope: 'target' }, caster, [foe2], ctx);
+    expect(foe2.hp).toBe(500);
+  });
+
+  it('detonateDot 吃 dotTaken 易傷與 mult 加成', () => {
+    const caster = makeUnit({ team: 0, pos: 1, atk: 100 });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 1000, class: 'tank' });
+    applyBuff(foe, { kind: 'dot', damage: 20, element: 'fire', duration: 2 }); // 40
+    applyBuff(foe, { kind: 'stat', stat: 'dotTaken', op: 'mul', value: 1.5, duration: 2 });
+    const ctx = ctxFor(caster, [caster], [foe]);
+    applyEffect({ type: 'detonateDot', element: 'fire', mult: 1.2, scope: 'target' }, caster, [foe], ctx);
+    expect(foe.hp).toBe(1000 - Math.round(40 * 1.2 * 1.5)); // 72
+  });
+});
+
 describe('新原語：荊棘反傷 / 反擊', () => {
   it('thorns：受直接攻擊時反彈實際傷害的 pct 給攻擊者', () => {
     const caster = makeUnit({ team: 0, pos: 1, atk: 100, hp: 1000 });

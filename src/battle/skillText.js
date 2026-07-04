@@ -34,6 +34,7 @@ const STAT_LABEL = {
   critMult: '暴擊傷害',
   dmgDealt: '造成傷害',
   dmgTaken: '承受傷害',
+  dotTaken: '受到的持續傷害',
   energyGain: '集氣速度',
 };
 
@@ -90,6 +91,19 @@ function describeEffect(effect, targetLabel) {
     case 'control':
       text = `對${who}施加${CONTROL_LABEL[effect.control] ?? effect.control}${dur(effect.duration)}`;
       break;
+    case 'extend': {
+      const what = effect.what === 'dot'
+        ? (effect.element === 'fire' ? '灼燒' : '持續傷害')
+        : effect.what === 'control' ? '控制狀態' : '減益狀態';
+      text = `使${who}的${what}持續時間 +${effect.turns ?? 1} 次行動`;
+      break;
+    }
+    case 'detonateDot': {
+      const what = effect.element === 'fire' ? '灼燒' : '持續傷害';
+      const bonus = effect.mult && effect.mult !== 1 ? `的 ${pct(effect.mult)}` : '';
+      text = `引爆${who}的${what}：立即結算剩餘全部傷害${bonus}並移除該狀態`;
+      break;
+    }
     case 'dispel':
       text = effect.what === 'buff'
         ? `驅散${who}的增益效果${effect.count ? `（最多 ${effect.count} 個）` : ''}`

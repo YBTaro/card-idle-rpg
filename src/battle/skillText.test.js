@@ -36,6 +36,12 @@ describe('describeSkill（描述自動生成）', () => {
     expect(describeSkill('nope')).toBe('');
   });
 
+  it('DoT 操作技能描述：延長/易傷/引爆', () => {
+    expect(describeSkill('emberWarmth')).toContain('灼燒持續時間 +1');
+    expect(describeSkill('fireArrow')).toContain('受到的持續傷害 +30%');
+    expect(describeSkill('detonate')).toContain('引爆');
+  });
+
   it('where 條件效果：種族/屬性/系列限定要寫進描述', () => {
     expect(describeSkill('holyVerdict')).toContain('「不死」'); // 剋不死追打
     expect(describeSkill('tsunami')).toContain('「火」屬性'); // 水滅火（element 轉中文）

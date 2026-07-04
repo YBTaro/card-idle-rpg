@@ -84,6 +84,7 @@ export const SKILLS = {
     { type: 'heal', power: 1.2, scope: 'allAllies' },
     { type: 'dispel', what: 'debuff', count: 1, scope: 'allAllies' }, // 淨化
     { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.15, duration: 2, scope: 'allAllies' },
+    { type: 'extend', what: 'dot', element: 'fire', turns: 1, scope: 'allEnemies' }, // 餘燼不熄：敵方灼燒 +1 回合
   ]},
   shellAegis: { name: '殼護', effects: [
     { type: 'thorns', pct: 0.3, duration: 2, scope: 'self' }, // 荊棘反傷
@@ -94,10 +95,12 @@ export const SKILLS = {
   fireArrow: { name: '火矢', target: 'singleEnemyByColumn', effects: [
     { type: 'damage', mult: 2.0, scope: 'target' },
     { type: 'dot', power: 0.5, element: 'fire', duration: 2, scope: 'target' },
+    { type: 'buff', stat: 'dotTaken', op: 'mul', value: 1.3, duration: 2, scope: 'target' }, // 火油：灼燒易傷
   ]},
   detonate: { name: '爆燃', target: 'enemyColumn', effects: [
+    { type: 'detonateDot', element: 'fire', mult: 1.0, scope: 'target' }, // 先引爆舊灼燒（每跳×剩餘回合一次結算）
     { type: 'damage', mult: 1.7, scope: 'target', ignoreDef: true }, // 無視防禦
-    { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target' },
+    { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target' }, // 再點新火
   ]},
   warBanner: { name: '軍威', effects: [
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies' },
