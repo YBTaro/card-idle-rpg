@@ -1,6 +1,8 @@
 // 角色詳情頁（英雄強化）：全螢幕 overlay——左滿版立繪、右資訊面板。
 // 入口統一：任何地方點卡 / 長按卡圖 → openHeroSheet(instanceId, { list })。
-// 左右滑動或 ‹ › 切換英雄；「強化」按住連續升級；上陣/下陣收在這裡（P5：破壞性操作不放單擊）。
+// 左右滑動或 ‹ › 切換英雄；「強化」按住連續升級。
+// 面板為單頁式（無分頁）：身分 → 等級/星級 → 數值(含下一級增量) → 技能 → 強化。
+// 上陣/下陣不在這裡（隊伍頁的「英雄替換」抽屜負責）。
 import { gsap } from 'gsap';
 import { el, clear, toast, fmt } from './dom.js';
 import { store } from '../core/state.js';
@@ -10,7 +12,6 @@ import { ELEMENT_LABEL } from '../data/elements.js';
 import { artFor } from '../data/assets.js';
 import { deriveStats, MAX_STARS, STAR_STAT_BONUS, STAR_MILESTONES } from '../core/stats.js';
 import { levelUp, levelUpCost, canLevelUp, MAX_LEVEL } from '../systems/leveling.js';
-import { isInFormation, toggleFormation, MAX_FORMATION } from '../systems/formation.js';
 import { skillInfoForCard, passiveInfoForCard } from '../battle/skillText.js';
 import { trackQuest } from '../systems/quests.js';
 import { holdRepeat } from './gestures.js';
@@ -19,8 +20,6 @@ import { icon } from './icons.js';
 const SHEET_IN_S = 0.28;
 const SHEET_OUT_S = 0.18;
 const SWIPE_MIN_PX = 48;
-
-const CLASS_GLYPH = { tank: '🛡', dps: '⚔', support: '✚' };
 
 let _open = null; // 單例：同時只開一張
 
@@ -130,7 +129,7 @@ class HeroSheet {
     this.renderPanel();
   }
 
-  // 面板局部重繪（升級/上下陣後由 store 驅動；立繪不動）。
+  // 面板局部重繪（升級/升星後由 store 驅動；立繪不動）。
   renderPanel() {
     const inst = this.inst;
     if (!inst || !this.panel) return;
@@ -140,10 +139,9 @@ class HeroSheet {
     const next = maxed ? null : deriveStats({ ...inst, level: inst.level + 1 });
     const cost = levelUpCost(inst.level);
     const affordable = canLevelUp(inst);
-    const inForm = isInFormation(inst.instanceId);
+    const stars = inst.stars ?? 0;
 
     // 身分名牌同步（屬性寶石 + 名字 + 星級）
-    const stars = inst.stars ?? 0;
     clear(this.idBar);
     this.idBar.appendChild(icon(`el_${card.element}`, 22));
     this.idBar.appendChild(el('span', { class: 'nm', text: card.name }));
@@ -152,119 +150,92 @@ class HeroSheet {
     const p = this.panel;
     clear(p);
 
-    // 頁簽列（參考原型的左欄分頁：資訊 / 強化 / 技能）
-    this.tab ??= 'grow';
-    const tabsRow = el('div', { class: 'hs-tabs' });
-    for (const [id, label] of [['info', '資訊'], ['grow', '強化'], ['skill', '技能']]) {
-      tabsRow.appendChild(el('div', {
-        class: `hs-tabbtn pressable${this.tab === id ? ' on' : ''}`,
-        text: label,
-        onClick: () => { this.tab = id; this.renderPanel(); },
-      }));
+    // 1) 身分標籤列：職業 / 屬性 / 種族 / 系列——一行讀完這隻是誰
+    const tags = el('div', { class: 'hs-tags' });
+    const clsTag = el('span', { class: 'hs-tag cls' });
+    clsTag.appendChild(icon(`cls_${card.class}`, 15));
+    clsTag.appendChild(el('span', { text: ` ${CLASSES[card.class].label}` }));
+    tags.appendChild(clsTag);
+    const elTag = el('span', { class: 'hs-tag el' });
+    elTag.appendChild(icon(`el_${card.element}`, 14));
+    elTag.appendChild(el('span', { text: ` ${ELEMENT_LABEL[card.element]}` }));
+    tags.appendChild(elTag);
+    tags.appendChild(el('span', { class: 'hs-tag race', text: card.race }));
+    for (const sName of card.series ?? []) {
+      tags.appendChild(el('span', { class: 'hs-tag series', text: sName }));
     }
-    p.appendChild(tabsRow);
+    p.appendChild(tags);
 
-    const body = el('div', { class: 'hs-tabbody' });
-    p.appendChild(body);
-
-    // 數值列（資訊=現值；強化=帶下一級增量，對齊參考的 +N 藍字）
-    const statBlock = (withDelta) => {
-      const stats = el('div', { class: 'hs-stats' });
-      const rows = [
-        ['❤ 生命', st.hp, next ? next.hp - st.hp : 0],
-        ['⚔ 攻擊', st.atk, next ? next.atk - st.atk : 0],
-        ['🛡 防禦', st.def, next ? next.def - st.def : 0],
-      ];
-      for (const [k, v, d] of rows) {
-        stats.appendChild(
-          el('div', { class: 'st' }, [
-            el('span', { class: 'k', text: k }),
-            el('span', { class: 'v', html: `${fmt(v)}${withDelta && d > 0 ? ` <small class="up">+${fmt(d)}</small>` : ''}` }),
-          ])
-        );
-      }
-      return stats;
-    };
-
-    if (this.tab === 'info') {
-      // 情報：職業 / 種族 / 屬性 / 系列（卡面不放的資訊層——放這裡）
-      body.appendChild(el('div', { class: 'hs-ribbon', text: '情報' }));
-      const infoRow = el('div', { class: 'hs-tags' });
-      const clsTag = el('span', { class: 'hs-tag cls' });
-      clsTag.appendChild(icon(`cls_${card.class}`, 15));
-      clsTag.appendChild(el('span', { text: ` ${CLASSES[card.class].label}` }));
-      infoRow.appendChild(clsTag);
-      infoRow.appendChild(el('span', { class: 'hs-tag race', text: `種族 · ${card.race}` }));
-      infoRow.appendChild(el('span', { class: 'hs-tag el', text: `屬性 · ${ELEMENT_LABEL[card.element]}` }));
-      for (const sName of card.series ?? []) {
-        infoRow.appendChild(el('span', { class: 'hs-tag series', text: sName }));
-      }
-      body.appendChild(infoRow);
-      body.appendChild(el('div', { class: 'hs-ribbon', text: '數值' }));
-      body.appendChild(statBlock(false));
-    } else if (this.tab === 'grow') {
-      // 等級（大字現值 » 下一級，對齊參考的 Lv.10 » Lv.11）
-      const lvLine = el('div', { class: 'hs-lvbig' });
-      lvLine.appendChild(el('b', { text: `Lv.${inst.level}` }));
-      if (!maxed) {
-        lvLine.appendChild(el('span', { class: 'arr', text: '»' }));
-        lvLine.appendChild(el('i', { text: `Lv.${inst.level + 1}` }));
-      } else {
-        lvLine.appendChild(el('span', { class: 'maxmark', text: 'MAX' }));
-      }
-      body.appendChild(lvLine);
-      body.appendChild(statBlock(true));
-
-      // 星級（重複卡自動升星；每星三圍加成 + 里程碑）
-      body.appendChild(el('div', { class: 'hs-ribbon', text: '星級' }));
-      const starLine = el('div', { class: 'hs-starline' });
-      starLine.appendChild(el('span', { class: 'hs-stars big', text: '★'.repeat(stars) + '☆'.repeat(MAX_STARS - stars) }));
-      starLine.appendChild(el('span', { class: 'st-note', text: `每星 三圍 +${Math.round(STAR_STAT_BONUS * 100)}%（重複抽到自動升星）` }));
-      for (const [star, m] of Object.entries(STAR_MILESTONES)) {
-        starLine.appendChild(
-          el('span', { class: `st-mile${stars >= Number(star) ? ' on' : ''}`, text: `${star}★ ${m.desc}` })
-        );
-      }
-      body.appendChild(starLine);
+    // 2) 等級 × 星級卡：本頁主軸（強化）的現況，一眼看懂「現在幾級、下一級、幾星」
+    const lvCard = el('div', { class: 'hs-lvcard' });
+    const lvLine = el('div', { class: 'hs-lvbig' });
+    lvLine.appendChild(el('b', { text: `Lv.${inst.level}` }));
+    if (!maxed) {
+      lvLine.appendChild(el('span', { class: 'arr', text: '»' }));
+      lvLine.appendChild(el('i', { text: `Lv.${inst.level + 1}` }));
     } else {
-      // 技能
-      const skill = skillInfoForCard(inst.cardId, card.class);
-      if (skill) {
-        const skIc = el('div', { class: 'ic' });
-        skIc.appendChild(icon(`cls_${card.class}`, 20));
-        body.appendChild(
-          el('div', { class: 'hs-skills' }, [
-            el('div', { class: 'hs-sk' }, [skIc, el('span', { class: 't', text: '絕技' })]),
-            el('div', { class: 'hs-skdesc', html: `<b>${skill.name}</b>${skill.desc}` }),
-          ])
-        );
-      }
-      for (const desc of passiveInfoForCard(inst.cardId)) {
-        body.appendChild(
-          el('div', { class: 'hs-skills' }, [
-            el('div', { class: 'hs-sk' }, [
-              el('div', { class: 'ic psv', text: '✨' }),
-              el('span', { class: 't', text: '被動' }),
-            ]),
-            el('div', { class: 'hs-skdesc', html: `<b>被動效果</b>${desc}` }),
-          ])
-        );
-      }
+      lvLine.appendChild(el('span', { class: 'maxmark', text: 'MAX' }));
+    }
+    lvCard.appendChild(lvLine);
+    lvCard.appendChild(el('span', { class: 'hs-stars big', text: '★'.repeat(stars) + '☆'.repeat(MAX_STARS - stars) }));
+    p.appendChild(lvCard);
+
+    // 3) 數值：永遠帶下一級增量（升級的理由直接寫在數字旁）
+    p.appendChild(el('div', { class: 'hs-ribbon', text: '數值' }));
+    const stats = el('div', { class: 'hs-stats' });
+    const rows = [
+      ['❤', '生命', st.hp, next ? next.hp - st.hp : 0],
+      ['⚔', '攻擊', st.atk, next ? next.atk - st.atk : 0],
+      ['🛡', '防禦', st.def, next ? next.def - st.def : 0],
+    ];
+    for (const [ic, k, v, d] of rows) {
+      stats.appendChild(
+        el('div', { class: 'st' }, [
+          el('span', { class: 'ic', text: ic }),
+          el('span', { class: 'k', text: k }),
+          el('span', { class: 'v', html: `${fmt(v)}${d > 0 ? ` <small class="up">+${fmt(d)}</small>` : ''}` }),
+        ])
+      );
+    }
+    p.appendChild(stats);
+
+    // 4) 星級成長：一行說明 + 里程碑膠囊（達成點亮）
+    const starLine = el('div', { class: 'hs-starline' });
+    starLine.appendChild(el('span', { class: 'st-note', text: `每星 三圍 +${Math.round(STAR_STAT_BONUS * 100)}%（重複抽到自動升星）` }));
+    for (const [star, m] of Object.entries(STAR_MILESTONES)) {
+      starLine.appendChild(
+        el('span', { class: `st-mile${stars >= Number(star) ? ' on' : ''}`, text: `${star}★ ${m.desc}` })
+      );
+    }
+    p.appendChild(starLine);
+
+    // 5) 技能：絕技 + 被動
+    p.appendChild(el('div', { class: 'hs-ribbon', text: '技能' }));
+    const skill = skillInfoForCard(inst.cardId, card.class);
+    if (skill) {
+      const skIc = el('div', { class: 'ic' });
+      skIc.appendChild(icon(`cls_${card.class}`, 20));
+      p.appendChild(
+        el('div', { class: 'hs-skills' }, [
+          el('div', { class: 'hs-sk' }, [skIc, el('span', { class: 't', text: '絕技' })]),
+          el('div', { class: 'hs-skdesc', html: `<b>${skill.name}</b>${skill.desc}` }),
+        ])
+      );
+    }
+    for (const desc of passiveInfoForCard(inst.cardId)) {
+      p.appendChild(
+        el('div', { class: 'hs-skills' }, [
+          el('div', { class: 'hs-sk' }, [
+            el('div', { class: 'ic psv', text: '✨' }),
+            el('span', { class: 't', text: '被動' }),
+          ]),
+          el('div', { class: 'hs-skdesc', html: `<b>被動效果</b>${desc}` }),
+        ])
+      );
     }
 
-    // 行動列
+    // 6) 行動列：只留「強化」（上陣/下陣歸隊伍頁管）
     const cta = el('div', { class: 'hs-cta' });
-    const formBtn = el('div', {
-      class: 'hs-btn sub pressable',
-      html: inForm ? '下陣<small>移出隊伍</small>' : '上陣<small>加入隊伍</small>',
-      onClick: () => {
-        const r = toggleFormation(inst.instanceId);
-        if (!r.ok && r.reason === 'full') toast(`陣容已滿（${MAX_FORMATION} 人）`);
-        else toast(inForm ? `${card.name} 已下陣` : `${card.name} 上陣！`, { icon: inForm ? '↩' : '⚔' });
-      },
-    });
-    cta.appendChild(formBtn);
-
     const upBtn = el('div', {
       class: `hs-btn pressable${maxed || !affordable ? ' disabled' : ''}`,
       html: maxed
