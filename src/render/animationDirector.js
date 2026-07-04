@@ -5,6 +5,7 @@ export const DELAYS = {
   heal: 0.15, death: 0.25, stunned: 0.25, revive: 0.45, dispel: 0.25,
   weather: 0.55, terrain: 0.55, drain: 0.12, // 環境宣告要有拍點；能量抽取快速連跳
   miss: 0.22, // 迴避：側移殘影 + MISS 飄字要看得清
+  steal: 0.3, // 竊能：奪走→轉移兩端飄字要有拍點
 };
 
 export class AnimationDirector {

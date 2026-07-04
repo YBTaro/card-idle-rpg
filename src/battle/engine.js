@@ -20,8 +20,10 @@
 //   普攻（過命中判定）→ 全 buff duration -1、到期移除 → buffchange 同步
 //
 // 【技能施放】（_act skill；免費行動：不結算 DoT/HoT、不遞減 duration）
-//   能量歸零 → castSkill：效果陣列「依序」結算（作者寫的順序＝結算順序，
+//   超充倍率＝施放瞬間 energy/100（能量池上限 200，溢出不浪費）→ 能量歸零 →
+//   castSkill：效果陣列「依序」結算（作者寫的順序＝結算順序，
 //   例：先引爆舊灼燒→再傷害→再點新火）→ 靈壓干擾（castDrain）結算
+//   ＊超充只放大 damage 直傷；DoT/治療/護盾/狀態不吃
 //   ＊同時滿氣多人：照 TURN_SEQUENCE 掃描，先掃到先放
 //
 // 【命中判定】（effects.rollHit 唯一入口）
@@ -220,10 +222,12 @@ export class BattleEngine {
     };
     if (isSkill) {
       // 技能不算回合：免費行動，不結算 DoT、不遞減 buff duration
+      // 超充：施放瞬間能量若溢出 100（充能技/受擊回能疊出來的），轉為直傷倍率後整條歸零
+      const overcharge = Math.min(2, u.energy / ENERGY_MAX);
       this.emit('turn', { unit: u });
       u.energy = 0;
       this.emit('energy', { unit: u, value: 0 });
-      castSkill(u, skillFor(u), ctx);
+      castSkill(u, skillFor(u), ctx, { overcharge });
       // 靈壓干擾：對面有人掛 castDrain → 施法者的「其他隊友」能量被抽（可疊加）
       const drain = this.enemiesOf(u)
         .filter((e) => e.alive)

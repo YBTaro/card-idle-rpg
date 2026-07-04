@@ -278,6 +278,10 @@ export const SKILLS = {
     { type: 'damage', mult: 1.5, scope: 'target' },
     { type: 'nightmare', pct: 0.05, scope: 'target' }, // 受普攻/技能直傷時額外損失 5% 最大生命
   ]},
+  energyLeech: { name: '奪流', target: 'highestEnergyEnemy', effects: [ // 定位：竊能——專打快放大招的人
+    { type: 'damage', mult: 1.6, scope: 'target' },
+    { type: 'energySteal', scope: 'target' }, // 奪走全部能量 → 轉給我方能量最低者（可疊出超充）
+  ]},
 };
 
 // cardId → skillId
@@ -340,10 +344,11 @@ export const CARD_SKILLS = {
   lumenvessel: 'callSurge',
   voidshade: 'callErosion',
   mireweaver: 'callSwamp',
-  // ---- 機制專職（3）----
+  // ---- 機制專職（4）----
   veilwalker: 'mirageVeil',
   hawkoracle: 'hawkSight',
   terrorweaver: 'nightTerror',
+  fluxreaver: 'energyLeech',
 };
 
 export function skillFor(unit) {
@@ -351,14 +356,16 @@ export function skillFor(unit) {
 }
 
 // 施放技能：解析主目標 → 逐效果依 scope 套用。
-export function castSkill(caster, skillId, ctx) {
+// overcharge＝超充倍率（施放瞬間 energy/100），只放大 damage 直傷（見 applyEffect）。
+export function castSkill(caster, skillId, ctx, { overcharge = 1 } = {}) {
   const def = SKILLS[skillId];
   if (!def) return;
   const primary = def.target ? SELECTORS[def.target](caster, ctx) : [];
-  ctx.emit('ultimate', { caster, skill: skillId, target: primary[0] });
+  ctx.emit('ultimate', { caster, skill: skillId, target: primary[0], overcharge });
+  const castCtx = overcharge > 1 ? { ...ctx, overcharge } : ctx;
   for (const effect of def.effects) {
     const units = resolveScope(effect.scope, caster, primary, ctx);
-    applyEffect(effect, caster, units, ctx, skillId);
+    applyEffect(effect, caster, units, castCtx, skillId);
   }
 }
 

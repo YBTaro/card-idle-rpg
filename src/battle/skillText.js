@@ -15,6 +15,7 @@ const TARGET_LABEL = {
   lowestHpAlly: '血量最低的隊友',
   randomEnemy: '隨機敵人',
   lowestHpEnemy: '血量最低的敵人',
+  highestEnergyEnemy: '能量最高的敵人',
   deadAlly: '倒下的隊友',
   self: '自身',
 };
@@ -110,6 +111,9 @@ function describeEffect(effect, targetLabel) {
       break;
     case 'transmute':
       text = `將${who}轉化為自身剋制的屬性${dur(effect.duration)}`;
+      break;
+    case 'energySteal':
+      text = `奪走${who}當前全部能量，轉移給我方能量最低的隊友`;
       break;
     case 'nightmare':
       text = `對${who}烙上惡夢印記（受到普攻或技能直接傷害時，額外損失 ${pct(effect.pct ?? 0.05)} 最大生命；永久，可被淨化）`;

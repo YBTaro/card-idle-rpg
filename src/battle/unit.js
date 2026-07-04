@@ -6,7 +6,8 @@ import { resolve, absorbWithShields, hasControl } from './buffs.js';
 
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 
-export const ENERGY_MAX = 100;
+export const ENERGY_MAX = 100; // 施放門檻：集滿即放
+export const ENERGY_CAP = 200; // 能量池上限：溢出（>100）轉為技能直傷「超充」倍率 energy/100
 
 let _uidSeq = 1;
 
@@ -78,7 +79,7 @@ export class Unit {
   gainEnergy(amount) {
     if (hasControl(this, 'freeze')) return; // 凍結：無法回能（扣能量不受影響）
     const gained = Math.round(amount * this.energyGainMult);
-    this.energy = Math.max(0, Math.min(ENERGY_MAX, this.energy + gained));
+    this.energy = Math.max(0, Math.min(ENERGY_CAP, this.energy + gained)); // 溢出保留到 200＝超充
   }
 
   // 套用傷害，回傳實際扣血量。

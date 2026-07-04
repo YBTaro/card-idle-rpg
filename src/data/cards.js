@@ -89,11 +89,12 @@ export const CARDS = {
   voidshade: { id: 'voidshade', name: '蝕域行者', element: 'dark', class: 'dps', attackStyle: 'melee', race: '不死', series: ['深淵', '影之眷屬'], base: { hp: 495, atk: 94, def: 37 }, growth: { hp: 53, atk: 11, def: 3 }, passives: [{ when: { selfHpBelow: 0.5 }, target: 'self', effects: [{ stat: 'dmgDealt', op: 'mul', value: 1.15 }] }] },
   mireweaver: { id: 'mireweaver', name: '沼澤織者', element: 'dark', class: 'support', attackStyle: 'ranged', race: '妖', series: ['影之眷屬'], base: { hp: 515, atk: 70, def: 45 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'self', effects: [{ stat: 'dmgTaken', op: 'mul', value: 0.9 }] }] },
 
-  /* ================= 機制專職（3 名）：迴避／命中／惡夢 =================
+  /* ================= 機制專職（4 名）：迴避／命中／惡夢／竊能 =================
      同環境使原則：戰略級機制由專職角色承載，一人一招、定位單一。 */
   veilwalker: { id: 'veilwalker', name: '蜃影舞姬', element: 'wind', class: 'support', attackStyle: 'ranged', race: '精靈', series: ['疾風', '星詠'], base: { hp: 500, atk: 71, def: 43 }, growth: { hp: 55, atk: 8, def: 4 }, passives: [{ target: 'self', effects: [{ stat: 'dodge', op: 'add', value: 0.1 }] }] },
   hawkoracle: { id: 'hawkoracle', name: '鷹眼哨衛', element: 'light', class: 'support', attackStyle: 'ranged', race: '人', series: ['獵團', '光輝'], base: { hp: 505, atk: 72, def: 43 }, growth: { hp: 55, atk: 8, def: 4 }, passives: [{ target: 'allAllies', effects: [{ stat: 'accuracy', op: 'add', value: 0.05 }] }] },
   terrorweaver: { id: 'terrorweaver', name: '惡夢織主', element: 'dark', class: 'support', attackStyle: 'ranged', race: '妖', series: ['深淵', '影之眷屬'], base: { hp: 505, atk: 73, def: 43 }, growth: { hp: 55, atk: 8, def: 4 }, passives: [{ target: 'allAllies', targetWhere: { race: '妖' }, effects: [{ stat: 'atk', op: 'mul', value: 1.1 }] }] },
+  fluxreaver: { id: 'fluxreaver', name: '奪流魅影', element: 'dark', class: 'dps', attackStyle: 'melee', race: '妖', series: ['深淵'], base: { hp: 490, atk: 95, def: 36 }, growth: { hp: 52, atk: 11, def: 3 }, passives: [{ target: 'self', effects: [{ stat: 'energyGain', op: 'mul', value: 1.1 }] }] },
 };
 
 export const CARD_LIST = Object.values(CARDS);

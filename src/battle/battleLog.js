@@ -15,11 +15,12 @@ export function simulateBattle(teamA, teamB, { rng, env = null } = {}) {
   engine.on('weather', ({ id, unit }) => log.push({ type: 'weather', id, uid: uidOf(unit) }));
   engine.on('terrain', ({ id, unit }) => log.push({ type: 'terrain', id, uid: uidOf(unit) }));
   engine.on('drain', ({ unit, amount }) => log.push({ type: 'drain', uid: uidOf(unit), amount }));
+  engine.on('steal', ({ from, to, amount }) => log.push({ type: 'steal', fromUid: uidOf(from), toUid: uidOf(to), amount }));
   engine.on('turn', ({ unit }) => log.push({ type: 'turn', uid: uidOf(unit) }));
   engine.on('round', ({ round }) => log.push({ type: 'round', round }));
   engine.on('energy', ({ unit, value }) => log.push({ type: 'energy', uid: uidOf(unit), value }));
   engine.on('attack', ({ attacker, target, skill }) => log.push({ type: 'attack', attackerUid: uidOf(attacker), targetUid: uidOf(target), skill }));
-  engine.on('ultimate', ({ caster, skill, target }) => log.push({ type: 'ultimate', casterUid: uidOf(caster), skill, targetUid: uidOf(target) }));
+  engine.on('ultimate', ({ caster, skill, target, overcharge }) => log.push({ type: 'ultimate', casterUid: uidOf(caster), skill, targetUid: uidOf(target), overcharge: overcharge ?? 1 }));
   engine.on('damage', (p) => log.push({ type: 'damage', sourceUid: uidOf(p.source), targetUid: uidOf(p.target), amount: p.amount, skill: p.skill, isAdvantage: !!p.isAdvantage, isDisadvantage: !!p.isDisadvantage, isCrit: !!p.isCrit, trueDmg: !!p.trueDmg, execute: !!p.execute, detonate: !!p.detonate, nightmare: !!p.nightmare }));
   engine.on('heal', (p) => log.push({ type: 'heal', sourceUid: uidOf(p.source), targetUid: uidOf(p.target), amount: p.amount, kind: p.kind ?? null }));
   engine.on('dispel', (p) => log.push({ type: 'dispel', uid: uidOf(p.unit), what: p.what, count: p.count }));

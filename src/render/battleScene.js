@@ -644,12 +644,20 @@ export class BattleScene {
           });
         }
       }),
-      rp.on('ultimate', ({ casterUid, skill, targetUid }) => {
+      rp.on('ultimate', ({ casterUid, skill, targetUid, overcharge }) => {
         if (this._instant) return;
         const s = this.sprites.get(casterUid);
         if (!s) return;
         const info = s._info;
         const color = ELEMENT_COLOR[info.element] ?? 0xffffff;
+        // 超充施放：溢出能量轉直傷倍率——金色比例標讓玩家看見「多充的沒白費」
+        if (overcharge > 1) {
+          const txt = new Text({
+            text: `超充 ${Math.round(overcharge * 100)}%！`,
+            style: { fontSize: 22, fill: 0xffd54a, fontWeight: '800', stroke: { color: 0x000000, width: 4 } },
+          });
+          floatText(this.fxLayer, s.x, this._chestY(s) - 46, txt);
+        }
         // 聚光燈演出：全場壓暗、施放者置頂 + 施法法陣 + 技能名小標籤（貼施放者旁）
         const timing = ultTiming(skill);
         this._ultTail = timing.impactTail; // 每技能不同的命中餘韻
@@ -864,6 +872,26 @@ export class BattleScene {
           style: { fontSize: 18, fill: 0xbfe8d8, fontStyle: 'italic', fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
         });
         floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
+      }),
+      rp.on('steal', ({ fromUid, toUid, amount }) => {
+        if (this._instant) return;
+        const from = this.sprites.get(fromUid);
+        const to = toUid != null ? this.sprites.get(toUid) : null;
+        if (from) {
+          drainMotes(from, this._dotTex); // 能量被抽走的收束光點
+          const txt = new Text({
+            text: `竊能 -${amount}`,
+            style: { fontSize: 18, fill: 0xc9a7ff, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
+          });
+          floatText(this.fxLayer, from.x, this._chestY(from) - 14, txt);
+        }
+        if (to) {
+          const txt = new Text({
+            text: `+${amount} 能量`,
+            style: { fontSize: 18, fill: 0x7ad7ff, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
+          });
+          floatText(this.fxLayer, to.x, this._chestY(to) - 14, txt);
+        }
       }),
       rp.on('drain', ({ uid, amount }) => {
         if (this._instant) return;

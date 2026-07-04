@@ -93,6 +93,12 @@ export const SELECTORS = {
     if (!a.length) return [];
     return [a.reduce((best, u) => (u.hpRatio < best.hpRatio ? u : best))];
   },
+  // 能量最高的存活敵人（竊能型：專打快要放大招的人）
+  highestEnergyEnemy: (caster, ctx) => {
+    const a = aliveIn(ctx.enemies);
+    if (!a.length) return [];
+    return [a.reduce((best, u) => (u.energy > best.energy ? u : best))];
+  },
   // 第一位倒下的隊友（復活用；配 scope 'targetIncludingDead'）
   deadAlly: (caster, ctx) => {
     const d = ctx.allies.find((u) => !u.alive);

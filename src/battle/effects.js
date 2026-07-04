@@ -152,8 +152,9 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
     }
     switch (effect.type) {
       case 'damage': {
+        // 超充：施放瞬間溢出的能量（energy/100）只放大直傷，DoT/治療/狀態不吃
+        let mult = effect.mult * (ctx.overcharge ?? 1);
         // 處決：目標血量比例低於 executeBelow → 倍率乘 executeBonus
-        let mult = effect.mult;
         let executed = false;
         if (effect.executeBelow != null && u.hpRatio < effect.executeBelow) {
           mult *= effect.executeBonus ?? 1.5;
@@ -308,6 +309,22 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         applyBuff(u, { kind: 'nightmare', pct: effect.pct ?? 0.05, key: defaultKey('nightmare') });
         emitBuffs(u);
         break;
+      case 'energySteal': {
+        // 竊能：奪走目標當前全部能量 → 全數轉給我方能量最低的存活隊友。
+        // 瞬發操作類（同 dispel/extend）不吃迴避判定；接收方走 gainEnergy（凍結/上限規則照常）。
+        const stolen = u.energy;
+        if (stolen <= 0) break;
+        u.energy = 0;
+        ctx.emit('energy', { unit: u, value: 0 });
+        const alive = ctx.allies.filter((a) => a.alive);
+        const recv = alive.length ? alive.reduce((m, a) => (a.energy < m.energy ? a : m)) : null;
+        if (recv) {
+          recv.gainEnergy(stolen);
+          ctx.emit('energy', { unit: recv, value: recv.energy });
+        }
+        ctx.emit('steal', { from: u, to: recv, amount: stolen });
+        break;
+      }
     }
   }
 }
