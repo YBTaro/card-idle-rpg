@@ -535,7 +535,7 @@ export class BattleScene {
     if (b.kind === 'control') {
       return b.control === 'silence' ? '🤫' : b.control === 'freeze' ? '❄' : '🎯';
     }
-    const map = { atk: '⚔', def: '🛡', dmgTaken: '🛡', dotTaken: '🔥', critChance: '✨', critMult: '✨', dmgDealt: '💥', energyGain: '⚡' };
+    const map = { atk: '⚔', def: '🛡', dmgTaken: '🛡', dotTaken: '🔥', critChance: '✨', critMult: '✨', dmgDealt: '💥', energyGain: '⚡', dodge: '💨', accuracy: '🎯', healTaken: '💊' };
     return map[b.stat] || '◆';
   }
 

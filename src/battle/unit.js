@@ -91,8 +91,11 @@ export class Unit {
     return dealt;
   }
 
+  // 受治療倍率（healTaken）唯一入口：治療增幅（神）/ 重傷（不死）都在這裡生效。
+  // 復活直接設 hp 不經此路徑（設計上復活不是治療）。
   heal(amount) {
-    const healed = Math.min(this.maxHp - this.hp, Math.max(0, Math.round(amount)));
+    const scaled = Math.round(Math.max(0, amount) * resolve(this, 'healTaken', 1));
+    const healed = Math.min(this.maxHp - this.hp, scaled);
     this.hp += healed;
     return healed;
   }

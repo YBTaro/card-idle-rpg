@@ -301,6 +301,13 @@ export const SKILLS = {
     { type: 'damage', mult: 1.6, scope: 'target' },
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.15, duration: 3, scope: 'self', stackable: true }, // 狂怒層：每次施放疊一層
   ]},
+  mercyRain: { name: '甘霖', effects: [ // 定位：治療增幅——神族專屬（受治療量↑）
+    { type: 'heal', power: 1.0, scope: 'allAllies' },
+    { type: 'buff', stat: 'healTaken', op: 'mul', value: 1.3, duration: 2, scope: 'allAllies' },
+  ]},
+  deathKnell: { name: '喪鐘', effects: [ // 定位：重傷——不死專屬（戰略級獨立承載：專剋治療隊）
+    { type: 'buff', stat: 'healTaken', op: 'mul', value: 0.5, duration: 2, scope: 'allEnemies' },
+  ]},
 };
 
 // cardId → skillId
@@ -368,11 +375,13 @@ export const CARD_SKILLS = {
   hawkoracle: 'hawkSight',
   terrorweaver: 'nightTerror',
   fluxreaver: 'energyLeech',
-  // ---- 種族號令與補位（4）----
+  // ---- 種族號令與補位（6）----
   bonemarshal: 'deathLegion',
   sylvanqueen: 'sylvanHymn',
   abysstyrant: 'bloodFeast',
   rageclaw: 'rageRend',
+  dawnmother: 'mercyRain',
+  knellwitch: 'deathKnell',
 };
 
 export function skillFor(unit) {

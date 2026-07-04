@@ -39,6 +39,7 @@ const STAT_LABEL = {
   energyGain: '集氣速度',
   dodge: '迴避率',
   accuracy: '命中率',
+  healTaken: '受治療量',
 };
 
 const CONTROL_LABEL = { taunt: '嘲諷', silence: '沉默（無法行動）', freeze: '凍結（無法回能）' };

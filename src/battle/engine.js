@@ -35,6 +35,7 @@
 //   dealDirect：繞盾直傷（DoT/引爆/侵蝕/惡夢共用；不暴擊、不回能、不觸發反傷）
 //
 // 【治療路徑】heal/lifesteal/HoT 全部經 healAmount()（環境 healMul 唯一入口）
+//   受治療倍率（healTaken：神＝增幅/不死＝重傷）於 Unit.heal 唯一入口生效；復活不經治療路徑
 //
 // 【觸發器掛點】（新增觸發型 buff 先看這裡有沒有現成掛點）
 //   受直接攻擊時 → dealDamage 內（thorns/counter/nightmare 惡夢印記）

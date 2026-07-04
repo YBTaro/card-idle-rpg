@@ -106,6 +106,9 @@ export const CARDS = {
   sylvanqueen: { id: 'sylvanqueen', name: '翠語女王', element: 'wind', class: 'support', attackStyle: 'ranged', race: '精靈', series: ['秘林', '星詠'], base: { hp: 510, atk: 71, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'allAllies', targetWhere: { race: '精靈' }, effects: [{ stat: 'atk', op: 'mul', value: 1.08 }] }] },
   abysstyrant: { id: 'abysstyrant', name: '魔淵僭主', element: 'dark', class: 'tank', attackStyle: 'melee', race: '妖', series: ['深淵'], base: { hp: 730, atk: 60, def: 71 }, growth: { hp: 82, atk: 6, def: 7 }, passives: [{ target: 'allAllies', targetWhere: { race: '妖' }, effects: [{ stat: 'dmgTaken', op: 'mul', value: 0.95 }] }] },
   rageclaw: { id: 'rageclaw', name: '裂爪狂熊', element: 'fire', class: 'dps', attackStyle: 'melee', race: '獸', series: ['大地'], base: { hp: 500, atk: 96, def: 36 }, growth: { hp: 54, atk: 11, def: 3 }, passives: [{ when: { selfHpBelow: 0.5 }, target: 'self', effects: [{ stat: 'critChance', op: 'add', value: 0.15 }] }] },
+  // 治療量機制的種族專屬載體：增幅＝神（稀有輔助）、重傷＝不死（亡者詛咒）
+  dawnmother: { id: 'dawnmother', name: '霖光聖母', element: 'light', class: 'support', attackStyle: 'ranged', race: '神', series: ['光輝', '聖歌隊'], base: { hp: 520, atk: 73, def: 46 }, growth: { hp: 58, atk: 8, def: 5 }, passives: [{ target: 'allAllies', effects: [{ stat: 'healTaken', op: 'mul', value: 1.05 }] }] },
+  knellwitch: { id: 'knellwitch', name: '喪鐘咒師', element: 'dark', class: 'support', attackStyle: 'ranged', race: '不死', series: ['影之眷屬'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'allEnemies', effects: [{ stat: 'healTaken', op: 'mul', value: 0.95 }] }] },
 };
 
 export const CARD_LIST = Object.values(CARDS);
