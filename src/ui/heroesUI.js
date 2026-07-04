@@ -23,9 +23,10 @@ export class HeroesUI {
   constructor(root) {
     this.root = root;
     this.tab = 'roster'; // roster | codex
-    this.element = null; // 三維篩選（null = 不限）
-    this.cls = null;
-    this.race = null;
+    // 三維篩選（Set 多選）：維度內＝或、維度間＝且；空集合＝不限
+    this.element = new Set();
+    this.cls = new Set();
+    this.race = new Set();
     this.render();
   }
 
@@ -34,10 +35,16 @@ export class HeroesUI {
   }
 
   _matches(card) {
-    if (this.element && card.element !== this.element) return false;
-    if (this.cls && card.class !== this.cls) return false;
-    if (this.race && card.race !== this.race) return false;
+    if (this.element.size && !this.element.has(card.element)) return false;
+    if (this.cls.size && !this.cls.has(card.class)) return false;
+    if (this.race.size && !this.race.has(card.race)) return false;
     return true;
+  }
+
+  _toggle(set, value) {
+    if (set.has(value)) set.delete(value);
+    else set.add(value);
+    this.render();
   }
 
   render() {
@@ -70,8 +77,8 @@ export class HeroesUI {
     const clsRow = el('div', { class: 'hx-chips' });
     for (const c of CLASS_META) {
       const chip = el('div', {
-        class: `fchip pressable${this.cls === c.id ? ' on' : ''}`,
-        onClick: () => { this.cls = this.cls === c.id ? null : c.id; this.render(); },
+        class: `fchip pressable${this.cls.has(c.id) ? ' on' : ''}`,
+        onClick: () => this._toggle(this.cls, c.id),
       });
       chip.appendChild(icon(`cls_${c.id}`, 15));
       chip.appendChild(el('span', { text: c.label }));
@@ -83,9 +90,9 @@ export class HeroesUI {
     const elRow = el('div', { class: 'hx-chips' });
     for (const elId of ELEMENTS) {
       elRow.appendChild(el('div', {
-        class: `fchip el-${elId} pressable${this.element === elId ? ' on' : ''}`,
+        class: `fchip el-${elId} pressable${this.element.has(elId) ? ' on' : ''}`,
         text: ELEMENT_LABEL[elId],
-        onClick: () => { this.element = this.element === elId ? null : elId; this.render(); },
+        onClick: () => this._toggle(this.element, elId),
       }));
     }
     rail.appendChild(elRow);
@@ -94,18 +101,19 @@ export class HeroesUI {
     const raceRow = el('div', { class: 'hx-chips' });
     for (const r of RACES) {
       raceRow.appendChild(el('div', {
-        class: `fchip pressable${this.race === r ? ' on' : ''}`,
+        class: `fchip pressable${this.race.has(r) ? ' on' : ''}`,
         text: r,
-        onClick: () => { this.race = this.race === r ? null : r; this.render(); },
+        onClick: () => this._toggle(this.race, r),
       }));
     }
     rail.appendChild(raceRow);
 
-    if (this.element || this.cls || this.race) {
+    const activeCount = this.element.size + this.cls.size + this.race.size;
+    if (activeCount > 0) {
       rail.appendChild(el('button', {
         class: 'btn hx-clear pressable',
-        text: '✕ 清除篩選',
-        onClick: () => { this.element = null; this.cls = null; this.race = null; this.render(); },
+        text: `✕ 清除篩選（${activeCount}）`,
+        onClick: () => { this.element.clear(); this.cls.clear(); this.race.clear(); this.render(); },
       }));
     }
     wrap.appendChild(rail);
