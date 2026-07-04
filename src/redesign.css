@@ -1,0 +1,222 @@
+/* ================= 介面重設計（首頁排版 / 頁面場景 / 英雄頁 / 卡面徽章 / 隊伍） ================= */
+
+/* ---- 共用頁面場景：功能頁不再浮在純色上（頂部靈光 + 底部山影 + 暗角） ---- */
+.screen:not(#screen-home):not(#screen-battle)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 55% at 50% -12%, rgba(96, 84, 168, 0.30), transparent 62%),
+    radial-gradient(55% 38% at 85% 108%, rgba(232, 196, 106, 0.07), transparent 65%),
+    radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.32) 100%);
+}
+.screen:not(#screen-home):not(#screen-battle)::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 30%;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 130% at 18% 118%, rgba(38, 34, 66, 0.75), transparent 65%),
+    radial-gradient(70% 150% at 82% 128%, rgba(30, 27, 54, 0.8), transparent 62%),
+    linear-gradient(to top, rgba(16, 14, 30, 0.55), transparent 80%);
+}
+/* 場景層為 ::before/::after（非定位偽元素），一定墊在定位內容之下——不需覆寫子元素定位 */
+
+/* 頁面標題：金色飾條 */
+.page-title.left::after {
+  content: '';
+  display: block;
+  height: 3px;
+  width: 58%;
+  margin-top: 4px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--gold, #e8c46a), transparent);
+}
+
+/* ---- 首頁重排（參考原型：橫幅/貨幣列/小功能列/大冒險鈕/底部大功能列） ---- */
+.hub-tl {
+  display: flex; gap: 10px; align-items: center;
+  background: linear-gradient(90deg, rgba(20, 18, 38, 0.78), rgba(20, 18, 38, 0.35));
+  border: 1px solid rgba(232, 196, 106, 0.35);
+  border-radius: 999px; padding: 5px 18px 5px 6px;
+}
+.hub-tl .pname { font-weight: 800; font-size: 14.5px; line-height: 1.25; }
+.hub-tl .pstage { font-size: 11.5px; color: var(--gold, #e8c46a); }
+.hub-cur {
+  position: absolute; top: 12px; right: 14px; z-index: 5;
+  display: flex; gap: 8px; align-items: center;
+}
+.hub-feats {
+  position: absolute; top: 62px; right: 14px; z-index: 5;
+  display: flex; gap: 10px;
+}
+.hub-feat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.hub-feat .fsq {
+  position: relative; width: 46px; height: 46px; border-radius: 14px;
+  background: linear-gradient(160deg, rgba(38, 34, 66, 0.9), rgba(24, 21, 44, 0.9));
+  border: 1.5px solid rgba(232, 196, 106, 0.45);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+.hub-feat span { font-size: 11px; color: var(--text, #e8e4da); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+
+.hub-adv {
+  position: absolute; right: 20px; bottom: 96px; z-index: 6;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  width: 112px; padding: 14px 8px 12px;
+  border-radius: 26px;
+  background: linear-gradient(165deg, #ffd76a, #d9a441 70%, #b9832e);
+  border: 2px solid #fff0c0;
+  box-shadow: 0 6px 18px rgba(217, 164, 65, 0.45), inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+  color: #3a2b18;
+}
+.hub-adv .a1 { font-size: 20px; font-weight: 900; line-height: 1; }
+.hub-adv .a2 { font-size: 12.5px; font-weight: 800; }
+.hub-adv .gicon { filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.4)); }
+
+.hub-dock {
+  position: absolute; left: 16px; bottom: 12px; z-index: 6;
+  display: flex; gap: 14px; align-items: flex-end;
+}
+.hub-dk { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.hub-dk .dksq {
+  width: 58px; height: 58px; border-radius: 18px;
+  background: linear-gradient(160deg, rgba(44, 39, 76, 0.95), rgba(26, 23, 48, 0.95));
+  border: 2px solid rgba(232, 196, 106, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.hub-dk .dkl {
+  margin-top: -8px; z-index: 1;
+  background: linear-gradient(180deg, #f2cd6f, #d9a441);
+  color: #3a2b18; font-size: 11.5px; font-weight: 800;
+  border-radius: 999px; padding: 2px 10px;
+  border: 1px solid #fff0c0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+.hub-dk:hover .dksq { border-color: var(--gold, #e8c46a); }
+
+/* ---- 英雄頁：左篩選欄 + 卡冊 ---- */
+.hx-wrap {
+  position: absolute; inset: 84px 16px 12px;
+  display: flex; gap: 14px; min-height: 0;
+}
+.hx-rail {
+  width: 172px; flex: none; overflow-y: auto;
+  background: rgba(10, 9, 22, 0.45);
+  border: 1px solid rgba(232, 196, 106, 0.18);
+  border-radius: 14px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.hx-rt {
+  color: var(--gold, #e8c46a); font-size: 12px; font-weight: 800;
+  letter-spacing: 0.12em; margin-top: 6px;
+}
+.hx-rt:first-child { margin-top: 0; }
+.hx-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.hx-chips .fchip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; border-radius: 999px; padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.hx-chips .fchip.on {
+  background: linear-gradient(180deg, #f2cd6f, #d9a441);
+  color: #3a2b18; font-weight: 800; border-color: #fff0c0;
+}
+/* 屬性 chips 元素色 */
+.fchip.el-fire.on { background: linear-gradient(180deg, #ff9a76, #d95a3a); color: #fff; }
+.fchip.el-wind.on { background: linear-gradient(180deg, #8ef2ae, #3d9e63); color: #10241a; }
+.fchip.el-water.on { background: linear-gradient(180deg, #7cc4ff, #2f6fb8); color: #0c1a2c; }
+.fchip.el-light.on { background: linear-gradient(180deg, #ffe789, #d9a441); color: #3a2b18; }
+.fchip.el-dark.on { background: linear-gradient(180deg, #c99aff, #7a4fc0); color: #fff; }
+.hx-clear { margin-top: 10px; font-size: 12px; }
+.hx-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.hx-count {
+  align-self: flex-end; font-size: 12px; color: var(--text-dim, #a89f92);
+  background: rgba(0, 0, 0, 0.3); border-radius: 99px; padding: 3px 12px; margin-bottom: 8px;
+}
+.hx-empty { color: var(--text-dim, #a89f92); font-size: 13px; text-align: center; padding: 40px 0; grid-column: 1 / -1; }
+.hx-main .hx-scroll { position: static; flex: 1; overflow-y: auto; }
+/* 卡格 hover 浮起 */
+.deck-item { transition: transform 0.16s ease, filter 0.16s ease; }
+.deck-item:hover { transform: translateY(-4px); filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.45)); }
+
+/* ---- 卡面徽章（TCG 感）：內金線框 + 屬性寶石 + 職業圓章 ---- */
+.cardframe { position: relative; }
+/* 屬性寶石佔左上 → 等級章讓位到右上（deck 卡冊原本把它移到左上，收回） */
+.deck-item .cardframe-lvl { left: auto; right: 0.3rem; top: 1.9rem; }
+.cardframe-lvl { top: 0.3rem; right: 0.3rem; left: auto; }
+.cardframe-inner {
+  position: absolute; inset: 3px; pointer-events: none;
+  border: 1px solid rgba(232, 196, 106, 0.28);
+  border-radius: inherit;
+}
+.cardframe-elbadge {
+  position: absolute; top: 5px; left: 5px; pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.cardframe-clsbadge {
+  position: absolute; right: 5px; bottom: 26px; pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.cardframe.mini .cardframe-elbadge, .cardframe.mini .cardframe-clsbadge, .cardframe.mini .cardframe-inner { display: none; }
+
+/* ---- 角色詳情：情報標籤 ---- */
+.hs-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+.hs-tag {
+  font-size: 12px; border-radius: 999px; padding: 3px 11px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.hs-tag.race { border-color: rgba(140, 220, 170, 0.5); color: #a9e8c3; }
+.hs-tag.el { border-color: rgba(124, 196, 255, 0.5); color: #a8d6ff; }
+.hs-tag.series { border-color: rgba(232, 196, 106, 0.5); color: var(--gold, #e8c46a); }
+.hs-id .gicon { margin-right: 2px; }
+.hs-lvrow .cls { display: inline-flex; align-items: center; gap: 2px; }
+
+/* ---- 角色詳情：頁簽制面板（參考原型 資訊/升級/技能 分頁） ---- */
+.hs-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+.hs-tabbtn {
+  flex: 1; text-align: center; font-size: 13.5px; font-weight: 700;
+  border-radius: 999px; padding: 7px 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-dim, #a89f92);
+}
+.hs-tabbtn.on {
+  background: linear-gradient(180deg, #f2cd6f, #d9a441);
+  border-color: #fff0c0; color: #3a2b18; font-weight: 800;
+  box-shadow: 0 2px 6px rgba(217, 164, 65, 0.35);
+}
+.hs-tabbody { min-height: 0; }
+.hs-lvbig {
+  display: flex; align-items: baseline; gap: 10px;
+  background: rgba(0, 0, 0, 0.25); border-radius: 12px; padding: 10px 14px; margin-bottom: 8px;
+}
+.hs-lvbig b { font-size: 24px; color: var(--gold, #e8c46a); }
+.hs-lvbig .arr { color: var(--text-dim, #a89f92); font-weight: 800; }
+.hs-lvbig i { font-style: normal; font-size: 20px; font-weight: 800; color: #7cc4ff; }
+.hs-lvbig .maxmark { color: #ff9a84; font-weight: 800; letter-spacing: 0.1em; }
+.hs-stats .v small.up { color: #7cc4ff; font-weight: 800; }
+.hs-tag.cls { display: inline-flex; align-items: center; border-color: rgba(232, 196, 106, 0.5); }
+
+/* ---- 隊伍頁：前後衛戰區 ---- */
+.tp-group {
+  border-radius: 16px; padding: 10px 8px 14px;
+  background: linear-gradient(to top, rgba(232, 196, 106, 0.05), transparent 55%);
+}
+.tp-group::after {
+  content: '';
+  position: absolute; left: 6%; right: 6%; bottom: 4px; height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(50% 100% at 50% 50%, rgba(232, 196, 106, 0.18), transparent 75%);
+  pointer-events: none;
+}
+.tp-group .gtag {
+  background: linear-gradient(180deg, #f2cd6f, #d9a441);
+  color: #3a2b18; font-weight: 800; border-radius: 999px;
+  padding: 2px 14px; border: 1px solid #fff0c0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+}

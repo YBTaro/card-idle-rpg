@@ -14,6 +14,7 @@ import { isInFormation, toggleFormation, MAX_FORMATION } from '../systems/format
 import { skillInfoForCard, passiveInfoForCard } from '../battle/skillText.js';
 import { trackQuest } from '../systems/quests.js';
 import { holdRepeat } from './gestures.js';
+import { icon } from './icons.js';
 
 const SHEET_IN_S = 0.28;
 const SHEET_OUT_S = 0.18;
@@ -141,82 +142,114 @@ class HeroSheet {
     const affordable = canLevelUp(inst);
     const inForm = isInFormation(inst.instanceId);
 
-    // 身分名牌同步（屬性徽章 + 名字 + 星級）
+    // 身分名牌同步（屬性寶石 + 名字 + 星級）
     const stars = inst.stars ?? 0;
     clear(this.idBar);
-    this.idBar.appendChild(el('span', { class: `el el-${card.element}`, text: ELEMENT_LABEL[card.element] }));
+    this.idBar.appendChild(icon(`el_${card.element}`, 22));
     this.idBar.appendChild(el('span', { class: 'nm', text: card.name }));
     this.idBar.appendChild(el('span', { class: 'hs-stars', text: '★'.repeat(stars) + '☆'.repeat(MAX_STARS - stars) }));
 
     const p = this.panel;
     clear(p);
 
-    // 等級列
-    p.appendChild(
-      el('div', { class: 'hs-lvrow' }, [
-        el('span', { class: 'hs-chip', text: '等級' }),
-        el('span', { class: 'lvv', text: `Lv ${inst.level} / ${MAX_LEVEL}` }),
-        el('span', {
-          class: 'cls',
-          text: `${CLASS_GLYPH[card.class]} ${CLASSES[card.class].label} · ${card.race}${card.series?.length ? ' · ' + card.series.join('／') : ''}`,
-        }),
-      ])
-    );
-
-    // 數值
-    p.appendChild(el('div', { class: 'hs-ribbon', text: '數值' }));
-    const stats = el('div', { class: 'hs-stats' });
-    const rows = [
-      ['❤ 生命', st.hp, next ? next.hp - st.hp : 0],
-      ['⚔ 攻擊', st.atk, next ? next.atk - st.atk : 0],
-      ['🛡 防禦', st.def, next ? next.def - st.def : 0],
-    ];
-    for (const [k, v, d] of rows) {
-      stats.appendChild(
-        el('div', { class: 'st' }, [
-          el('span', { class: 'k', text: k }),
-          el('span', { class: 'v', html: `${fmt(v)}${d > 0 ? ` <small>+${fmt(d)}</small>` : ''}` }),
-        ])
-      );
+    // 頁簽列（參考原型的左欄分頁：資訊 / 強化 / 技能）
+    this.tab ??= 'grow';
+    const tabsRow = el('div', { class: 'hs-tabs' });
+    for (const [id, label] of [['info', '資訊'], ['grow', '強化'], ['skill', '技能']]) {
+      tabsRow.appendChild(el('div', {
+        class: `hs-tabbtn pressable${this.tab === id ? ' on' : ''}`,
+        text: label,
+        onClick: () => { this.tab = id; this.renderPanel(); },
+      }));
     }
-    p.appendChild(stats);
+    p.appendChild(tabsRow);
 
-    // 星級（重複卡自動升星；每星三圍加成 + 里程碑）
-    p.appendChild(el('div', { class: 'hs-ribbon', text: '星級' }));
-    const starLine = el('div', { class: 'hs-starline' });
-    starLine.appendChild(el('span', { class: 'hs-stars big', text: '★'.repeat(stars) + '☆'.repeat(MAX_STARS - stars) }));
-    starLine.appendChild(el('span', { class: 'st-note', text: `每星 三圍 +${Math.round(STAR_STAT_BONUS * 100)}%（重複抽到自動升星）` }));
-    for (const [star, m] of Object.entries(STAR_MILESTONES)) {
-      starLine.appendChild(
-        el('span', { class: `st-mile${stars >= Number(star) ? ' on' : ''}`, text: `${star}★ ${m.desc}` })
-      );
-    }
-    p.appendChild(starLine);
+    const body = el('div', { class: 'hs-tabbody' });
+    p.appendChild(body);
 
-    // 技能
-    p.appendChild(el('div', { class: 'hs-ribbon', text: '技能' }));
-    const skill = skillInfoForCard(inst.cardId, card.class);
-    if (skill) {
-      p.appendChild(
-        el('div', { class: 'hs-skills' }, [
-          el('div', { class: 'hs-sk' }, [
-            el('div', { class: 'ic', text: CLASS_GLYPH[card.class] || '✦' }),
-            el('span', { class: 't', text: '絕技' }),
-          ]),
-          el('div', { class: 'hs-skdesc', html: `<b>${skill.name}</b>${skill.desc}` }),
-        ])
-      );
-    }
-    for (const desc of passiveInfoForCard(inst.cardId)) {
-      p.appendChild(
-        el('div', { class: 'hs-skills' }, [
-          el('div', { class: 'hs-sk' }, [
-            el('div', { class: 'ic psv', text: '✨' }),
-            el('span', { class: 't', text: '被動' }),
-          ]),
-          el('div', { class: 'hs-skdesc', html: `<b>被動效果</b>${desc}` }),
-        ])
-      );
+    // 數值列（資訊=現值；強化=帶下一級增量，對齊參考的 +N 藍字）
+    const statBlock = (withDelta) => {
+      const stats = el('div', { class: 'hs-stats' });
+      const rows = [
+        ['❤ 生命', st.hp, next ? next.hp - st.hp : 0],
+        ['⚔ 攻擊', st.atk, next ? next.atk - st.atk : 0],
+        ['🛡 防禦', st.def, next ? next.def - st.def : 0],
+      ];
+      for (const [k, v, d] of rows) {
+        stats.appendChild(
+          el('div', { class: 'st' }, [
+            el('span', { class: 'k', text: k }),
+            el('span', { class: 'v', html: `${fmt(v)}${withDelta && d > 0 ? ` <small class="up">+${fmt(d)}</small>` : ''}` }),
+          ])
+        );
+      }
+      return stats;
+    };
+
+    if (this.tab === 'info') {
+      // 情報：職業 / 種族 / 屬性 / 系列（卡面不放的資訊層——放這裡）
+      body.appendChild(el('div', { class: 'hs-ribbon', text: '情報' }));
+      const infoRow = el('div', { class: 'hs-tags' });
+      const clsTag = el('span', { class: 'hs-tag cls' });
+      clsTag.appendChild(icon(`cls_${card.class}`, 15));
+      clsTag.appendChild(el('span', { text: ` ${CLASSES[card.class].label}` }));
+      infoRow.appendChild(clsTag);
+      infoRow.appendChild(el('span', { class: 'hs-tag race', text: `種族 · ${card.race}` }));
+      infoRow.appendChild(el('span', { class: 'hs-tag el', text: `屬性 · ${ELEMENT_LABEL[card.element]}` }));
+      for (const sName of card.series ?? []) {
+        infoRow.appendChild(el('span', { class: 'hs-tag series', text: sName }));
+      }
+      body.appendChild(infoRow);
+      body.appendChild(el('div', { class: 'hs-ribbon', text: '數值' }));
+      body.appendChild(statBlock(false));
+    } else if (this.tab === 'grow') {
+      // 等級（大字現值 » 下一級，對齊參考的 Lv.10 » Lv.11）
+      const lvLine = el('div', { class: 'hs-lvbig' });
+      lvLine.appendChild(el('b', { text: `Lv.${inst.level}` }));
+      if (!maxed) {
+        lvLine.appendChild(el('span', { class: 'arr', text: '»' }));
+        lvLine.appendChild(el('i', { text: `Lv.${inst.level + 1}` }));
+      } else {
+        lvLine.appendChild(el('span', { class: 'maxmark', text: 'MAX' }));
+      }
+      body.appendChild(lvLine);
+      body.appendChild(statBlock(true));
+
+      // 星級（重複卡自動升星；每星三圍加成 + 里程碑）
+      body.appendChild(el('div', { class: 'hs-ribbon', text: '星級' }));
+      const starLine = el('div', { class: 'hs-starline' });
+      starLine.appendChild(el('span', { class: 'hs-stars big', text: '★'.repeat(stars) + '☆'.repeat(MAX_STARS - stars) }));
+      starLine.appendChild(el('span', { class: 'st-note', text: `每星 三圍 +${Math.round(STAR_STAT_BONUS * 100)}%（重複抽到自動升星）` }));
+      for (const [star, m] of Object.entries(STAR_MILESTONES)) {
+        starLine.appendChild(
+          el('span', { class: `st-mile${stars >= Number(star) ? ' on' : ''}`, text: `${star}★ ${m.desc}` })
+        );
+      }
+      body.appendChild(starLine);
+    } else {
+      // 技能
+      const skill = skillInfoForCard(inst.cardId, card.class);
+      if (skill) {
+        const skIc = el('div', { class: 'ic' });
+        skIc.appendChild(icon(`cls_${card.class}`, 20));
+        body.appendChild(
+          el('div', { class: 'hs-skills' }, [
+            el('div', { class: 'hs-sk' }, [skIc, el('span', { class: 't', text: '絕技' })]),
+            el('div', { class: 'hs-skdesc', html: `<b>${skill.name}</b>${skill.desc}` }),
+          ])
+        );
+      }
+      for (const desc of passiveInfoForCard(inst.cardId)) {
+        body.appendChild(
+          el('div', { class: 'hs-skills' }, [
+            el('div', { class: 'hs-sk' }, [
+              el('div', { class: 'ic psv', text: '✨' }),
+              el('span', { class: 't', text: '被動' }),
+            ]),
+            el('div', { class: 'hs-skdesc', html: `<b>被動效果</b>${desc}` }),
+          ])
+        );
+      }
     }
 
     // 行動列

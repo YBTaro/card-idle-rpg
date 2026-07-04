@@ -2,7 +2,7 @@
 // 版式依參考原型：左上檔案+貨幣、左中事件卡+台詞泡泡、左下營運捷徑、
 // 中央看板英雄、右側菱形模式入口、右上工具列、底部飾條功能列。
 import { gsap } from 'gsap';
-import { el, clear, toast, fmt } from './dom.js';
+import { el, clear, fmt } from './dom.js';
 import { store } from '../core/state.js';
 import { nav } from './router.js';
 import { computeBadges, dot } from './badges.js';
@@ -85,7 +85,7 @@ export class HomeUI {
     ]);
     this.root.appendChild(this._say);
 
-    // 左上：檔案（點開自己的名片，可編輯暱稱/頭像/簽名）+ 貨幣
+    // 左上：玩家橫幅（頭像＋暱稱＋章節；點開名片可編輯）——參考原型的角色橫幅
     const ava = el('div', {
       class: 'hub-ava pressable',
       onClick: () => openPlayerCard({ ...myProfileData(), ...(net.profile ?? {}) }, { editable: true }),
@@ -93,69 +93,59 @@ export class HomeUI {
     const p = hero ? portraitFor(hero.cardId) : null;
     if (p) ava.appendChild(el('img', { src: p.src, alt: '', style: `object-position:${p.x * 100}% ${p.y * 100}%` }));
     this.root.appendChild(
-      el('div', { class: 'hub-tl' }, [
+      el('div', { class: 'hub-tl pressable', onClick: () => openPlayerCard({ ...myProfileData(), ...(net.profile ?? {}) }, { editable: true }) }, [
         ava,
         el('div', { class: 'cols' }, [
-          el('div', { class: 'prow' }, [
-            currencyPill('coin', s.currencies.gold),
-            currencyPill('ticket', s.currencies.tickets),
-            currencyPill('essence', s.inventory.materials.essence || 0),
-          ]),
+          el('div', { class: 'pname', text: s.profile?.nickname ?? '指揮官' }),
+          el('div', { class: 'pstage', text: `📖 ${stageLabel(s.progress.stage || 1)}` }),
         ]),
       ])
     );
 
-    // 左中：事件卡（通關進度導流）
+    // 右上：貨幣列 + 設定（參考原型：資源集中右上）
     this.root.appendChild(
-      el('div', {
-        class: 'hub-event pressable',
-        onClick: () => nav.go('battle'),
-      }, [
-        el('div', { class: 'e1', text: `討伐 第 ${stageLabel(s.progress.stage || 1)} 關` }),
-        el('div', { class: 'e2', text: '前往戰役，掃平敵軍 →' }),
+      el('div', { class: 'hub-cur' }, [
+        currencyPill('coin', s.currencies.gold),
+        currencyPill('ticket', s.currencies.tickets),
+        currencyPill('essence', s.inventory.materials.essence || 0),
+        el('div', { class: 'icon-btn pressable', onClick: () => openSettingsSheet({ onReset: () => this.render() }) }, [icon('settings', 20)]),
       ])
     );
 
-    // 左下：營運捷徑（社交按鈕與營運捷徑並列）
-    const sc = el('div', { class: 'hub-sc' });
-    sc.appendChild(shortcut('friends', '好友', false, () => nav.go('friends')));
-    sc.appendChild(shortcut('quests', '任務', badges.quests, () => openQuestsSheet()));
-    sc.appendChild(shortcut('signin', '簽到', badges.signin, () => openSigninSheet()));
-    this._idleShortcut = shortcut('idle', '掛機箱', badges.idle, () => openIdleSheet());
-    sc.appendChild(this._idleShortcut);
-    this.root.appendChild(sc);
+    // 右側小功能列（貨幣列下方）：好友 / 任務 / 簽到 / 掛機箱
+    const feats = el('div', { class: 'hub-feats' });
+    feats.appendChild(featBtn('friends', '好友', false, () => nav.go('friends')));
+    feats.appendChild(featBtn('quests', '任務', badges.quests, () => openQuestsSheet()));
+    feats.appendChild(featBtn('signin', '簽到', badges.signin, () => openSigninSheet()));
+    this._idleShortcut = featBtn('idle', '掛機箱', badges.idle, () => openIdleSheet());
+    feats.appendChild(this._idleShortcut);
+    this.root.appendChild(feats);
 
-    // 右側：菱形模式入口
-    const dia = el('div', { class: 'hub-dia' });
-    this._battleDia = diamond('battle', '戰役', { big: true, badge: false, onClick: () => nav.go('battle') });
-    dia.appendChild(this._battleDia);
-    dia.appendChild(diamond('arena', '競技場', { onClick: () => nav.go('arena') }));
-    dia.appendChild(diamond('guild', '公會', { onClick: () => nav.go('guild') }));
-    dia.appendChild(diamond('tower', '試煉塔', { onClick: () => nav.go('tower') }));
-    this.root.appendChild(dia);
+    // 右下：大冒險鈕（參考原型的「X-X 立刻出發」）
+    this._battleDia = el('div', { class: 'hub-adv pressable', onClick: () => nav.go('battle') }, [
+      el('div', { class: 'a1', text: stageLabel(s.progress.stage || 1) }),
+      el('div', { class: 'a2', text: '立刻出發！' }),
+    ]);
+    this._battleDia.prepend(icon('battle', 30));
+    this.root.appendChild(this._battleDia);
 
-    // 右上：工具列
-    this.root.appendChild(
-      el('div', { class: 'hub-util' }, [
-        el('div', { class: 'icon-btn pressable', onClick: () => openSettingsSheet({ onReset: () => this.render() }) }, [icon('settings', 22)]),
-      ])
-    );
+    // 底部大功能鈕列（參考原型的圓章＋名牌）
+    const dock = el('div', { class: 'hub-dock' });
+    this._gachaBar = dockBtn('gacha', '召喚', () => nav.go('gacha'));
+    dock.appendChild(this._gachaBar);
+    dock.appendChild(dockBtn('shop', '商店', () => nav.go('shop')));
+    dock.appendChild(dockBtn('team', '隊伍', () => nav.go('team')));
+    this._heroesBar = dockBtn('heroes', '英雄', () => nav.go('heroes'));
+    dock.appendChild(this._heroesBar);
+    dock.appendChild(dockBtn('guild', '公會', () => nav.go('guild')));
+    dock.appendChild(dockBtn('arena', '競技場', () => nav.go('arena')));
+    dock.appendChild(dockBtn('tower', '試煉塔', () => nav.go('tower')));
+    this.root.appendChild(dock);
 
-    // 底部飾條功能列
-    const bar = el('div', { class: 'hub-bar' });
-    bar.appendChild(barItem('home', '主城', { on: true }));
-    bar.appendChild(barItem('team', '隊伍', { onClick: () => nav.go('team') }));
-    this._heroesBar = barItem('heroes', '英雄', { onClick: () => nav.go('heroes') });
-    bar.appendChild(this._heroesBar);
-    this._gachaBar = barItem('gacha', '召喚', { onClick: () => nav.go('gacha') });
-    bar.appendChild(this._gachaBar);
-    bar.appendChild(barItem('shop', '商店', { onClick: () => nav.go('shop') }));
-    this.root.appendChild(bar);
-
-    // 進場動效：捷徑/入口/功能列交錯浮現（登入的儀式感，不瞬間全亮）
-    staggerIn(sc.children, { dy: 10, step: 0.05 });
-    staggerIn(dia.children, { dy: 12, step: 0.07 });
-    staggerIn(bar.children, { dy: 8, step: 0.04 });
+    // 進場動效：功能列交錯浮現（登入的儀式感，不瞬間全亮）
+    staggerIn(feats.children, { dy: 10, step: 0.05 });
+    staggerIn(dock.children, { dy: 14, step: 0.05 });
+    staggerIn([this._battleDia], { dy: 14, step: 0 });
   }
 
   _nextSpeech() {
@@ -208,32 +198,17 @@ function currencyPill(iconName, value) {
   return el('div', { class: 'pill' }, [ic, el('span', { text: fmt(value) })]);
 }
 
-function shortcut(iconName, label, badge, onClick) {
-  const ic = el('span', { class: 'ic' });
-  ic.appendChild(icon(iconName, 24));
-  const node = el('div', { class: 'hub-sci pressable', onClick }, [ic, el('span', { text: label })]);
-  if (badge) ic.appendChild(dot());
-  return node;
+// 右側小功能鈕：圓角方章 + 下方小字（參考原型的活動視窗/好友/任務列）
+function featBtn(iconName, label, badge, onClick) {
+  const sq = el('div', { class: 'fsq' });
+  sq.appendChild(icon(iconName, 26));
+  if (badge) sq.appendChild(dot());
+  return el('div', { class: 'hub-feat pressable', onClick }, [sq, el('span', { text: label })]);
 }
 
-function diamond(iconName, label, { big = false, locked = false, badge = false, onClick } = {}) {
-  const sq = el('div', { class: 'dsq' });
-  sq.appendChild(icon(iconName, big ? 34 : 26));
-  const node = el('div', {
-    class: `dia${big ? ' big' : ''}${locked ? ' locked' : ' pressable'}`,
-    onClick: locked ? () => toast('敬請期待') : onClick,
-  }, [sq, el('span', { class: 'dl', text: label })]);
-  if (badge) node.appendChild(dot());
-  return node;
-}
-
-function barItem(iconName, label, { on = false, locked = false, badge = false, onClick } = {}) {
-  const ic = el('span', { class: 'bic' });
-  ic.appendChild(icon(iconName, 22));
-  const node = el('div', {
-    class: `bn${on ? ' on' : ''}${locked ? ' locked' : ' pressable'}`,
-    onClick: locked ? () => toast('敬請期待') : onClick,
-  }, [ic, el('span', { text: label })]);
-  if (badge) node.appendChild(dot());
-  return node;
+// 底部大功能鈕：金框圓章 + 名牌（參考原型的招募/商店/編制陣容列）
+function dockBtn(iconName, label, onClick) {
+  const sq = el('div', { class: 'dksq' });
+  sq.appendChild(icon(iconName, 30));
+  return el('div', { class: 'hub-dk pressable', onClick }, [sq, el('span', { class: 'dkl', text: label })]);
 }

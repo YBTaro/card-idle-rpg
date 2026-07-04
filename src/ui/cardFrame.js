@@ -5,6 +5,7 @@
 import { el } from './dom.js';
 import { ELEMENT_LABEL } from '../data/elements.js';
 import { artFor, portraitFor, elementGradient } from '../data/assets.js';
+import { icon } from './icons.js';
 
 // 職業符號沿用 battleScene 的 CLASS_GLYPH，保持卡圖 / 棋子一致。
 const CLASS_GLYPH = { tank: '🛡', dps: '⚔', support: '✚' };
@@ -39,6 +40,18 @@ export function cardFrame(card, { level, size = 'full', stars } = {}) {
     frame.appendChild(
       el('div', { class: 'cardframe-lvl', text: typeof level === 'number' ? `Lv${level}` : String(level) })
     );
+  }
+
+  // TCG 卡面徽章（full 尺寸限定）：左上屬性寶石、名牌左側職業圓章、內框金線。
+  // 種族/系列不上卡面——放角色詳情頁（資訊層級：卡面只放一眼要認的）。
+  if (size !== 'mini') {
+    frame.appendChild(el('div', { class: 'cardframe-inner' }));
+    const elBadge = el('div', { class: 'cardframe-elbadge' });
+    elBadge.appendChild(icon(`el_${element}`, 22));
+    frame.appendChild(elBadge);
+    const clsBadge = el('div', { class: 'cardframe-clsbadge' });
+    clsBadge.appendChild(icon(`cls_${card.class}`, 20));
+    frame.appendChild(clsBadge);
   }
 
   return frame;

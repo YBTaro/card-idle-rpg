@@ -125,6 +125,40 @@ const ICONS = {
     <path d="M8.2 4.5 h7.6 L19.5 9 12 20.5 4.5 9 Z" fill="#7cc4ff" stroke="#1e3a5c" stroke-width="1.4" stroke-linejoin="round"/>
     <path d="M4.5 9 h15 M8.2 4.5 L10.5 9 12 20.5 M15.8 4.5 L13.5 9 12 20.5 M10.5 9 h3" stroke="#1e3a5c" stroke-width="1" opacity=".65"/>
     <path d="M8.8 5.6 l1.4 2.2" stroke="#dff1ff" stroke-width="1.4" stroke-linecap="round"/>`),
+
+  /* ---- 卡面徽章：屬性寶石（圓底 + 元素符號） ---- */
+  el_fire: S(`
+    <circle cx="12" cy="12" r="10" fill="#8f2f22" stroke="#ffd2b0" stroke-width="1.6"/>
+    <path d="M12 4.8 c1.2 2.6 4.4 4 4.4 7.6 a4.4 4.4 0 0 1-8.8 0 c0-1.6.7-2.8 1.6-4 .2 1 .7 1.7 1.5 2.2 -.3-2 .3-4.2 1.3-5.8 Z" fill="#ffb37a"/>
+    <path d="M12 10.4 c.9 1 1.8 1.8 1.8 3.1 a1.8 1.8 0 0 1-3.6 0 c0-1.3.9-2.1 1.8-3.1 Z" fill="#ffe9c9"/>`),
+  el_wind: S(`
+    <circle cx="12" cy="12" r="10" fill="#1f5c3c" stroke="#d8ffb0" stroke-width="1.6"/>
+    <path d="M5.5 10 h8.5 a2.4 2.4 0 1 0-2.3-3 M5.5 13.5 h11 a2.5 2.5 0 1 1-2.4 3.2 M5.5 6.8 h4.5" stroke="#b9f6a0" stroke-width="1.8" stroke-linecap="round" fill="none"/>`),
+  el_water: S(`
+    <circle cx="12" cy="12" r="10" fill="#1e4472" stroke="#b3e6ff" stroke-width="1.6"/>
+    <path d="M12 4.6 c2.6 3.4 5 6 5 9 a5 5 0 0 1-10 0 c0-3 2.4-5.6 5-9 Z" fill="#7cc4ff"/>
+    <path d="M9.4 13.4 a2.8 2.8 0 0 0 2 2.6" stroke="#e5f6ff" stroke-width="1.5" stroke-linecap="round" fill="none"/>`),
+  el_light: S(`
+    <circle cx="12" cy="12" r="10" fill="#8a6a1c" stroke="#fff4c2" stroke-width="1.6"/>
+    <circle cx="12" cy="12" r="4" fill="#ffe789"/>
+    <path d="M12 4.6 v2.6 M12 16.8 v2.6 M4.6 12 h2.6 M16.8 12 h2.6 M6.8 6.8 l1.8 1.8 M15.4 15.4 l1.8 1.8 M17.2 6.8 l-1.8 1.8 M8.6 15.4 l-1.8 1.8" stroke="#ffe789" stroke-width="1.7" stroke-linecap="round"/>`),
+  el_dark: S(`
+    <circle cx="12" cy="12" r="10" fill="#3d2a5e" stroke="#e6ccff" stroke-width="1.6"/>
+    <path d="M15.8 5.6 a7.6 7.6 0 1 0 2.6 10.4 a6.2 6.2 0 0 1-2.6-10.4 Z" fill="#c99aff"/>
+    <circle cx="15.6" cy="8.4" r="1" fill="#efe0ff"/>`),
+
+  /* ---- 卡面徽章：職業（金框圓章） ---- */
+  cls_tank: S(`
+    <circle cx="12" cy="12" r="10" fill="#233043" stroke="${G1}" stroke-width="1.6"/>
+    <path d="M12 5.6 l5.6 1.6 v4.6 c0 3.3-2.2 5.7-5.6 7 -3.4-1.3-5.6-3.7-5.6-7 V7.2 Z" fill="${G1}" stroke="${LN}" stroke-width="1"/>
+    <path d="M12 5.6 v13.2 c-3.4-1.3-5.6-3.7-5.6-7 V7.2 Z" fill="${G2}" opacity=".6"/>`),
+  cls_dps: S(`
+    <circle cx="12" cy="12" r="10" fill="#43232a" stroke="${G1}" stroke-width="1.6"/>
+    <path d="M8 16 L15.4 6.4 l2 .3 .3 2 L8.6 17.4 Z" fill="${G1}" stroke="${LN}" stroke-width="1" stroke-linejoin="round"/>
+    <path d="M7 15 l2 2 M6 18 l1.6-1.6" stroke="${G1}" stroke-width="1.8" stroke-linecap="round"/>`),
+  cls_support: S(`
+    <circle cx="12" cy="12" r="10" fill="#1f3d33" stroke="${G1}" stroke-width="1.6"/>
+    <path d="M10.2 6 h3.6 v4.2 H18 v3.6 h-4.2 V18 h-3.6 v-4.2 H6 v-3.6 h4.2 Z" fill="${G1}" stroke="${LN}" stroke-width="1" stroke-linejoin="round"/>`),
 };
 
 // icon(name, size) → <span class="gicon">。未知名稱回退問號方塊（開發期好抓漏）。

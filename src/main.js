@@ -2,6 +2,7 @@
 // 主城大廳制導覽 → 登入彈窗佇列 + FTUE。
 import './style.css';
 import './social.css';
+import './redesign.css';
 import { loadGame } from './core/save.js';
 import { store } from './core/state.js';
 import { createPixiApp } from './render/pixiApp.js';

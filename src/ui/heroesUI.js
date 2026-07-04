@@ -1,5 +1,4 @@
-// 英雄頁：卡冊（收藏與養成入口）＋圖鑑頁簽。
-// 卡冊格只留 4 個識別元素：卡面 / Lv / 元素框色 / 出戰旗標（P3 漸進揭露），
+// 英雄頁：左側篩選欄（職業/屬性/種族三維過濾）＋卡冊/圖鑑頁簽。
 // 點卡或長按 → 角色詳情頁；圖鑑未擁有者為灰色剪影（收集慾儀表板）。
 import { el, clear, toast } from './dom.js';
 import { icon } from './icons.js';
@@ -13,11 +12,20 @@ import { openHeroSheet } from './heroSheet.js';
 import { longPress } from './gestures.js';
 import { cardFrame } from './cardFrame.js';
 
+const CLASS_META = [
+  { id: 'tank', label: '坦克' },
+  { id: 'dps', label: '輸出' },
+  { id: 'support', label: '輔助' },
+];
+const RACES = [...new Set(CARD_LIST.map((c) => c.race))];
+
 export class HeroesUI {
   constructor(root) {
     this.root = root;
     this.tab = 'roster'; // roster | codex
-    this.element = null; // null = 全部
+    this.element = null; // 三維篩選（null = 不限）
+    this.cls = null;
+    this.race = null;
     this.render();
   }
 
@@ -25,12 +33,19 @@ export class HeroesUI {
     this.render();
   }
 
+  _matches(card) {
+    if (this.element && card.element !== this.element) return false;
+    if (this.cls && card.class !== this.cls) return false;
+    if (this.race && card.race !== this.race) return false;
+    return true;
+  }
+
   render() {
     clear(this.root);
     this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
-    this.root.appendChild(el('div', { class: 'page-title', text: this.tab === 'roster' ? '英雄' : '圖鑑' }));
+    this.root.appendChild(el('div', { class: 'page-title left', text: this.tab === 'roster' ? '英雄' : '圖鑑' }));
 
-    // 頁簽
+    // 頁簽（右上）
     const tabs = el('div', { class: 'hx-tabs' });
     for (const [id, label] of [['roster', '英雄'], ['codex', '圖鑑']]) {
       tabs.appendChild(
@@ -46,46 +61,84 @@ export class HeroesUI {
     }
     this.root.appendChild(tabs);
 
-    // 篩選列（卡冊限定；固定排序＝出戰中優先、等級降冪）
-    if (this.tab === 'roster') {
-      const filters = el('div', { class: 'hx-filters' });
-      filters.appendChild(
-        el('div', {
-          class: `fchip pressable${this.element == null ? ' on' : ''}`,
-          text: '全部',
-          onClick: () => {
-            this.element = null;
-            this.render();
-          },
-        })
-      );
-      for (const elId of ELEMENTS) {
-        filters.appendChild(
-          el('div', {
-            class: `fchip pressable${this.element === elId ? ' on' : ''}`,
-            text: ELEMENT_LABEL[elId],
-            onClick: () => {
-              this.element = this.element === elId ? null : elId;
-              this.render();
-            },
-          })
-        );
-      }
-      this.root.appendChild(filters);
-    }
+    const wrap = el('div', { class: 'hx-wrap' });
 
-    const scroll = el('div', { class: 'hx-scroll' });
+    // ---- 左：篩選欄（職業 / 屬性 / 種族 三段） ----
+    const rail = el('div', { class: 'hx-rail' });
+
+    rail.appendChild(el('div', { class: 'hx-rt', text: '職業' }));
+    const clsRow = el('div', { class: 'hx-chips' });
+    for (const c of CLASS_META) {
+      const chip = el('div', {
+        class: `fchip pressable${this.cls === c.id ? ' on' : ''}`,
+        onClick: () => { this.cls = this.cls === c.id ? null : c.id; this.render(); },
+      });
+      chip.appendChild(icon(`cls_${c.id}`, 15));
+      chip.appendChild(el('span', { text: c.label }));
+      clsRow.appendChild(chip);
+    }
+    rail.appendChild(clsRow);
+
+    rail.appendChild(el('div', { class: 'hx-rt', text: '屬性' }));
+    const elRow = el('div', { class: 'hx-chips' });
+    for (const elId of ELEMENTS) {
+      elRow.appendChild(el('div', {
+        class: `fchip el-${elId} pressable${this.element === elId ? ' on' : ''}`,
+        text: ELEMENT_LABEL[elId],
+        onClick: () => { this.element = this.element === elId ? null : elId; this.render(); },
+      }));
+    }
+    rail.appendChild(elRow);
+
+    rail.appendChild(el('div', { class: 'hx-rt', text: '種族' }));
+    const raceRow = el('div', { class: 'hx-chips' });
+    for (const r of RACES) {
+      raceRow.appendChild(el('div', {
+        class: `fchip pressable${this.race === r ? ' on' : ''}`,
+        text: r,
+        onClick: () => { this.race = this.race === r ? null : r; this.render(); },
+      }));
+    }
+    rail.appendChild(raceRow);
+
+    if (this.element || this.cls || this.race) {
+      rail.appendChild(el('button', {
+        class: 'btn hx-clear pressable',
+        text: '✕ 清除篩選',
+        onClick: () => { this.element = null; this.cls = null; this.race = null; this.render(); },
+      }));
+    }
+    wrap.appendChild(rail);
+
+    // ---- 右：計數 + 卡格 ----
+    const main = el('div', { class: 'hx-main' });
     const grid = this.tab === 'roster' ? this._rosterGrid() : this._codexGrid();
+    main.appendChild(this._countBar());
+    const scroll = el('div', { class: 'hx-scroll' });
     scroll.appendChild(grid);
-    this.root.appendChild(scroll);
+    main.appendChild(scroll);
+    wrap.appendChild(main);
+    this.root.appendChild(wrap);
+
     // 卡冊進場：前兩排交錯浮現（後面的直接顯示，不拖捲動）
     staggerIn(grid.children, { dy: 14, step: 0.03, maxN: 12 });
+    staggerIn(rail.children, { dy: 8, step: 0.03 });
+  }
+
+  _countBar() {
+    const s = store.state;
+    if (this.tab === 'roster') {
+      const total = s.cards.length;
+      const shown = s.cards.filter((inst) => this._matches(CARDS[inst.cardId] ?? {})).length;
+      return el('div', { class: 'hx-count', text: `顯示 ${shown} / 擁有 ${total}` });
+    }
+    const ownedCount = new Set(s.cards.map((c) => c.cardId)).size;
+    return el('div', { class: 'hx-count', text: `收集進度 ${ownedCount} / ${CARD_LIST.length}` });
   }
 
   _sortedOwned() {
     const s = store.state;
-    let list = [...s.cards];
-    if (this.element) list = list.filter((inst) => CARDS[inst.cardId]?.element === this.element);
+    const list = s.cards.filter((inst) => this._matches(CARDS[inst.cardId] ?? {}));
     // 出戰中永遠排前，再按等級降冪
     list.sort((a, b) => {
       const fa = Number(isInFormation(b.instanceId)) - Number(isInFormation(a.instanceId));
@@ -99,7 +152,7 @@ export class HeroesUI {
     const list = this._sortedOwned();
     const grid = el('div', { class: 'deck' });
     if (!list.length) {
-      grid.appendChild(el('div', { style: 'color:var(--dim);font-size:.9rem', text: '沒有符合條件的英雄' }));
+      grid.appendChild(el('div', { class: 'hx-empty', text: '沒有符合條件的英雄——調整左側篩選看看' }));
       return grid;
     }
     const orderIds = list.map((c) => c.instanceId);
@@ -121,7 +174,7 @@ export class HeroesUI {
   _codexGrid() {
     const s = store.state;
     const grid = el('div', { class: 'deck' });
-    for (const card of CARD_LIST) {
+    for (const card of CARD_LIST.filter((c) => this._matches(c))) {
       const owned = s.cards.find((c) => c.cardId === card.id);
       const item = el('div', { class: `deck-item${owned ? '' : ' silhouette'}` });
       const frame = cardFrame(card, owned ? { level: owned.level, size: 'full', stars: owned.stars } : { size: 'full' });
@@ -131,14 +184,7 @@ export class HeroesUI {
       longPress(item, () => this._codexTap(card, owned), { onTap: () => this._codexTap(card, owned) });
       grid.appendChild(item);
     }
-    // 收集進度
-    const ownedCount = new Set(s.cards.map((c) => c.cardId)).size;
-    grid.appendChild(
-      el('div', {
-        style: 'grid-column:1/-1;text-align:center;color:var(--dim);font-size:.85rem;padding:.5rem 0',
-        text: `收集進度 ${ownedCount} / ${CARD_LIST.length}`,
-      })
-    );
+    if (!grid.children.length) grid.appendChild(el('div', { class: 'hx-empty', text: '沒有符合條件的英雄' }));
     return grid;
   }
 
