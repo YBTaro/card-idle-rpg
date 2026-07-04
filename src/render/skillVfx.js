@@ -168,11 +168,18 @@ export function swirl(parent, dotTex, color) {
     cont.addChild(p);
     dots.push(p);
   }
-  gsap.to(state, {
+  // 注意：補間目標是 state 物件（不在顯示樹上），場景拆除的 killFx 掃不到它——
+  // onUpdate 需自我防衛：容器已銷毀就自殺，否則會對 null position 寫入。
+  let tw = null;
+  tw = gsap.to(state, {
     t: 1,
     duration: 0.9,
     ease: 'power1.out',
     onUpdate: () => {
+      if (cont.destroyed) {
+        tw?.kill();
+        return;
+      }
       dots.forEach((p, i) => {
         const a = state.t * Math.PI * 3 + (i / N) * Math.PI * 2;
         p.x = Math.cos(a) * 40;
