@@ -60,8 +60,7 @@ export const SKILLS = {
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'self' },
   ]},
   shadowExecute: { name: '影誅', target: 'singleEnemyByColumn', effects: [
-    { type: 'damage', mult: 3.0, scope: 'target' },
-    { type: 'control', control: 'stun', duration: 1, scope: 'target' },
+    { type: 'damage', mult: 3.0, scope: 'target' }, // 全遊戲最高單體倍率＝它的簽名
   ]},
   gravePact: { name: '墓約', effects: [
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
@@ -116,8 +115,7 @@ export const SKILLS = {
   // ---- 風 ----
   thunderCut: { name: '雷切', target: 'singleEnemyByColumn', effects: [
     { type: 'damage', mult: 2.4, scope: 'target' },
-    { type: 'control', control: 'stun', duration: 1, scope: 'target', chance: 0.3 }, // 機率暈眩
-    { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.3, duration: 2, scope: 'self' },
+    { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.3, duration: 2, scope: 'self' }, // 拔刀後蓄勢
   ]},
   windShift: { name: '風蝕', target: 'enemyColumn', effects: [ // 屬性轉化：敵直排變水屬 → 風隊穩吃剋制
     { type: 'damage', mult: 1.3, scope: 'target' },
@@ -145,11 +143,11 @@ export const SKILLS = {
     { type: 'hot', power: 0.3, duration: 2, scope: 'allAllies' },
     { type: 'buff', stat: 'def', op: 'mul', value: 1.25, duration: 2, scope: 'self' },
   ]},
-  galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [ // 亂舞三連腿＋終擊 25% 踢暈
+  galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [ // 亂舞三連腿＋回氣
     { type: 'damage', mult: 0.9, scope: 'target' },
     { type: 'damage', mult: 0.9, scope: 'target' },
     { type: 'damage', mult: 0.9, scope: 'target' },
-    { type: 'control', control: 'stun', duration: 1, scope: 'target', chance: 0.25 },
+    { type: 'energy', amount: 20, scope: 'self' },
   ]},
 
   // ---- 水 ----
@@ -254,7 +252,6 @@ export const SKILLS = {
   ]},
   webBind: { name: '縛絲', target: 'lowestHpEnemy', effects: [ // 補刀型選目標
     { type: 'damage', mult: 1.8, scope: 'target' },
-    { type: 'control', control: 'stun', duration: 1, scope: 'target' },
     { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target', chance: 0.7 }, // 70% 蛛毒 2 回合（每跳 15% 最大生命）
   ]},
   duskVeil: { name: '暮幕', effects: [ // 入夜：奪走敵人的光（全體驅散）

@@ -18,11 +18,11 @@ describe('describeSkill（描述自動生成）', () => {
     expect(d).toContain('護盾');
   });
 
-  it('影誅：對位傷害 + 暈眩', () => {
+  it('影誅：對位純傷害（無附帶狀態）', () => {
     const d = describeSkill('shadowExecute');
     expect(d).toContain('對位敵人');
     expect(d).toContain('300%');
-    expect(d).toContain('暈眩');
+    expect(d).not.toContain('暈眩');
   });
 
   it('聖恩：治療血量最低隊友 + 全隊暴擊率 +20%', () => {

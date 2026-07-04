@@ -59,13 +59,13 @@ describe('每卡專屬技', () => {
     for (const id of ids) expect(SKILLS[id]).toBeTruthy();
   });
 
-  it('shadowExecute（nightreaper）：目標受傷 + 被 stun', () => {
+  it('shadowExecute（nightreaper）：純高倍率單體傷害、不掛任何狀態', () => {
     const caster = makeUnit({ team: 0, pos: 1, cardId: 'nightreaper', atk: 100 });
     const foe = makeUnit({ team: 1, pos: 1, hp: 99999, def: 0 });
     const ctx = ctxFor(caster, [caster], [foe]);
     castSkill(caster, skillFor(caster), ctx);
     expect(foe.hp).toBeLessThan(99999);
-    expect(hasControl(foe, 'stun')).toBe(true);
+    expect(foe.buffs ?? []).toHaveLength(0); // 簽名＝全遊戲最高單體倍率，無附帶效果
   });
 
   it('tidalPrison（tidecaller）：直排目標受傷 + 被凍結（水屬專屬狀態）', () => {

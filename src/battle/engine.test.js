@@ -102,18 +102,6 @@ describe('BattleEngine（回合制）', () => {
     expect(me.buffs.find((b) => b.stat === 'atk')?.duration).toBe(1);
   });
 
-  it('暈眩：輪到時跳過攻擊、發 stunned', () => {
-    const me = makeUnit({ team: 0, pos: 1, atk: 100 });
-    const foe = makeUnit({ team: 1, pos: 1, hp: 1000, def: 0 });
-    applyBuff(me, { kind: 'control', control: 'stun', duration: 1 });
-    const engine = new BattleEngine([me], [foe], { rng: new Rng(1) });
-    let stunned = false;
-    engine.on('stunned', () => (stunned = true));
-    engine.step(); // me 輪到 → 被暈跳過
-    expect(stunned).toBe(true);
-    expect(foe.hp).toBe(1000); // 未被攻擊
-  });
-
   it('沉默：技能與普攻皆封（跳過行動）、能量保留', () => {
     const me = makeUnit({ team: 0, pos: 1, class: 'dps', atk: 100, energy: ENERGY_MAX });
     const foe = makeUnit({ team: 1, pos: 1, hp: 1000, def: 0 });
@@ -165,17 +153,17 @@ describe('BattleEngine（回合制）', () => {
     expect(ally.effDef).toBe(110);
   });
 
-  it('暈眩：滿氣也不觸發技能階段', () => {
+  it('沉默：滿氣也不觸發技能階段', () => {
     const me = makeUnit({ team: 0, pos: 1, class: 'dps', atk: 100, energy: ENERGY_MAX });
     const foe = makeUnit({ team: 1, pos: 1, hp: 99999, def: 0 });
-    applyBuff(me, { kind: 'control', control: 'stun', duration: 5 });
+    applyBuff(me, { kind: 'control', control: 'silence', duration: 5 });
     const engine = new BattleEngine([me], [foe], { rng: new Rng(1) });
     let ult = false;
-    let stunned = false;
+    let skipped = false;
     engine.on('ultimate', () => (ult = true));
-    engine.on('stunned', () => (stunned = true));
-    engine.step(); // me 輪到 → 暈眩跳過；滿氣但 _canCast=false → 不進技能階段
-    expect(stunned).toBe(true);
+    engine.on('stunned', () => (skipped = true));
+    engine.step(); // me 輪到 → 沉默跳過；滿氣但 _canCast=false → 不進技能階段
+    expect(skipped).toBe(true);
     expect(ult).toBe(false);
     expect(me.energy).toBe(ENERGY_MAX);
   });

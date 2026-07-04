@@ -108,26 +108,6 @@ function risingMotes(dotTex, color, { speed = 1 } = {}) {
   return cont;
 }
 
-// 暈眩：三顆星星繞頭頂。
-function stunAura() {
-  const cont = new Container();
-  cont.y = -148;
-  const orbit = new Container();
-  cont.addChild(orbit);
-  for (let i = 0; i < 3; i += 1) {
-    const g = new Graphics();
-    g.star(0, 0, 4, 7, 3).fill({ color: COLOR.stun, alpha: 0.95 });
-    g.blendMode = 'add';
-    const a = (i / 3) * Math.PI * 2;
-    g.x = Math.cos(a) * 26;
-    g.y = Math.sin(a) * 9;
-    orbit.addChild(g);
-  }
-  gsap.to(orbit, { rotation: Math.PI * 2, duration: 1.6, repeat: -1, ease: 'none' });
-  orbit.scale.y = 0.5;
-  return cont;
-}
-
 // 沉默：頭側紫色禁言符（圓 + 斜線）。
 function silenceAura() {
   const cont = new Container();
@@ -218,7 +198,6 @@ function buildAura(key, sprite, dotTex) {
     case 'dot': return risingMotes(dotTex, COLOR.dot, { speed: 1.3 });
     case 'hot': return risingMotes(dotTex, COLOR.hot);
     case 'castDrain': return castDrainAura();
-    case 'control:stun': return stunAura();
     case 'control:freeze': return freezeAura();
     case 'control:silence': return silenceAura();
     case 'control:taunt': return tauntAura();

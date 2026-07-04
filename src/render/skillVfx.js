@@ -533,5 +533,5 @@ export function targetVfx({ dotTex }, sprite, skillId, color, { heal = false } =
   const single = def.target === 'singleEnemyByColumn';
   if (def.effects.some((e) => e.type === 'damage')) slashArc(sprite, color, { big: single });
   if (def.effects.some((e) => e.type === 'dot')) emberFall(sprite, dotTex);
-  if (def.effects.some((e) => e.control === 'stun')) shieldDome(sprite, STUN_COLOR);
+  if (def.effects.some((e) => e.control === 'silence' || e.control === 'freeze')) shieldDome(sprite, STUN_COLOR);
 }

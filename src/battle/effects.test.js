@@ -361,11 +361,11 @@ describe('DoT 操作原語：延長 / 易傷 / 引爆', () => {
   it('extend what:negative：所有減益 +1（含控制），嘲諷除外', () => {
     const caster = makeUnit({ team: 0, pos: 1 });
     const foe = makeUnit({ team: 1, pos: 1 });
-    applyBuff(foe, { kind: 'control', control: 'stun', duration: 1 });
+    applyBuff(foe, { kind: 'control', control: 'freeze', duration: 1 });
     applyBuff(foe, { kind: 'control', control: 'taunt', duration: 2 }); // 嘲諷非減益
     const ctx = ctxFor(caster, [caster], [foe]);
     applyEffect({ type: 'extend', what: 'negative', turns: 1, scope: 'target' }, caster, [foe], ctx);
-    expect(foe.buffs.find((b) => b.control === 'stun').duration).toBe(2);
+    expect(foe.buffs.find((b) => b.control === 'freeze').duration).toBe(2);
     expect(foe.buffs.find((b) => b.control === 'taunt').duration).toBe(2);
   });
 
