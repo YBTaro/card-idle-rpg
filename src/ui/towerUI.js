@@ -89,7 +89,11 @@ export class TowerUI {
       el('b', { text: `${fp.floor}` }),
       el('span', { text: '層' }),
     ]));
-    row.appendChild(el('div', { class: 'tw-ftheme', text: `${ELEMENT_ICON[fp.theme]} ${ELEMENT_LABEL[fp.theme]}屬威脅${fp.isBoss ? ' · 👹 BOSS' : ''}` }));
+    const themeCell = el('div', { class: 'tw-ftheme' }, [
+      el('div', { text: `${ELEMENT_ICON[fp.theme]} ${ELEMENT_LABEL[fp.theme]}屬威脅${fp.isBoss ? ' · 👹 BOSS' : ''}` }),
+    ]);
+    if (fp.envLabel) themeCell.appendChild(el('div', { class: 'tw-fenv', text: fp.envLabel }));
+    row.appendChild(themeCell);
     const mini = el('div', { class: 'tw-fdef' });
     for (const e of [...fp.enemies].sort((a, b) => a.pos - b.pos)) {
       const card = CARDS[e.cardId];
@@ -116,6 +120,7 @@ export class TowerUI {
     nav.go('battle');
     this.battle.playCustom({ setup: res.sim.setup, log: res.sim.log }, {
       title: `試煉塔 ${res.floor}F`,
+      env: res.env,
       onDone: () => {
         this._busy = false;
         nav.go('tower');

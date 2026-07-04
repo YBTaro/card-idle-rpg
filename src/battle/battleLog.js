@@ -7,10 +7,14 @@ function snapshot(u) {
 }
 const uidOf = (u) => (u ? u.uid : null);
 
-export function simulateBattle(teamA, teamB, { rng } = {}) {
-  const engine = new BattleEngine(teamA, teamB, { rng });
+export function simulateBattle(teamA, teamB, { rng, env = null } = {}) {
+  const engine = new BattleEngine(teamA, teamB, { rng, env });
   const setup = [...teamA, ...teamB].map(snapshot);
   const log = [];
+  // 天氣/場地宣告與變化（開場預設與進場被動由引擎首步發出）
+  engine.on('weather', ({ id, unit }) => log.push({ type: 'weather', id, uid: uidOf(unit) }));
+  engine.on('terrain', ({ id, unit }) => log.push({ type: 'terrain', id, uid: uidOf(unit) }));
+  engine.on('drain', ({ unit, amount }) => log.push({ type: 'drain', uid: uidOf(unit), amount }));
   engine.on('turn', ({ unit }) => log.push({ type: 'turn', uid: uidOf(unit) }));
   engine.on('round', ({ round }) => log.push({ type: 'round', round }));
   engine.on('energy', ({ unit, value }) => log.push({ type: 'energy', uid: uidOf(unit), value }));
@@ -28,5 +32,5 @@ export function simulateBattle(teamA, teamB, { rng } = {}) {
   const MAX = 100000;
   let steps = 0;
   while (!engine.over && steps < MAX) { engine.step(); steps += 1; }
-  return { setup, log, winner: engine.winner, rounds: engine.round };
+  return { setup, log, winner: engine.winner, rounds: engine.round, env: env ?? null };
 }

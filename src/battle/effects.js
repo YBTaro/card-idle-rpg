@@ -95,6 +95,14 @@ export function matchesWhere(unit, where) {
 }
 
 export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
+  // ---- 全場效果（無目標概念）：不進逐目標迴圈，機率整體擲一次 ----
+  if (effect.type === 'weather' || effect.type === 'terrain') {
+    if (effect.chance != null && (ctx.rng ? ctx.rng.next() : Math.random()) >= effect.chance) return;
+    if (effect.type === 'weather') ctx.setWeather?.(effect.weather);
+    else ctx.setTerrain?.(effect.terrain);
+    return;
+  }
+
   const targets = effect.where ? units.filter((u) => matchesWhere(u, effect.where)) : units;
   // buff 類效果套用後發布狀態摘要（戰鬥 log / 前端小圖示用）。
   const emitBuffs = (u) => ctx.emit('buffchange', { unit: u, buffs: summarizeBuffs(u) });
@@ -117,15 +125,16 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
           executed = true;
         }
         const dealt = dealDamage(caster, u, mult, ctx, skillId, { ignoreDef: effect.ignoreDef, execute: executed });
-        // 吸血：實際傷害的一定比例回復施放者
+        // 吸血：實際傷害的一定比例回復施放者（吃環境治療倍率）
         if (effect.lifesteal && dealt > 0 && caster.alive) {
-          const healed = caster.heal(Math.round(dealt * effect.lifesteal));
+          const healed = caster.heal(Math.round(dealt * effect.lifesteal * (ctx.rules?.healMul ?? 1)));
           if (healed > 0) ctx.emit('heal', { source: caster, target: caster, amount: healed, kind: 'lifesteal' });
         }
         break;
       }
       case 'heal': {
-        const healed = u.heal(Math.round(resolvePower(effect, caster, u)));
+        // 環境規則：枯寂遺跡治療減半
+        const healed = u.heal(Math.round(resolvePower(effect, caster, u) * (ctx.rules?.healMul ?? 1)));
         if (healed > 0) ctx.emit('heal', { source: caster, target: u, amount: healed });
         break;
       }
@@ -182,6 +191,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         break;
       }
       case 'revive':
+        if (ctx.rules?.noRevive) break; // 環境規則：鎮魂墓場禁復活
         if (!u.alive) {
           u.hp = Math.max(1, Math.round(u.maxHp * effect.power));
           u.energy = 0;
@@ -190,6 +200,13 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
           ctx.emit('energy', { unit: u, value: 0 });
           emitBuffs(u);
         }
+        break;
+      case 'castDrain': // 靈壓干擾：掛身期間敵方施法 → 其餘敵人能量被抽
+        applyBuff(u, {
+          kind: 'castDrain', amount: effect.amount ?? 20,
+          duration: effect.duration, key: defaultKey('castDrain'), stackable: effect.stackable,
+        });
+        emitBuffs(u);
         break;
       case 'thorns': // 荊棘反傷：受直接攻擊時反彈實際傷害的 pct
         applyBuff(u, {

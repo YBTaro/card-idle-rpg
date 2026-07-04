@@ -40,6 +40,8 @@ const STAT_LABEL = {
 
 const CONTROL_LABEL = { taunt: '嘲諷', stun: '暈眩', silence: '沉默' };
 
+const TERRAIN_NAME = { surge: '湧能磁場', erosion: '侵蝕之地', swamp: '迷霧沼澤' };
+
 const pct = (x) => `${Math.round(x * 100)}%`;
 
 // buff 數值 → 「+30%」/「-30%」（mul 相對 1、add 直接百分比）。
@@ -90,6 +92,21 @@ function describeEffect(effect, targetLabel) {
       break;
     case 'control':
       text = `對${who}施加${CONTROL_LABEL[effect.control] ?? effect.control}${dur(effect.duration)}`;
+      break;
+    case 'weather': {
+      const w = {
+        sunny: '烈日（火屬傷害 +20%、水屬 -10%）',
+        rain: '暴雨（水屬傷害 +20%、火屬 -10%）',
+        gale: '颶風（風屬傷害 +20%、水火 -5%）',
+      }[effect.weather];
+      text = `使天候轉為${w ?? effect.weather}`;
+      break;
+    }
+    case 'terrain':
+      text = `將場地轉為「${TERRAIN_NAME[effect.terrain] ?? effect.terrain}」`;
+      break;
+    case 'castDrain':
+      text = `展開靈壓領域（敵方施放技能時，其餘敵人能量 -${effect.amount ?? 20}${dur(effect.duration)}）`;
       break;
     case 'extend': {
       const what = effect.what === 'dot'

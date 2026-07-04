@@ -29,6 +29,7 @@ export class Unit {
     this.race = stats.race ?? '人';
     this.series = Array.isArray(stats.series) ? [...stats.series] : [];
     this.passives = stats.passives || [];
+    this.onEnter = stats.onEnter ?? null; // 進場被動（開天氣/場地；引擎開場照行動序結算）
 
     this.energy = 0;
   }

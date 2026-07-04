@@ -37,6 +37,22 @@ function auraValue(effect, owner, teams) {
   return effect.value;
 }
 
+// 環境光環：把天氣/場地的全場效果當「無主光環」套到雙方符合條件的存活單位。
+// 在 recomputePassives 之後呼叫（同為 aura:true，每步重算時一起被清）。
+export function applyEnvAuras(teams, auraSpecs) {
+  if (!auraSpecs?.length) return;
+  const all = [...teams[0], ...teams[1]];
+  for (const u of all) {
+    if (!u.alive) continue;
+    for (const spec of auraSpecs) {
+      if (spec.where && !matchesWhere(u, spec.where)) continue;
+      for (const e of spec.effects) {
+        applyBuff(u, { kind: 'stat', stat: e.stat, op: e.op, value: e.value, duration: null, aura: true });
+      }
+    }
+  }
+}
+
 export function recomputePassives(teams) {
   const all = [...teams[0], ...teams[1]];
   for (const u of all) clearAuras(u);

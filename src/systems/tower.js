@@ -10,6 +10,7 @@ import { Rng } from '../core/rng.js';
 import { CARD_LIST } from '../data/cards.js';
 import { ELEMENTS } from '../data/elements.js';
 import { buildPlayerUnits } from './battleSetup.js';
+import { towerEnv, envLabelOf } from '../battle/environments.js';
 
 export const BOSS_EVERY = 5; // 每 5 層 Boss 層（強化 + 里程碑獎勵）
 
@@ -73,12 +74,16 @@ export function floorEnemies(floor) {
 // 樓層預覽資料（UI 用；不建 Unit 全量、只拿卡面資訊）。
 export function floorPreview(floor) {
   const units = floorEnemies(floor);
+  const theme = themeOf(floor);
+  const env = towerEnv(floor, theme);
   return {
     floor,
-    theme: themeOf(floor),
+    theme,
     isBoss: isBossFloor(floor),
     level: enemyLevel(floor),
     rewards: rewardsOf(floor),
+    env,
+    envLabel: envLabelOf(env.weather, env.terrain),
     enemies: units.map((u) => ({ cardId: u.cardId, level: u.level, pos: u.pos })),
   };
 }
@@ -95,8 +100,9 @@ export function challengeTower(state = store.state) {
   if (player.length === 0) return null;
   const floor = currentFloor(state);
   const enemies = floorEnemies(floor);
-  const sim = simulateBattle(player, enemies, { rng: new Rng() });
-  return { sim, win: sim.winner === 0, floor, rewards: rewardsOf(floor) };
+  const env = towerEnv(floor, themeOf(floor)); // 樓層環境：天氣連動主題、場地每 5 層一換
+  const sim = simulateBattle(player, enemies, { rng: new Rng(), env });
+  return { sim, win: sim.winner === 0, floor, rewards: rewardsOf(floor), env };
 }
 
 // 首通入帳 + 推層。回傳發放的獎勵。

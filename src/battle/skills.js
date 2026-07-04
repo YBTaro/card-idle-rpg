@@ -26,6 +26,7 @@ export const SKILLS = {
     ],
   },
   infernoNova: { name: '焚天', target: 'enemyFrontRow', effects: [
+    { type: 'weather', weather: 'sunny' }, // 焚天：天空轉為烈日
     { type: 'damage', mult: 1.8, scope: 'target' },
     { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target' },
   ]},
@@ -37,10 +38,12 @@ export const SKILLS = {
     { type: 'damage', mult: 2.2, scope: 'target' },
   ]},
   windsong: { name: '風歌', effects: [
+    { type: 'weather', weather: 'gale' }, // 風歌：喚來颶風
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.5, duration: 3, scope: 'allAllies' },
     { type: 'heal', power: 1.0, scope: 'allAllies' },
   ]},
   tidalPrison: { name: '潮牢', target: 'enemyColumn', effects: [
+    { type: 'weather', weather: 'rain' }, // 潮牢：喚來暴雨
     { type: 'damage', mult: 1.6, scope: 'target' },
     { type: 'control', control: 'silence', duration: 2, scope: 'target' },
   ]},
@@ -206,6 +209,7 @@ export const SKILLS = {
     { type: 'damage', mult: 1.0, scope: 'target', where: { race: '不死' } }, // 剋不死追打
   ]},
   morningSong: { name: '晨曲', effects: [
+    { type: 'terrain', terrain: 'surge' }, // 晨曲：場地轉為湧能磁場（全體+50能量、光屬集氣+15%）
     { type: 'energy', amount: 25, scope: 'allAllies' }, // 群體充能
     { type: 'energy', amount: 15, scope: 'allAllies', where: { series: '聖歌隊' } }, // 聖歌隊合唱加成
     { type: 'heal', power: 0.7, scope: 'allAllies' },
@@ -231,11 +235,13 @@ export const SKILLS = {
 
   // ---- 暗 ----
   plagueSpread: { name: '瘟疫', target: 'allEnemies', effects: [
+    { type: 'terrain', terrain: 'swamp' }, // 疫沼：場地轉為迷霧沼澤（DoT 加深）
     { type: 'damage', mult: 0.8, scope: 'target' },
     { type: 'damage', mult: 0.6, scope: 'target', where: { race: '人' } }, // 疫病剋人族追打
     { type: 'dot', power: 0.3, duration: 2, scope: 'target', stackable: true }, // 可疊層劇毒
   ]},
   mindGnaw: { name: '蝕心', effects: [
+    { type: 'castDrain', amount: 20, duration: 2, scope: 'self', stackable: true }, // 靈壓領域：敵方施法→其餘敵人 -20 能量
     { type: 'buff', stat: 'atk', op: 'mul', value: 0.82, duration: 2, scope: 'allEnemies' },
     { type: 'heal', power: 0.6, scope: 'allAllies' },
   ]},
@@ -250,6 +256,7 @@ export const SKILLS = {
     { type: 'energy', amount: 15, scope: 'self' }, // 汲取式回能
   ]},
   voidBurst: { name: '虛爆', target: 'enemyColumn', effects: [
+    { type: 'terrain', terrain: 'erosion' }, // 虛空侵蝕：非暗屬每回合流失 10% 最大生命
     { type: 'damage', mult: 1.6, scope: 'target' },
     { type: 'dot', power: 0.35, duration: 2, scope: 'target' },
   ]},

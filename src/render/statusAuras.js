@@ -141,6 +141,24 @@ function silenceAura() {
   return cont;
 }
 
+// 靈壓領域（castDrain）：腳底紫色雙環反向緩轉——「干擾力場」。
+function castDrainAura() {
+  const cont = new Container();
+  const mk = (r, w, alpha) => {
+    const g = new Graphics();
+    g.ellipse(0, 0, r, r * 0.36).stroke({ width: w, color: 0x9d7bff, alpha });
+    g.blendMode = 'add';
+    cont.addChild(g);
+    return g;
+  };
+  const outer = mk(52, 3, 0.7);
+  const inner = mk(38, 2, 0.5);
+  gsap.to(outer, { rotation: Math.PI * 2, duration: 7, repeat: -1, ease: 'none' });
+  gsap.to(inner, { rotation: -Math.PI * 2, duration: 5, repeat: -1, ease: 'none' });
+  gsap.fromTo(cont, { alpha: 0.6 }, { alpha: 1, duration: 1.1, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  return cont;
+}
+
 // 嘲諷：腳底金色挑釁環脈動。
 function tauntAura() {
   const cont = new Container();
@@ -165,6 +183,7 @@ function auraKeysOf(buffs) {
     else if (b.kind === 'counter') keys.add('counter');
     else if (b.kind === 'dot') keys.add(b.element === 'fire' ? 'dot:fire' : 'dot');
     else if (b.kind === 'hot') keys.add('hot');
+    else if (b.kind === 'castDrain') keys.add('castDrain');
     else if (b.kind === 'control') keys.add(`control:${b.control}`);
   }
   return keys;
@@ -178,6 +197,7 @@ function buildAura(key, sprite, dotTex) {
     case 'dot:fire': return risingMotes(dotTex, COLOR.dotFire, { speed: 1.3 });
     case 'dot': return risingMotes(dotTex, COLOR.dot, { speed: 1.3 });
     case 'hot': return risingMotes(dotTex, COLOR.hot);
+    case 'castDrain': return castDrainAura();
     case 'control:stun': return stunAura();
     case 'control:silence': return silenceAura();
     case 'control:taunt': return tauntAura();

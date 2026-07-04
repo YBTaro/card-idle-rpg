@@ -1,6 +1,7 @@
 // 戰鬥流程控制：每場用 simulateBattle 產 log，交給 Replayer/Director 播放到 BattleScene，
 // 掛機自動重開下一場。資訊層（頭像/血量匯總/回合/勝敗橫幅）由 BattleOverlay 呈現。
 import { simulateBattle } from '../battle/battleLog.js';
+import { campaignEnv } from '../battle/environments.js';
 import { Replayer } from '../battle/replayer.js';
 import { AnimationDirector } from './animationDirector.js';
 import { BattleScene } from './battleScene.js';
@@ -48,24 +49,35 @@ export class BattleController {
     }
     const stage = store.state.progress.stage || 1;
     const enemy = buildEnemyUnits(stage, new Rng());
-    const sim = simulateBattle(player, enemy, { rng: new Rng() });
-    this._mount(sim);
-    this.overlay?.setBattle({ stage });
+    const env = campaignEnv(stage); // 章節環境（第 1 章中立）
+    const sim = simulateBattle(player, enemy, { rng: new Rng(), env });
+    this._mount(sim, env);
+    this.overlay?.setBattle({ stage, env });
   }
 
-  // 播放外部戰報（競技場/切磋/公會 Boss：伺服器或本地模擬的 {setup, log}）。
+  // 播放外部戰報（競技場/切磋/公會 Boss/試煉塔：{setup, log}）。
   // 期間不動關卡進度；播完呼叫 onDone(winner) 並回到掛機戰。
-  playCustom(sim, { title = '競技場', onDone } = {}) {
+  playCustom(sim, { title = '競技場', env = null, onDone } = {}) {
     this._custom = { onDone, title };
-    this._mount(sim);
-    this.overlay?.setBattle({ stage: store.state.progress.stage || 1, title });
+    this._mount(sim, env);
+    this.overlay?.setBattle({ stage: store.state.progress.stage || 1, title, env });
   }
 
-  _mount(sim) {
+  _mount(sim, env = null) {
     this._teardownScene();
     this._setup = sim.setup;
     this.replayer = new Replayer(sim.setup, sim.log);
-    this.scene = new BattleScene(this.app, sim.setup, this.replayer);
+    this.scene = new BattleScene(this.app, sim.setup, this.replayer, { env });
+    // 戰鬥中換天氣/場地 → 資訊層徽章即時跟進
+    this._envIds = { weather: env?.weather ?? null, terrain: env?.terrain ?? null };
+    this.replayer.on('weather', ({ id }) => {
+      this._envIds.weather = id;
+      this.overlay?.setEnv?.(this._envIds);
+    });
+    this.replayer.on('terrain', ({ id }) => {
+      this._envIds.terrain = id;
+      this.overlay?.setEnv?.(this._envIds);
+    });
     this.director = new AnimationDirector(this.replayer, {
       // 絕技的施放停頓依技能不同（單體快、範圍長、治療居中）——見 skillVfx.ultTiming
       delays: { ...DELAYS, ultimate: (entry) => ultTiming(entry.skill).castDelay },

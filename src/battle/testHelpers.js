@@ -15,6 +15,7 @@ export function makeUnit(opts = {}) {
     race: opts.race ?? '人',
     series: opts.series ?? [],
     passives: opts.passives ?? [],
+    onEnter: opts.onEnter ?? null,
   };
   const u = new Unit(stats, { team: opts.team ?? 0, pos: opts.pos ?? 1 });
   if (opts.energy != null) u.energy = opts.energy;

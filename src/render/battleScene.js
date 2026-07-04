@@ -41,6 +41,7 @@ import {
 } from './fx.js';
 import { casterVfx, targetVfx, ultTiming, thornsBurst, executeSlash, pierceFlash, drainMotes, purifyBurst } from './skillVfx.js';
 import { syncStatusAuras } from './statusAuras.js';
+import { weatherOf, terrainOf } from '../battle/environments.js';
 import { playVoice } from './audio.js';
 
 // 與 style.css 的 --fire/--wind/--water/--light/--dark 同色值。
@@ -73,10 +74,11 @@ const Z_SPOT_TARGET = 590; // 被點亮的目標
 const Z_SPOT_CASTER = 600; // 施放者最上層
 
 export class BattleScene {
-  constructor(app, setup, replayer) {
+  constructor(app, setup, replayer, { env = null } = {}) {
     this.app = app;
     this.setup = setup;
     this.replayer = replayer;
+    this.env = env; // 環境（天氣氛圍層用）
     this._instant = false;
     this._destroyed = false;
     this.root = new Container();
@@ -106,8 +108,55 @@ export class BattleScene {
 
     this._dotTex = this._makeDotTexture();
     this._drawBackground();
+    this._drawWeather(this.env?.weather ?? null);
     this._buildUnits();
     this._bindEvents();
+  }
+
+  // 天氣氛圍層：頂部灑下天氣色柔光 + 緩慢飄落/上升的光屑（低調，不搶戰鬥戲）。
+  // 可重複呼叫（技能換天氣時拆舊建新）。
+  _drawWeather(weatherId) {
+    if (this._weatherLayer) {
+      killFx(this._weatherLayer);
+      if (!this._weatherLayer.destroyed) this._weatherLayer.destroy({ children: true });
+      this._weatherLayer = null;
+    }
+    const weather = weatherOf(weatherId);
+    if (!weather) return;
+    const layer = new Container();
+    layer.zIndex = -890;
+    this._weatherLayer = layer;
+    this.root.addChild(layer);
+    const color = Number(`0x${weather.color.slice(1)}`);
+    // 頂部柔光
+    const glow = new Graphics();
+    for (let i = 8; i >= 1; i -= 1) {
+      const t = i / 8;
+      glow.ellipse(STAGE_W / 2, -40, STAGE_W * 0.55 * t, 150 * t).fill({ color, alpha: 0.018 });
+    }
+    glow.blendMode = 'add';
+    layer.addChild(glow);
+    // 環境光屑：暴雨下落、烈日上升、颶風橫飄
+    if (!this._dotTex) return;
+    const drift = weather.id === 'rain' ? 'down' : weather.id === 'gale' ? 'side' : 'up';
+    for (let i = 0; i < 10; i += 1) {
+      const p = new Sprite(this._dotTex);
+      p.anchor.set(0.5);
+      p.blendMode = 'add';
+      p.tint = color;
+      p.alpha = 0;
+      const x0 = Math.random() * STAGE_W;
+      const y0 = 60 + Math.random() * (STAGE_H - 160);
+      p.scale.set(0.22 + Math.random() * 0.25);
+      p.position.set(x0, y0);
+      layer.addChild(p);
+      const dur = 5 + Math.random() * 4;
+      const move = drift === 'side'
+        ? { x: x0 + 220, y: y0 + (Math.random() * 60 - 30) }
+        : { x: x0 + (Math.random() * 50 - 25), y: y0 + (drift === 'down' ? 180 : -180) };
+      gsap.fromTo(p, { alpha: 0 }, { alpha: 0.5, duration: dur * 0.3, delay: i * 0.4, repeat: -1, repeatDelay: dur * 0.7, yoyo: false, ease: 'sine.out' });
+      gsap.fromTo(p, { x: x0, y: y0 }, { ...move, duration: dur, delay: i * 0.4, repeat: -1, ease: 'none' });
+    }
   }
 
   // 柔邊光點材質：app 層級共享（每場重建場景不重做、也不銷毀——
@@ -424,10 +473,14 @@ export class BattleScene {
   _buffGlyph(b) {
     if (b.kind === 'dot') return b.element === 'fire' ? '🔥' : '☠';
     if (b.kind === 'shield') return '🔰';
+    if (b.kind === 'hot') return '💗';
+    if (b.kind === 'thorns') return '🌿';
+    if (b.kind === 'counter') return '↩';
+    if (b.kind === 'castDrain') return '🌀';
     if (b.kind === 'control') {
       return b.control === 'stun' ? '💫' : b.control === 'silence' ? '🤫' : '🎯';
     }
-    const map = { atk: '⚔', def: '🛡', dmgTaken: '🛡', critChance: '✨', critMult: '✨', dmgDealt: '💥', energyGain: '⚡' };
+    const map = { atk: '⚔', def: '🛡', dmgTaken: '🛡', dotTaken: '🔥', critChance: '✨', critMult: '✨', dmgDealt: '💥', energyGain: '⚡' };
     return map[b.stat] || '◆';
   }
 
@@ -449,6 +502,21 @@ export class BattleScene {
       t.anchor.set(0.5);
       t.x = x;
       icons.addChild(t);
+      // 剩餘回合小數字（右下角標；無期限狀態不顯示）
+      if (b.turns != null && b.turns > 0) {
+        const badge = new Graphics();
+        badge.circle(x + SIZE / 2 - 1, SIZE / 2 - 1, 5).fill({ color: 0x0b0d16, alpha: 0.95 });
+        badge.circle(x + SIZE / 2 - 1, SIZE / 2 - 1, 5).stroke({ color: b.neg ? 0xff8a8a : 0x8ef2ae, width: 1, alpha: 0.7 });
+        icons.addChild(badge);
+        const n = new Text({
+          text: String(Math.min(9, b.turns)),
+          style: { fontSize: 7, fill: 0xffffff, fontWeight: '800' },
+        });
+        n.anchor.set(0.5);
+        n.x = x + SIZE / 2 - 1;
+        n.y = SIZE / 2 - 1;
+        icons.addChild(n);
+      }
     });
   }
 
@@ -526,7 +594,7 @@ export class BattleScene {
       }
 
       const buffs = this.replayer.buffsOf(uid);
-      const buffKey = buffs.map((b) => `${b.kind}:${b.stat || b.control || b.element || ''}:${b.neg ? 1 : 0}`).join(',');
+      const buffKey = buffs.map((b) => `${b.kind}:${b.stat || b.control || b.element || ''}:${b.neg ? 1 : 0}:${b.turns ?? ''}`).join(',');
       if (buffKey !== sprite._buffKey) {
         sprite._buffKey = buffKey;
         this._rebuildBuffIcons(sprite, buffs);
@@ -751,6 +819,37 @@ export class BattleScene {
         });
         floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
         if (this._ultDim) this._spotlightTarget(s);
+      }),
+      rp.on('weather', ({ id }) => {
+        if (this._instant) return;
+        this._drawWeather(id);
+        const w = weatherOf(id);
+        if (!w) return;
+        const txt = new Text({
+          text: `${w.name}降臨！`,
+          style: { fontSize: 26, fill: Number(`0x${w.color.slice(1)}`), fontWeight: '800', stroke: { color: 0x000000, width: 4 } },
+        });
+        floatText(this.fxLayer, STAGE_W / 2, STAGE_H * 0.3, txt);
+      }),
+      rp.on('terrain', ({ id }) => {
+        if (this._instant) return;
+        const t = terrainOf(id);
+        if (!t) return;
+        const txt = new Text({
+          text: `場地：${t.name}`,
+          style: { fontSize: 22, fill: Number(`0x${t.color.slice(1)}`), fontWeight: '800', stroke: { color: 0x000000, width: 4 } },
+        });
+        floatText(this.fxLayer, STAGE_W / 2, STAGE_H * 0.38, txt);
+      }),
+      rp.on('drain', ({ uid, amount }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(uid);
+        if (!s) return;
+        const txt = new Text({
+          text: `干擾 -${amount}`,
+          style: { fontSize: 17, fill: 0xb48cff, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
+        });
+        floatText(this.fxLayer, s.x, this._chestY(s) - 14, txt);
       }),
       rp.on('battleEnd', () => this._endUltSpotlight())
     );

@@ -8,6 +8,7 @@ import { store } from '../core/state.js';
 import { nav } from './router.js';
 import { stageLabel } from '../systems/profile.js';
 import { avatarEl } from './metaSheets.js';
+import { weatherOf, terrainOf, envLabelOf, envDescOf } from '../battle/environments.js';
 
 const COIN_FLY_S = 0.6;
 const SPEEDS = [1, 2, 3];
@@ -50,9 +51,11 @@ export class BattleOverlay {
       ])
     );
 
-    // 上中：關卡菱標
+    // 上中：關卡菱標 + 環境徽章（天氣/場地；hover 看效果說明）
     this.waveText = el('span', { text: '1-1' });
     this.root.appendChild(el('div', { class: 'bo-wave' }, [this.waveText]));
+    this.envChip = el('div', { class: 'bo-env' });
+    this.root.appendChild(this.envChip);
 
     // 左下：回合圓章
     this.roundEl = el('div', { class: 'bo-round', text: 'R1' });
@@ -82,14 +85,29 @@ export class BattleOverlay {
   }
 
   // 每場開打時同步靜態資訊。title 有值＝自訂回放（競技場/切磋/公會 Boss）。
-  setBattle({ stage, title = null }) {
+  setBattle({ stage, title = null, env = null }) {
     const label = stageLabel(stage);
     this.waveText.textContent = title ?? label;
     this.nmLeft.textContent = '我方';
     this.nmRight.textContent = title ? '對手' : `西境軍 ${label}`;
     clear(this.avaLeft);
     this.avaLeft.appendChild(avatarEl());
+    this.setEnv(env);
     this.hideResult();
+  }
+
+  // 環境徽章：天氣/場地色點 + 名稱；戰鬥中被技能覆蓋時即時更新（controller 轉發事件）。
+  setEnv(ids) {
+    clear(this.envChip);
+    const has = !!(ids?.weather || ids?.terrain);
+    this.envChip.classList.toggle('on', has);
+    if (!has) return;
+    this.envChip.title = envDescOf(ids.weather, ids.terrain);
+    const w = weatherOf(ids.weather);
+    const t = terrainOf(ids.terrain);
+    if (w) this.envChip.appendChild(el('i', { style: `background:${w.color}` }));
+    if (t) this.envChip.appendChild(el('i', { style: `background:${t.color}` }));
+    this.envChip.appendChild(el('span', { text: envLabelOf(ids.weather, ids.terrain) }));
   }
 
   // 每 tick 呼叫，但只在值變化時寫 DOM（避免每幀 style/layout 重算、

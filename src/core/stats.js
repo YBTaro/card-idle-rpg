@@ -47,5 +47,6 @@ export function deriveStats(cardInst) {
     atk: Math.round(raw.atk * cls.statMods.atk * starMul),
     def: Math.round(raw.def * cls.statMods.def * starMul),
     passives,
+    onEnter: card.onEnter ?? null, // 進場被動（開天氣/場地）
   };
 }

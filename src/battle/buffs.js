@@ -90,6 +90,7 @@ export function summarizeBuffs(unit) {
       control: b.control,
       element: b.element,
       neg: isNegative(b),
+      turns: b.duration ?? null, // 剩餘回合（無期限＝null，前端不顯示數字）
     }));
 }
 
