@@ -487,16 +487,18 @@ class SummonStage {
     this.spRays.position.z = -0.2;
     g.add(this.spRays);
 
-    // 角色全圖（去背立繪；每次登場換貼圖）
+    // 角色全圖（去背立繪；每次登場換貼圖）——右偏構圖，讓出左下名字區
     this.spArtMat = this._track(new THREE.MeshBasicMaterial({ map: null, transparent: true, opacity: 0, depthWrite: false }));
     this.spArt = new THREE.Mesh(this._track(new THREE.PlaneGeometry(2.45, 3.3)), this.spArtMat);
-    this.spArt.position.set(0.35, 0.06, 0); // 全身入鏡（鏡頭注視點略低，圖心上移補償）
+    this.spArt.position.set(0.62, 0.06, 0); // 全身入鏡（鏡頭注視點略低，圖心上移補償）
+    this.spArt.renderOrder = 1;
     g.add(this.spArt);
 
-    // 名字（slam 入場）
-    this.spNameMat = this._track(new THREE.MeshBasicMaterial({ map: null, transparent: true, opacity: 0, depthWrite: false }));
+    // 名字（slam 入場）——renderOrder 最高，永遠壓在角色圖之上
+    this.spNameMat = this._track(new THREE.MeshBasicMaterial({ map: null, transparent: true, opacity: 0, depthWrite: false, depthTest: false }));
     this.spName = new THREE.Mesh(this._track(new THREE.PlaneGeometry(3.6, 0.95)), this.spNameMat);
-    this.spName.position.set(-1.35, -0.95, 0.1);
+    this.spName.position.set(-1.5, -1.0, 0.25);
+    this.spName.renderOrder = 10;
     g.add(this.spName);
 
     this.splash = g;
@@ -649,7 +651,10 @@ class SummonStage {
     const applyHelix = (c) => {
       const { ang, rad, y, s } = c.p;
       c.grp.position.set(Math.cos(ang) * rad, y, Math.sin(ang) * rad * 0.82 + 0.2);
-      c.grp.rotation.y = Math.atan2(c.grp.position.x, c.grp.position.z) + Math.PI; // 卡背朝外，不漏牌面
+      // 卡背永遠朝向鏡頭（billboard）：環轉到任何角度都不會偷看到牌面
+      const dx = this.camera.position.x - c.grp.position.x;
+      const dz = this.camera.position.z - c.grp.position.z;
+      c.grp.rotation.y = Math.atan2(dx, dz) + Math.PI;
       c.grp.scale.setScalar(s);
     };
 
@@ -771,7 +776,7 @@ class SummonStage {
         tl.fromTo(this.spDimMat, { opacity: 0 }, { opacity: 0.88, duration: SPLASH_IN_S * 0.6 }, tIn);
         tl.fromTo(this.spWashMat, { opacity: 0 }, { opacity: 0.42, duration: SPLASH_IN_S }, tIn);
         tl.fromTo(this.spRaysMat, { opacity: 0 }, { opacity: 0.5, duration: SPLASH_IN_S }, tIn);
-        tl.fromTo(this.spArt.position, { x: 1.7 }, { x: 0.35, duration: SPLASH_IN_S, ease: 'power3.out' }, tIn);
+        tl.fromTo(this.spArt.position, { x: 2.0 }, { x: 0.62, duration: SPLASH_IN_S, ease: 'power3.out' }, tIn);
         tl.fromTo(this.spArtMat, { opacity: 0 }, { opacity: 1, duration: SPLASH_IN_S * 0.6 }, tIn);
         tl.fromTo(this.spArt.scale, { x: 1.18, y: 1.18 }, { x: 1, y: 1, duration: SPLASH_IN_S, ease: 'power2.out' }, tIn);
         tl.fromTo(this.spName.scale, { x: 2.2, y: 2.2 }, { x: 1, y: 1, duration: 0.24, ease: 'back.out(2)' }, tIn + 0.14);
