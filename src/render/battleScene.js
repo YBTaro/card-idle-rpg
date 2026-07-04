@@ -18,6 +18,7 @@ import {
 import { STAGE_W, STAGE_H } from './pixiApp.js';
 import { ENERGY_MAX } from '../battle/unit.js';
 import { SKILLS } from '../battle/skills.js';
+import { CARDS } from '../data/cards.js';
 import { cutoutFor } from '../data/assets.js';
 import {
   lunge,
@@ -553,8 +554,10 @@ export class BattleScene {
           lunge(s, dir);
           return;
         }
-        if (s._info.class === 'support') {
-          // 法系/輔助：發射元素光彈（飛行 0.24s，約與 damage 事件同步命中）
+        // 普攻型態：卡片資料 attackStyle 優先，未標時退回職業判定（support=遠程）
+        const style = CARDS[s._info.cardId]?.attackStyle ?? (s._info.class === 'support' ? 'ranged' : 'melee');
+        if (style === 'ranged') {
+          // 遠程：原地前傾＋發射元素光彈（飛行 0.24s，約與 damage 事件同步命中）
           const color = ELEMENT_COLOR[s._info.element] || 0xffffff;
           bolt(this.fxLayer, s.x + dir * 24, this._chestY(s), t.x, this._chestY(t), color, this._dotTex);
           lunge(s, dir);
