@@ -235,10 +235,22 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
       case 'dot': {
         const elem = effect.element ? elementMultiplier(caster.element, u.element) : 1;
         const damage = Math.round(resolvePower(effect, caster, u) * elem);
-        applyBuff(u, {
-          kind: 'dot', damage, element: effect.element,
-          duration: effect.duration, key: defaultKey(`dot:${effect.element ?? ''}`), stackable: effect.stackable,
-        });
+        if (effect.stackable) {
+          // 明示可疊層（業火/瘟疫）：同人也疊新層
+          applyBuff(u, { kind: 'dot', damage, element: effect.element, duration: effect.duration, stackable: true });
+        } else {
+          // DoT 身分＝施放者＋技能＋屬性：
+          //   同人再上 → 原層剩餘回合 +1、每跳傷害更新為新值（不重置、不疊層）
+          //   不同人上 →（key 含 caster.uid）各自獨立一層，同時各跳各的
+          const key = `${caster.uid}:${skillId}:dot:${effect.element ?? ''}`;
+          const existing = (u.buffs ?? []).find((b) => b.key === key);
+          if (existing) {
+            existing.duration = (existing.duration ?? 0) + 1;
+            existing.damage = damage;
+          } else {
+            applyBuff(u, { kind: 'dot', damage, element: effect.element, duration: effect.duration, key });
+          }
+        }
         emitBuffs(u);
         break;
       }

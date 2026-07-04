@@ -263,6 +263,48 @@ describe('新原語：HoT / 驅散淨化 / 復活', () => {
   });
 });
 
+describe('DoT 身分規則：同人延長、異人獨立', () => {
+  it('同一施放者同技能再上火：不疊層、剩餘回合 +1、傷害更新', () => {
+    const caster = makeUnit({ team: 0, pos: 1, atk: 100 });
+    const foe = makeUnit({ team: 1, pos: 1, element: 'fire' }); // 同屬性：無剋制倍率干擾
+    const ctx = ctxFor(caster, [caster], [foe]);
+    const fx = { type: 'dot', power: 0.5, element: 'fire', duration: 2, scope: 'target' };
+    applyEffect(fx, caster, [foe], ctx, 'fireArrow');
+    foe.buffs[0].duration = 1; // 模擬時間流逝
+    caster.atk = 200; // 施放者變強
+    applyEffect(fx, caster, [foe], ctx, 'fireArrow');
+    const dots = foe.buffs.filter((b) => b.kind === 'dot');
+    expect(dots.length).toBe(1); // 不疊層
+    expect(dots[0].duration).toBe(2); // 剩餘 1 +1
+    expect(dots[0].damage).toBe(100); // 傷害更新為新值（200×0.5）
+  });
+
+  it('不同施放者（同技能）：各自獨立一層', () => {
+    const a = makeUnit({ team: 0, pos: 1, atk: 100 });
+    const b = makeUnit({ team: 0, pos: 2, atk: 60 });
+    const foe = makeUnit({ team: 1, pos: 1, element: 'fire' });
+    const fx = { type: 'dot', power: 0.5, element: 'fire', duration: 2, scope: 'target' };
+    applyEffect(fx, a, [foe], ctxFor(a, [a, b], [foe]), 'fireArrow');
+    applyEffect(fx, b, [foe], ctxFor(b, [a, b], [foe]), 'fireArrow');
+    const dots = foe.buffs.filter((b2) => b2.kind === 'dot');
+    expect(dots.length).toBe(2); // 兩層獨立
+    expect(dots.map((d) => d.damage).sort((x, y) => x - y)).toEqual([30, 50]);
+  });
+
+  it('跨角色 combo：A 的火可被引爆者一併結算', () => {
+    const a = makeUnit({ team: 0, pos: 1, atk: 100 });
+    const b = makeUnit({ team: 0, pos: 2, atk: 60 });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 1000, element: 'fire', class: 'tank' });
+    const fx = { type: 'dot', power: 0.5, element: 'fire', duration: 2, scope: 'target' };
+    applyEffect(fx, a, [foe], ctxFor(a, [a, b], [foe]), 'fireArrow'); // 50×2=100
+    applyEffect(fx, b, [foe], ctxFor(b, [a, b], [foe]), 'fireArrow'); // 30×2=60
+    const ctx = ctxFor(b, [a, b], [foe]);
+    applyEffect({ type: 'detonateDot', element: 'fire', scope: 'target' }, b, [foe], ctx, 'detonate');
+    expect(foe.hp).toBe(1000 - 160); // 兩人的火一起被引爆
+    expect(foe.buffs.filter((x) => x.kind === 'dot').length).toBe(0);
+  });
+});
+
 describe('DoT 操作原語：延長 / 易傷 / 引爆', () => {
   it('extend：延長敵方灼燒 +1 回合（element 過濾、不動增益與光環）', () => {
     const caster = makeUnit({ team: 0, pos: 1, atk: 100 });
