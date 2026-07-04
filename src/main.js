@@ -25,7 +25,7 @@ async function main() {
   loadGame();
   ensureQuests(); // 跨日任務重置
 
-  // Pixi 戰場（常駐運轉＝掛機推關，不在戰役頁也照打）
+  // Pixi 戰場（只在戰役頁運轉：進頁開打、離頁收場——不做背景自動戰鬥）
   const app = await createPixiApp(document.getElementById('battle-canvas'));
   app.canvas.style.width = '100%';
   app.canvas.style.height = '100%';
@@ -55,10 +55,13 @@ async function main() {
   nav.register('guild', document.getElementById('screen-guild'), guild);
   nav.register('tower', document.getElementById('screen-tower'), tower);
   nav.register('shop', document.getElementById('screen-shop'), shop);
-  nav.register('battle', document.getElementById('screen-battle'), null);
+  // 戰鬥只在戰役頁跑：進頁開打、離頁整場收掉（不做背景自動戰鬥）。
+  nav.register('battle', document.getElementById('screen-battle'), {
+    onShow: () => battle.enter(),
+    onHide: () => battle.leave(),
+  });
 
-  // 效能：戰鬥畫布被其他頁蓋住時降頻渲染（掛機模擬照跑、進度照推），
-  // 回到戰役頁恢復不限幀（RAF 同步 60+）。避免背景 WebGL 全速渲染搶走 DOM 頁的主執行緒。
+  // 效能：不在戰役頁時 ticker 降頻（此時無戰鬥、僅低成本空轉），戰役頁不限幀（RAF 同步 60+）。
   const throttleBattle = (id) => { app.ticker.maxFPS = id === 'battle' ? 0 : 10; };
   nav.onChange(throttleBattle);
   nav.go('home');
@@ -86,13 +89,13 @@ async function main() {
     if (id && screens[id]) screens[id].render?.();
   });
 
-  // 陣容變更 → 重啟當前戰鬥（升級不重啟，下一場才吃新數值）。
+  // 陣容變更 → 重啟當前戰鬥（只在戰役頁上有戰鬥時；其他頁下次進場自然吃新陣容）。
   let lastFormation = JSON.stringify(store.state.formation);
   store.subscribe(() => {
     const f = JSON.stringify(store.state.formation);
     if (f !== lastFormation) {
       lastFormation = f;
-      battle.restart();
+      if (nav.current() === 'battle') battle.restart();
     }
   });
 

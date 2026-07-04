@@ -33,7 +33,30 @@ export class BattleController {
 
     overlay?.bind?.(this);
     this.app.ticker.add(this._tick, this);
-    this.start();
+    // 不自動開戰：等玩家進戰役頁（enter()）才跑（見 main.js 的 nav 掛鉤）
+  }
+
+  // 進戰役頁：沒有進行中的戰鬥才開新場（回來時接續原本那場）。
+  enter() {
+    if (!this.replayer) this.start();
+  }
+
+  // 離開戰役頁：整場收掉——不在畫面上就不跑任何戰鬥。
+  // 主線戰中途離場＝這場不算（進度只在看著打時推進）；
+  // 自訂回放（競技場/試煉塔…）中途離場＝視為快轉：結果照常結算，呼叫端不卡 busy、獎勵不漏。
+  leave() {
+    if (this._custom) {
+      if (this.replayer && !this.replayer.done) this.replayer.skipToEnd(); // 觸發 battleEnd → 記下勝者
+      const done = this._custom.onDone;
+      const winner = this._customWinner;
+      this._custom = null;
+      setTimeout(() => done?.(winner), 0); // 等 nav 轉場結束再回呼（其內常有 nav.go）
+    }
+    this._teardownScene();
+    this.replayer = null;
+    this.director = null;
+    this._setup = null;
+    this._cooldown = 0;
   }
 
   start() {
