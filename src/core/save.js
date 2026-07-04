@@ -32,8 +32,9 @@ function migrate(data) {
   }
   data.daily ??= { lastClaim: 0 };
   data.progress ??= { wins: 0, losses: 0, stage: 1 };
-  // v2：開發期資源補給——舊檔一次性把資源補到至少 DEV_RESOURCES 水準（保留進度，不用清檔）。
-  if (fromVersion < 2) {
+  // v2/v4：開發期資源補給——舊檔一次性把資源補到至少 DEV_RESOURCES 水準（保留進度，不用清檔）。
+  // v4 上調水準（親自測試玩法用），舊檔進場自動補到新值。
+  if (fromVersion < 4) {
     data.currencies.tickets = Math.max(data.currencies.tickets || 0, DEV_RESOURCES.tickets);
     data.currencies.gold = Math.max(data.currencies.gold || 0, DEV_RESOURCES.gold);
     data.inventory.materials.essence = Math.max(data.inventory.materials.essence || 0, DEV_RESOURCES.essence);

@@ -22,8 +22,9 @@ export function buildPlayerUnits(state = store.state) {
 }
 
 export function buildEnemyUnits(stage = 1, rng = new Rng()) {
-  const level = Math.max(1, stage);
-  const scale = 0.8 + (stage - 1) * 0.06;
+  // 主線成長節奏：敵人等級每 3 關 +1（不再每關升等）；關內難度改由小倍率平滑爬升
+  const level = 1 + Math.floor((stage - 1) / 2);
+  const scale = 0.85;
   const tanks = CARD_LIST.filter((c) => c.class === 'tank');
   const picks = [rng.pick(tanks)];
   for (let i = 1; i < 5; i++) picks.push(rng.pick(CARD_LIST));

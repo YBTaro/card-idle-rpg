@@ -3,10 +3,10 @@
 import { EventEmitter } from './events.js';
 import { STARTER_CARD_IDS, CARDS } from '../data/cards.js';
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
-// 開發期測試資源水準（新檔直接給；舊檔由 save.js 的 v2 遷移一次性補到至少此值）。
-export const DEV_RESOURCES = { tickets: 300, gold: 100000, essence: 10000 };
+// 開發期測試資源水準（新檔直接給；舊檔由 save.js 的版本遷移一次性補到至少此值）。
+export const DEV_RESOURCES = { tickets: 1000, gold: 2000000, essence: 200000 };
 
 // 建立全新存檔（首次遊玩）。
 export function createNewGame() {
