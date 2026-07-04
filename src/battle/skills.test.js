@@ -68,13 +68,13 @@ describe('每卡專屬技', () => {
     expect(hasControl(foe, 'stun')).toBe(true);
   });
 
-  it('tidalPrison（tidecaller）：直排目標受傷 + 被 silence', () => {
+  it('tidalPrison（tidecaller）：直排目標受傷 + 被凍結（水屬專屬狀態）', () => {
     const caster = makeUnit({ team: 0, pos: 1, cardId: 'tidecaller', atk: 100 });
     const foe = makeUnit({ team: 1, pos: 1, hp: 99999, def: 0 });
     const ctx = ctxFor(caster, [caster], [foe]);
     castSkill(caster, skillFor(caster), ctx);
     expect(foe.hp).toBeLessThan(99999);
-    expect(hasControl(foe, 'silence')).toBe(true);
+    expect(hasControl(foe, 'freeze')).toBe(true);
   });
 
   it('windsong（galewind）：全隊 energyGain buff + 回血', () => {

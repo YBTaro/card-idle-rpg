@@ -478,7 +478,7 @@ export class BattleScene {
     if (b.kind === 'counter') return '↩';
     if (b.kind === 'castDrain') return '🌀';
     if (b.kind === 'control') {
-      return b.control === 'stun' ? '💫' : b.control === 'silence' ? '🤫' : '🎯';
+      return b.control === 'stun' ? '💫' : b.control === 'silence' ? '🤫' : b.control === 'freeze' ? '❄' : '🎯';
     }
     const map = { atk: '⚔', def: '🛡', dmgTaken: '🛡', dotTaken: '🔥', critChance: '✨', critMult: '✨', dmgDealt: '💥', energyGain: '⚡' };
     return map[b.stat] || '◆';
@@ -779,13 +779,13 @@ export class BattleScene {
         });
         floatText(this.fxLayer, s.x, this._chestY(s) - 32, txt);
       }),
-      rp.on('stunned', ({ uid }) => {
+      rp.on('stunned', ({ uid, reason }) => {
         if (this._instant) return;
         const s = this.sprites.get(uid);
         if (!s) return;
         const txt = new Text({
-          text: '暈眩',
-          style: { fontSize: 20, fill: 0x9aa3b8, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
+          text: reason === 'silence' ? '沉默' : '暈眩',
+          style: { fontSize: 20, fill: reason === 'silence' ? 0xbb8cff : 0x9aa3b8, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
         });
         floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
       }),

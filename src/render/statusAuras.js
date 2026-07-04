@@ -159,6 +159,26 @@ function castDrainAura() {
   return cont;
 }
 
+// 凍結：冰藍結晶繞體（無法回能的「冰封感」）。
+function freezeAura() {
+  const cont = new Container();
+  cont.y = -58;
+  const N = 5;
+  for (let i = 0; i < N; i += 1) {
+    const g = new Graphics();
+    g.moveTo(0, -9).lineTo(4, 0).lineTo(0, 9).lineTo(-4, 0).closePath().fill({ color: 0xbfe8ff, alpha: 0.9 });
+    g.blendMode = 'add';
+    const a = (i / N) * Math.PI * 2;
+    g.x = Math.cos(a) * 42;
+    g.y = Math.sin(a) * 28;
+    g.rotation = a;
+    cont.addChild(g);
+  }
+  gsap.fromTo(cont, { alpha: 0.55 }, { alpha: 1, duration: 1.2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  gsap.to(cont, { rotation: Math.PI * 2, duration: 10, repeat: -1, ease: 'none' });
+  return cont;
+}
+
 // 嘲諷：腳底金色挑釁環脈動。
 function tauntAura() {
   const cont = new Container();
@@ -199,6 +219,7 @@ function buildAura(key, sprite, dotTex) {
     case 'hot': return risingMotes(dotTex, COLOR.hot);
     case 'castDrain': return castDrainAura();
     case 'control:stun': return stunAura();
+    case 'control:freeze': return freezeAura();
     case 'control:silence': return silenceAura();
     case 'control:taunt': return tauntAura();
     default: return null;

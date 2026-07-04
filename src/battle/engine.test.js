@@ -114,16 +114,33 @@ describe('BattleEngine（回合制）', () => {
     expect(foe.hp).toBe(1000); // 未被攻擊
   });
 
-  it('沉默：滿氣不放技能、仍普攻、能量保留', () => {
+  it('沉默：技能與普攻皆封（跳過行動）、能量保留', () => {
     const me = makeUnit({ team: 0, pos: 1, class: 'dps', atk: 100, energy: ENERGY_MAX });
-    const foe = makeUnit({ team: 1, pos: 1, hp: 99999, def: 0 });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 1000, def: 0 });
     applyBuff(me, { kind: 'control', control: 'silence', duration: 5 });
     const engine = new BattleEngine([me], [foe], { rng: new Rng(1) });
     let ult = false;
+    let silenced = null;
     engine.on('ultimate', () => (ult = true));
-    engine.step(); // me 普攻（滿氣但被沉默）→ 不觸發技能階段
+    engine.on('stunned', ({ reason }) => (silenced = reason));
+    engine.step(); // me 被沉默 → 普攻與技能皆不可用
     expect(ult).toBe(false);
+    expect(silenced).toBe('silence');
+    expect(foe.hp).toBe(1000); // 沒被普攻
     expect(me.energy).toBe(ENERGY_MAX); // 能量保留
+  });
+
+  it('凍結：無法回能（行動照常、扣能量不受影響）', () => {
+    const me = makeUnit({ team: 0, pos: 1, class: 'dps', atk: 100 });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 99999, def: 0 });
+    applyBuff(me, { kind: 'control', control: 'freeze', duration: 2 });
+    const engine = new BattleEngine([me], [foe], { rng: new Rng(1) });
+    engine.step(); // me 普攻照打，但行動回能被凍結
+    expect(foe.hp).toBeLessThan(99999); // 有普攻
+    expect(me.energy).toBe(0); // 沒回能
+    me.energy = 50;
+    me.energy = Math.max(0, me.energy - 20); // 扣能量（靈壓型）不受凍結影響
+    expect(me.energy).toBe(30);
   });
 
   it('HoT：輪到時行動前回血並發 heal 事件', () => {

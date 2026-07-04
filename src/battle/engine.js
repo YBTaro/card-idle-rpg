@@ -258,8 +258,9 @@ export class BattleEngine {
       if (healed > 0) ctx.emit('heal', { source: null, target: u, amount: healed, kind: 'hot' });
     }
     this.emit('turn', { unit: u });
-    if (hasControl(u, 'stun')) {
-      this.emit('stunned', { unit: u });
+    // 暈眩/沉默都跳過普攻（沉默＝技能與普攻皆不可用；凍結不影響行動、只擋回能）
+    if (hasControl(u, 'stun') || hasControl(u, 'silence')) {
+      this.emit('stunned', { unit: u, reason: hasControl(u, 'stun') ? 'stun' : 'silence' });
     } else {
       normalAttack(u, ctx);
     }

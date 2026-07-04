@@ -47,7 +47,7 @@ export const SKILLS = {
   tidalPrison: { name: '潮牢', target: 'enemyColumn', effects: [
     { type: 'weather', weather: 'rain' }, // 潮牢：喚來暴雨
     { type: 'damage', mult: 1.6, scope: 'target' },
-    { type: 'control', control: 'silence', duration: 2, scope: 'target' },
+    { type: 'control', control: 'freeze', duration: 1, scope: 'target' }, // 困於潮牢：凍結（沉默是光屬專屬，水用凍結）
   ]},
   dragonGuard: { name: '龍護', effects: [
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.6, duration: 2, key: 'guard', scope: 'allAllies' },
@@ -81,6 +81,7 @@ export const SKILLS = {
     { type: 'damage', mult: 1.0, scope: 'target' },
     { type: 'damage', mult: 1.0, scope: 'target' },
     { type: 'damage', mult: 0.8, scope: 'target', executeBelow: 0.3, executeBonus: 2.0 },
+    { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target', chance: 0.7 }, // 70% 燃燒 2 回合（同人再上＝回合數疊加）
   ]},
   karmicFire: { name: '業火', target: 'enemyFrontRow', effects: [
     { type: 'damage', mult: 1.5, scope: 'target' },
@@ -162,9 +163,9 @@ export const SKILLS = {
   ]},
 
   // ---- 水 ----
-  frostThorns: { name: '冰棘', effects: [
-    { type: 'damage', mult: 1.1, scope: 'allEnemies' },
-    { type: 'buff', stat: 'energyGain', op: 'mul', value: 0.75, duration: 2, scope: 'allEnemies' }, // 全體霜緩
+  frostThorns: { name: '冰棘', target: 'allEnemies', effects: [ // 水屬專屬：凍結（無法回能）
+    { type: 'damage', mult: 1.1, scope: 'target' },
+    { type: 'control', control: 'freeze', duration: 2, scope: 'target', chance: 0.3 }, // 30% 全體凍結 2 回合
   ]},
   tideHymn: { name: '潮頌', target: 'lowestHpAlly', effects: [ // 潮洗：深度淨化單一隊友
     { type: 'heal', power: 2.8, scope: 'target' },
@@ -227,7 +228,7 @@ export const SKILLS = {
   ]},
   starfall: { name: '星隕', target: 'enemyBackRow', effects: [
     { type: 'damage', mult: 1.8, scope: 'target' },
-    { type: 'control', control: 'silence', duration: 1, scope: 'target' },
+    { type: 'control', control: 'silence', duration: 1, scope: 'target', chance: 0.4 }, // 40% 沉默 1 回合（光屬專屬；沉默＝技能與普攻皆封）
   ]},
   silverThrust: { name: '聖刺', target: 'singleEnemyByColumn', effects: [ // 五成機率追刺第三劍
     { type: 'damage', mult: 1.5, scope: 'target' },
@@ -269,6 +270,7 @@ export const SKILLS = {
   webBind: { name: '縛絲', target: 'lowestHpEnemy', effects: [ // 補刀型選目標
     { type: 'damage', mult: 1.8, scope: 'target' },
     { type: 'control', control: 'stun', duration: 1, scope: 'target' },
+    { type: 'dot', power: 0.35, duration: 2, scope: 'target', chance: 0.7 }, // 70% 蛛毒 2 回合（暗屬專屬中毒）
   ]},
   duskVeil: { name: '暮幕', effects: [ // 入夜：奪走敵人的光（全體驅散）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },

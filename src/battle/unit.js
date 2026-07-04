@@ -2,7 +2,7 @@
 import { CLASSES } from '../data/classes.js';
 import { rowOf, columnOf } from './positions.js';
 import { CRIT_CHANCE, CRIT_MULT } from './damage.js';
-import { resolve, absorbWithShields } from './buffs.js';
+import { resolve, absorbWithShields, hasControl } from './buffs.js';
 
 const clamp01 = (x) => Math.max(0, Math.min(1, x));
 
@@ -67,6 +67,7 @@ export class Unit {
   get energyGainMult() { return resolve(this, 'energyGain', 1); }
 
   gainEnergy(amount) {
+    if (hasControl(this, 'freeze')) return; // 凍結：無法回能（扣能量不受影響）
     const gained = Math.round(amount * this.energyGainMult);
     this.energy = Math.max(0, Math.min(ENERGY_MAX, this.energy + gained));
   }

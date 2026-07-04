@@ -38,7 +38,7 @@ const STAT_LABEL = {
   energyGain: '集氣速度',
 };
 
-const CONTROL_LABEL = { taunt: '嘲諷', stun: '暈眩', silence: '沉默' };
+const CONTROL_LABEL = { taunt: '嘲諷', stun: '暈眩', silence: '沉默（無法行動）', freeze: '凍結（無法回能）' };
 
 const TERRAIN_NAME = { surge: '湧能磁場', erosion: '侵蝕之地', swamp: '迷霧沼澤' };
 
