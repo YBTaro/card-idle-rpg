@@ -50,6 +50,27 @@ export function dotEntries(unit) {
   return unit.buffs ? unit.buffs.filter((b) => b.kind === 'dot') : [];
 }
 
+// 持續回復（HoT）：行動前結算的治療 buff。
+export function hotEntries(unit) {
+  return unit.buffs ? unit.buffs.filter((b) => b.kind === 'hot') : [];
+}
+
+// 驅散/淨化：移除最多 count 個（非光環）buff。negative=true 淨化減益、false 驅散增益。
+// 回傳實際移除數。
+export function dispelBuffs(unit, { negative = true, count = Infinity } = {}) {
+  if (!unit.buffs) return 0;
+  let removed = 0;
+  unit.buffs = unit.buffs.filter((b) => {
+    if (b.aura || removed >= count) return true;
+    if (isNegative(b) === negative) {
+      removed += 1;
+      return false;
+    }
+    return true;
+  });
+  return removed;
+}
+
 export function hasControl(unit, name) {
   return !!unit.buffs && unit.buffs.some((b) => b.kind === 'control' && b.control === name);
 }

@@ -12,6 +12,9 @@ const TARGET_LABEL = {
   allEnemies: '敵方全體',
   allAllies: '我方全體',
   lowestHpAlly: '血量最低的隊友',
+  randomEnemy: '隨機敵人',
+  lowestHpEnemy: '血量最低的敵人',
+  deadAlly: '倒下的隊友',
   self: '自身',
 };
 
@@ -47,26 +50,61 @@ const dur = (d) => (d ? `，持續 ${d} 次行動` : '');
 
 function describeEffect(effect, targetLabel) {
   const who = SCOPE_LABEL[effect.scope] ?? targetLabel ?? '目標';
+  const chance = effect.chance != null ? `${pct(effect.chance)} 機率` : '';
+  let text = '';
   switch (effect.type) {
-    case 'damage':
-      return `對${who}造成 ${pct(effect.mult)} 攻擊力的傷害`;
+    case 'damage': {
+      const mods = [];
+      if (effect.ignoreDef) mods.push('無視防禦');
+      text = `對${who}造成 ${pct(effect.mult)} 攻擊力的傷害${mods.length ? `（${mods.join('、')}）` : ''}`;
+      if (effect.executeBelow != null) {
+        text += `；目標生命低於 ${pct(effect.executeBelow)} 時傷害 ×${effect.executeBonus ?? 1.5}`;
+      }
+      if (effect.lifesteal) text += `，並回復造成傷害 ${pct(effect.lifesteal)} 的生命`;
+      break;
+    }
     case 'heal':
-      return `治療${who} ${pct(effect.power)} 攻擊力的生命`;
+      text = `治療${who} ${pct(effect.power)} 攻擊力的生命`;
+      break;
+    case 'hot':
+      text = `為${who}附加持續回復（每次行動前回復 ${pct(effect.power)} 攻擊力的生命${dur(effect.duration)}）`;
+      break;
     case 'buff':
-      return `${who}${STAT_LABEL[effect.stat] ?? effect.stat} ${buffDelta(effect.op, effect.value)}${dur(effect.duration)}`;
+      text = `${who}${STAT_LABEL[effect.stat] ?? effect.stat} ${buffDelta(effect.op, effect.value)}${dur(effect.duration)}`;
+      break;
     case 'dot': {
       const name = effect.element === 'fire' ? '灼燒' : '持續傷害';
-      return `對${who}附加${name}（每次行動前受 ${pct(effect.power)} 攻擊力傷害${dur(effect.duration)}）`;
+      const stack = effect.stackable ? '（可疊加）' : '';
+      text = `對${who}附加${name}${stack}（每次行動前受 ${pct(effect.power)} 攻擊力傷害${dur(effect.duration)}）`;
+      break;
     }
     case 'shield':
-      return `為${who}套上 ${pct(effect.power)} 攻擊力的護盾${dur(effect.duration)}`;
+      text = `為${who}套上 ${pct(effect.power)} 攻擊力的護盾${dur(effect.duration)}`;
+      break;
     case 'energy':
-      return `${who}獲得 ${effect.amount} 點能量`;
+      text = `${who}獲得 ${effect.amount} 點能量`;
+      break;
     case 'control':
-      return `對${who}施加${CONTROL_LABEL[effect.control] ?? effect.control}${dur(effect.duration)}`;
+      text = `對${who}施加${CONTROL_LABEL[effect.control] ?? effect.control}${dur(effect.duration)}`;
+      break;
+    case 'dispel':
+      text = effect.what === 'buff'
+        ? `驅散${who}的增益效果${effect.count ? `（最多 ${effect.count} 個）` : ''}`
+        : `淨化${who}的減益效果${effect.count ? `（最多 ${effect.count} 個）` : ''}`;
+      break;
+    case 'revive':
+      text = `復活${who}並回復 ${pct(effect.power)} 最大生命`;
+      break;
+    case 'thorns':
+      text = `${who}獲得荊棘（受擊時反彈 ${pct(effect.pct)} 傷害${dur(effect.duration)}）`;
+      break;
+    case 'counter':
+      text = `${who}進入反擊姿態（受擊時回敬 ${pct(effect.mult)} 攻擊力${dur(effect.duration)}）`;
+      break;
     default:
       return '';
   }
+  return chance ? `${chance}${text}` : text;
 }
 
 // skillId → 完整描述字串（不含技能名）。未知技能回空字串。

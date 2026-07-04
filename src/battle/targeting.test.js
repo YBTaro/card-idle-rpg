@@ -98,4 +98,33 @@ describe('SELECTORS registry', () => {
     const enemies = [makeUnit({ team: 1, pos: 1 }), makeUnit({ team: 1, pos: 2 })];
     expect(SELECTORS.allEnemies(makeUnit({ team: 0, pos: 1 }), ctxWith(enemies)).length).toBe(2);
   });
+
+  it('randomEnemy：用 rng.pick 從存活敵人中挑、排除陣亡', () => {
+    const e1 = makeUnit({ team: 1, pos: 1, name: 'e1' });
+    const e2 = makeUnit({ team: 1, pos: 2, name: 'e2' });
+    e1.takeDamage(99999); // e1 陣亡
+    const rng = { pick: (arr) => arr[arr.length - 1] };
+    const res = SELECTORS.randomEnemy(makeUnit({ team: 0, pos: 1 }), { enemies: [e1, e2], allies: [], rng });
+    expect(res).toEqual([e2]);
+    expect(SELECTORS.randomEnemy(makeUnit({ team: 0, pos: 1 }), ctxWith([]))).toEqual([]);
+  });
+
+  it('lowestHpEnemy：挑血量比例最低的存活敵人', () => {
+    const e1 = makeUnit({ team: 1, pos: 1, hp: 1000 });
+    const e2 = makeUnit({ team: 1, pos: 2, hp: 1000 });
+    const e3 = makeUnit({ team: 1, pos: 3, hp: 1000 });
+    e2.takeDamage(700); // 30%
+    e3.takeDamage(999); // 最低但接著陣亡
+    e3.takeDamage(99999);
+    const res = SELECTORS.lowestHpEnemy(makeUnit({ team: 0, pos: 1 }), ctxWith([e1, e2, e3]));
+    expect(res).toEqual([e2]);
+  });
+
+  it('deadAlly：回傳第一位倒下的隊友；全活回空', () => {
+    const a1 = makeUnit({ team: 0, pos: 1 });
+    const a2 = makeUnit({ team: 0, pos: 2 });
+    expect(SELECTORS.deadAlly(a1, ctxWith([], [a1, a2]))).toEqual([]);
+    a2.takeDamage(99999);
+    expect(SELECTORS.deadAlly(a1, ctxWith([], [a1, a2]))).toEqual([a2]);
+  });
 });

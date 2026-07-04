@@ -5,7 +5,7 @@ import { Rng } from '../core/rng.js';
 import { ENERGY_MAX } from './unit.js';
 import { TURN_SEQUENCE } from './positions.js';
 import { normalAttack, castSkill, skillFor } from './skills.js';
-import { tickBuffs, dotEntries, hasControl, summarizeBuffs } from './buffs.js';
+import { tickBuffs, dotEntries, hotEntries, hasControl, summarizeBuffs } from './buffs.js';
 import { dealDot } from './effects.js';
 import { recomputePassives } from './passives.js';
 
@@ -132,9 +132,13 @@ export class BattleEngine {
       castSkill(u, skillFor(u), ctx);
       return;
     }
-    // 普攻才算回合：出手前結算 DoT（可致死 → 跳過行動），行動後遞減 buff
+    // 普攻才算回合：出手前結算 DoT（可致死 → 跳過行動）與 HoT，行動後遞減 buff
     for (const dot of dotEntries(u)) dealDot(u, dot, ctx);
     if (!u.alive) return;
+    for (const hot of hotEntries(u)) {
+      const healed = u.heal(hot.amount);
+      if (healed > 0) ctx.emit('heal', { source: null, target: u, amount: healed });
+    }
     this.emit('turn', { unit: u });
     if (hasControl(u, 'stun')) {
       this.emit('stunned', { unit: u });

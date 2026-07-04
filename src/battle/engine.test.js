@@ -126,6 +126,19 @@ describe('BattleEngine（回合制）', () => {
     expect(me.energy).toBe(ENERGY_MAX); // 能量保留
   });
 
+  it('HoT：輪到時行動前回血並發 heal 事件', () => {
+    const me = makeUnit({ team: 0, pos: 1, atk: 100, hp: 1000 });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 99999 });
+    me.hp = 500;
+    applyBuff(me, { kind: 'hot', amount: 50, duration: 2 });
+    const engine = new BattleEngine([me], [foe], { rng: new Rng(1) });
+    let healed = 0;
+    engine.on('heal', ({ target, amount }) => { if (target === me) healed += amount; });
+    engine.step(); // me 的回合：行動前 HoT 結算
+    expect(healed).toBe(50);
+    expect(me.hp).toBe(550);
+  });
+
   it('被動：開打時光環反映在 effDef', () => {
     const tank = makeUnit({ team: 0, pos: 1, def: 100, passives: [{ target: 'allAllies', effects: [{ stat: 'def', op: 'mul', value: 1.1 }] }] });
     const ally = makeUnit({ team: 0, pos: 2, def: 100 });

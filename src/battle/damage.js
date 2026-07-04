@@ -9,13 +9,15 @@ export const DEF_SOFTCAP = 120; // 防禦軟上限 K：承傷比例 = K / (K + d
 
 // 計算一次攻擊傷害。
 // attacker / defender 為 Unit；mult 為技能倍率（普攻 1.0、大招更高）。
+// opts.ignoreDef＝無視防禦（防禦視為 0）。
 // 讀取有效值 getter（effAtk/effDef/critChance/critMult/dmgTakenMult/dmgDealtMult）。
-export function computeDamage(attacker, defender, mult, rng) {
+export function computeDamage(attacker, defender, mult, rng, opts = {}) {
   const elemMult = elementMultiplier(attacker.element, defender.element);
   const base = attacker.effAtk * mult;
   // 防禦採比值衰減（寶可夢式 A/D 精神）：K/(K+def) 平滑遞減、
   // 防禦再高也不會把傷害壓到 0，且高防有遞減報酬。
-  const afterDef = base * (DEF_SOFTCAP / (DEF_SOFTCAP + Math.max(0, defender.effDef)));
+  const def = opts.ignoreDef ? 0 : Math.max(0, defender.effDef);
+  const afterDef = base * (DEF_SOFTCAP / (DEF_SOFTCAP + def));
   const variance = rng ? 1 + (rng.next() * 2 - 1) * DAMAGE_VARIANCE : 1;
   const isCrit = rng ? rng.next() < attacker.critChance : false;
   const critMult = isCrit ? attacker.critMult : 1;

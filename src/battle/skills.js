@@ -82,9 +82,11 @@ export const SKILLS = {
   ]},
   emberWarmth: { name: '餘溫', effects: [
     { type: 'heal', power: 1.2, scope: 'allAllies' },
+    { type: 'dispel', what: 'debuff', count: 1, scope: 'allAllies' }, // 淨化
     { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.15, duration: 2, scope: 'allAllies' },
   ]},
   shellAegis: { name: '殼護', effects: [
+    { type: 'thorns', pct: 0.3, duration: 2, scope: 'self' }, // 荊棘反傷
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'shield', power: 2.2, duration: 3, scope: 'self' },
     { type: 'buff', stat: 'def', op: 'mul', value: 1.3, duration: 2, scope: 'self' },
@@ -94,7 +96,7 @@ export const SKILLS = {
     { type: 'dot', power: 0.5, element: 'fire', duration: 2, scope: 'target' },
   ]},
   detonate: { name: '爆燃', target: 'enemyColumn', effects: [
-    { type: 'damage', mult: 1.7, scope: 'target' },
+    { type: 'damage', mult: 1.7, scope: 'target', ignoreDef: true }, // 無視防禦
     { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target' },
   ]},
   warBanner: { name: '軍威', effects: [
@@ -102,6 +104,7 @@ export const SKILLS = {
     { type: 'energy', amount: 15, scope: 'allAllies' },
   ]},
   lionRoar: { name: '獅吼', target: 'enemyFrontRow', effects: [
+    { type: 'counter', mult: 0.8, duration: 2, scope: 'self' }, // 反擊姿態
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'buff', stat: 'atk', op: 'mul', value: 0.8, duration: 2, scope: 'target' },
   ]},
@@ -109,6 +112,7 @@ export const SKILLS = {
   // ---- 風 ----
   thunderCut: { name: '雷切', target: 'singleEnemyByColumn', effects: [
     { type: 'damage', mult: 2.4, scope: 'target' },
+    { type: 'control', control: 'stun', duration: 1, scope: 'target', chance: 0.3 }, // 機率暈眩
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.3, duration: 2, scope: 'self' },
   ]},
   phantomEdge: { name: '殘影', target: 'singleEnemyByColumn', effects: [
@@ -157,7 +161,7 @@ export const SKILLS = {
     { type: 'shield', power: 0.8, duration: 3, scope: 'allAllies' },
   ]},
   abyssBite: { name: '淵噬', target: 'singleEnemyByColumn', effects: [
-    { type: 'damage', mult: 2.2, scope: 'target' },
+    { type: 'damage', mult: 2.2, scope: 'target', lifesteal: 0.35 }, // 吸血
     { type: 'buff', stat: 'def', op: 'mul', value: 0.75, duration: 2, scope: 'target' }, // 破甲
   ]},
   mistBlades: { name: '霧刃', target: 'singleEnemyByColumn', effects: [
@@ -167,6 +171,7 @@ export const SKILLS = {
   ]},
   springSurge: { name: '湧泉', effects: [
     { type: 'heal', power: 1.4, scope: 'allAllies' },
+    { type: 'hot', power: 0.35, duration: 2, scope: 'allAllies' }, // 持續回復
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.85, duration: 2, scope: 'allAllies' },
   ]},
   tsunami: { name: '海嘯', target: 'allEnemies', effects: [
@@ -187,7 +192,7 @@ export const SKILLS = {
     { type: 'buff', stat: 'critMult', op: 'add', value: 0.3, duration: 2, scope: 'allAllies' },
   ]},
   holyVerdict: { name: '審判', target: 'singleEnemyByColumn', effects: [
-    { type: 'damage', mult: 2.6, scope: 'target' },
+    { type: 'damage', mult: 2.6, scope: 'target', executeBelow: 0.35, executeBonus: 1.6 }, // 處決
     { type: 'damage', mult: 1.0, scope: 'target', where: { race: '不死' } }, // 剋不死追打
   ]},
   morningSong: { name: '晨曲', effects: [
@@ -227,8 +232,8 @@ export const SKILLS = {
     { type: 'shield', power: 2.0, duration: 3, scope: 'self' },
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.15, duration: 2, scope: 'self' },
   ]},
-  dreamEater: { name: '噬夢', target: 'singleEnemyByColumn', effects: [
-    { type: 'damage', mult: 2.1, scope: 'target' },
+  dreamEater: { name: '噬夢', target: 'randomEnemy', effects: [ // 隨機目標
+    { type: 'damage', mult: 2.1, scope: 'target', lifesteal: 0.3 }, // 吸血
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 0.6, duration: 1, scope: 'target' },
     { type: 'energy', amount: 15, scope: 'self' }, // 汲取式回能
   ]},
@@ -236,7 +241,7 @@ export const SKILLS = {
     { type: 'damage', mult: 1.6, scope: 'target' },
     { type: 'dot', power: 0.35, duration: 2, scope: 'target' },
   ]},
-  webBind: { name: '縛絲', target: 'singleEnemyByColumn', effects: [
+  webBind: { name: '縛絲', target: 'lowestHpEnemy', effects: [ // 補刀型選目標
     { type: 'damage', mult: 1.8, scope: 'target' },
     { type: 'control', control: 'stun', duration: 1, scope: 'target' },
   ]},
@@ -244,7 +249,8 @@ export const SKILLS = {
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.8, duration: 2, key: 'guard', scope: 'allAllies' },
   ]},
-  requiem: { name: '安魂', effects: [
+  requiem: { name: '安魂', target: 'deadAlly', effects: [
+    { type: 'revive', power: 0.35, scope: 'targetIncludingDead' }, // 復活
     { type: 'heal', power: 1.1, scope: 'allAllies' },
     { type: 'heal', power: 0.6, scope: 'allAllies', where: { race: '不死' } }, // 不死族額外治療
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies' },

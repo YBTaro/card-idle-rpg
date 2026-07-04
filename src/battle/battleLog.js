@@ -19,6 +19,7 @@ export function simulateBattle(teamA, teamB, { rng } = {}) {
   engine.on('damage', (p) => log.push({ type: 'damage', sourceUid: uidOf(p.source), targetUid: uidOf(p.target), amount: p.amount, skill: p.skill, isAdvantage: !!p.isAdvantage, isDisadvantage: !!p.isDisadvantage, isCrit: !!p.isCrit }));
   engine.on('heal', (p) => log.push({ type: 'heal', sourceUid: uidOf(p.source), targetUid: uidOf(p.target), amount: p.amount }));
   engine.on('death', ({ unit }) => log.push({ type: 'death', uid: uidOf(unit) }));
+  engine.on('revive', ({ unit, hp }) => log.push({ type: 'revive', uid: uidOf(unit), hp }));
   engine.on('stunned', ({ unit }) => log.push({ type: 'stunned', uid: uidOf(unit) }));
   engine.on('buffchange', ({ unit, buffs }) => log.push({ type: 'buffchange', uid: uidOf(unit), buffs: buffs ?? [] }));
   engine.on('battleEnd', ({ winner }) => log.push({ type: 'battleEnd', winner }));

@@ -673,6 +673,21 @@ export class BattleScene {
           }
         }
       }),
+      rp.on('revive', ({ uid }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(uid);
+        if (!s) return;
+        this._dead.delete(uid);
+        resetVisual(s); // 清灰階/傾倒/透明
+        if (s._ghost) { s._ghost.hp = this.replayer.hpOf(uid); s._ghost.lastHp = s._ghost.hp; }
+        spark(this.fxLayer, s.x, this._chestY(s), 0x8ef2ae, this._dotTex, 12);
+        const txt = new Text({
+          text: '復活！',
+          style: { fontSize: 24, fill: 0x8ef2ae, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
+        });
+        floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
+        if (this._ultDim) this._spotlightTarget(s);
+      }),
       rp.on('battleEnd', () => this._endUltSpotlight())
     );
   }

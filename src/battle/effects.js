@@ -2,7 +2,7 @@
 // 效果原語：技能由多個 effect 組成，每個 effect 依 type 套用到 scope 解析出的目標。
 import { computeDamage } from './damage.js';
 import { elementMultiplier } from '../data/elements.js';
-import { applyBuff, summarizeBuffs } from './buffs.js';
+import { applyBuff, summarizeBuffs, dispelBuffs } from './buffs.js';
 
 // power 的基準：預設 caster.effAtk（含 buff 加成）；basis:'targetMaxHp' 用目標 maxHp。
 export function resolvePower(effect, caster, target) {
@@ -23,14 +23,17 @@ export function resolveScope(scope, caster, primary, ctx) {
       return alive(ctx.enemies);
     case 'alliesExceptTarget':
       return alive(ctx.allies).filter((u) => !primary.includes(u));
+    case 'targetIncludingDead': // 復活用：不過濾存活
+      return primary;
     default:
       return [];
   }
 }
 
 // 共用傷害：走完整公式、護盾/hp、被擊回能、事件。
-export function dealDamage(caster, target, mult, ctx, skill = 'skill') {
-  const res = computeDamage(caster, target, mult, ctx.rng);
+// opts.ignoreDef＝無視防禦；opts.noRetaliate＝不觸發荊棘/反擊（避免連鎖遞迴）。
+export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}) {
+  const res = computeDamage(caster, target, mult, ctx.rng, opts);
   const dealt = target.takeDamage(res.amount);
   target.gainEnergy(target.classDef.energyOnHitTaken);
   ctx.emit('energy', { unit: target, value: target.energy });
@@ -39,6 +42,26 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill') {
     isAdvantage: res.isAdvantage, isDisadvantage: res.isDisadvantage, isCrit: res.isCrit,
   });
   if (!target.alive) ctx.emit('death', { unit: target });
+
+  // 受擊觸發（直接攻擊才觸發；反傷/反擊本身不再連鎖）
+  if (!opts.noRetaliate && dealt > 0 && caster) {
+    // 荊棘反傷：受擊者身上 thorns 總和 × 實際傷害，直接回敬攻擊者
+    const thornsPct = (target.buffs || []).filter((b) => b.kind === 'thorns').reduce((s, b) => s + b.pct, 0);
+    if (thornsPct > 0 && caster.alive) {
+      const reflect = Math.max(1, Math.round(dealt * thornsPct));
+      const rDealt = caster.takeDamage(reflect);
+      ctx.emit('damage', {
+        source: target, target: caster, amount: rDealt, skill: 'thorns',
+        isAdvantage: false, isDisadvantage: false, isCrit: false,
+      });
+      if (!caster.alive) ctx.emit('death', { unit: caster });
+    }
+    // 反擊：受擊者存活且掛 counter → 立即回敬一擊（不觸發對方的荊棘/反擊）
+    if (target.alive && caster.alive) {
+      const counter = (target.buffs || []).find((b) => b.kind === 'counter');
+      if (counter) dealDamage(target, caster, counter.mult, ctx, 'counter', { noRetaliate: true });
+    }
+  }
   return dealt;
 }
 
@@ -76,15 +99,68 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
   // 技能資料可用 key 讓跨技能互斥（如 'guard'），或 stackable:true 明示可疊層。
   const defaultKey = (kindTag) => effect.key ?? `${skillId}:${kindTag}`;
   for (const u of targets) {
+    // 機率觸發：每個目標獨立擲骰，未中則此效果跳過該目標
+    if (effect.chance != null) {
+      const roll = ctx.rng ? ctx.rng.next() : Math.random();
+      if (roll >= effect.chance) continue;
+    }
     switch (effect.type) {
-      case 'damage':
-        dealDamage(caster, u, effect.mult, ctx, skillId);
+      case 'damage': {
+        // 處決：目標血量比例低於 executeBelow → 倍率乘 executeBonus
+        let mult = effect.mult;
+        if (effect.executeBelow != null && u.hpRatio < effect.executeBelow) {
+          mult *= effect.executeBonus ?? 1.5;
+        }
+        const dealt = dealDamage(caster, u, mult, ctx, skillId, { ignoreDef: effect.ignoreDef });
+        // 吸血：實際傷害的一定比例回復施放者
+        if (effect.lifesteal && dealt > 0 && caster.alive) {
+          const healed = caster.heal(Math.round(dealt * effect.lifesteal));
+          if (healed > 0) ctx.emit('heal', { source: caster, target: caster, amount: healed });
+        }
         break;
+      }
       case 'heal': {
         const healed = u.heal(Math.round(resolvePower(effect, caster, u)));
         if (healed > 0) ctx.emit('heal', { source: caster, target: u, amount: healed });
         break;
       }
+      case 'hot': // 持續回復：行動前結算（engine 與 DoT 同點）
+        applyBuff(u, {
+          kind: 'hot', amount: Math.round(resolvePower(effect, caster, u)),
+          duration: effect.duration, key: defaultKey('hot'), stackable: effect.stackable,
+        });
+        emitBuffs(u);
+        break;
+      case 'dispel': {
+        // what:'debuff' 淨化減益（用在隊友）/ 'buff' 驅散增益（用在敵人）
+        const removed = dispelBuffs(u, { negative: effect.what !== 'buff', count: effect.count ?? Infinity });
+        if (removed > 0) emitBuffs(u);
+        break;
+      }
+      case 'revive':
+        if (!u.alive) {
+          u.hp = Math.max(1, Math.round(u.maxHp * effect.power));
+          u.energy = 0;
+          u.buffs = []; // 復活淨身：清掉生前所有狀態
+          ctx.emit('revive', { unit: u, hp: u.hp });
+          ctx.emit('energy', { unit: u, value: 0 });
+          emitBuffs(u);
+        }
+        break;
+      case 'thorns': // 荊棘反傷：受直接攻擊時反彈實際傷害的 pct
+        applyBuff(u, {
+          kind: 'thorns', pct: effect.pct,
+          duration: effect.duration, key: defaultKey('thorns'), stackable: effect.stackable,
+        });
+        emitBuffs(u);
+        break;
+      case 'counter': // 反擊：受直接攻擊存活時回敬 mult 倍攻擊
+        applyBuff(u, {
+          kind: 'counter', mult: effect.mult,
+          duration: effect.duration, key: defaultKey('counter'), stackable: effect.stackable,
+        });
+        emitBuffs(u);
+        break;
       case 'buff':
         applyBuff(u, {
           kind: 'stat', stat: effect.stat, op: effect.op, value: effect.value,

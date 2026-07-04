@@ -81,4 +81,21 @@ export const SELECTORS = {
     if (!a.length) return [];
     return [ctx.rng ? ctx.rng.pick(a) : a[0]];
   },
+  // 隨機一名存活敵人
+  randomEnemy: (caster, ctx) => {
+    const a = aliveIn(ctx.enemies);
+    if (!a.length) return [];
+    return [ctx.rng ? ctx.rng.pick(a) : a[0]];
+  },
+  // 血量比例最低的存活敵人（補刀型）
+  lowestHpEnemy: (caster, ctx) => {
+    const a = aliveIn(ctx.enemies);
+    if (!a.length) return [];
+    return [a.reduce((best, u) => (u.hpRatio < best.hpRatio ? u : best))];
+  },
+  // 第一位倒下的隊友（復活用；配 scope 'targetIncludingDead'）
+  deadAlly: (caster, ctx) => {
+    const d = ctx.allies.find((u) => !u.alive);
+    return d ? [d] : [];
+  },
 };

@@ -27,6 +27,9 @@ export class Replayer {
     } else if (entry.type === 'death') {
       const s = this.state.get(entry.uid);
       if (s) s.alive = false;
+    } else if (entry.type === 'revive') {
+      const s = this.state.get(entry.uid);
+      if (s) { s.alive = true; s.hp = entry.hp; s.energy = 0; s.buffs = []; }
     } else if (entry.type === 'energy') {
       const s = this.state.get(entry.uid);
       if (s) s.energy = entry.value;

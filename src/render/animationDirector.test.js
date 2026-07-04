@@ -51,7 +51,7 @@ describe('AnimationDirector', () => {
   it('DELAYS 精確值', () => {
     expect(DELAYS).toEqual({
       turn: 0.1, attack: 0.25, ultimate: 1.05, damage: 0.18,
-      heal: 0.15, death: 0.25, stunned: 0.25,
+      heal: 0.15, death: 0.25, stunned: 0.25, revive: 0.45,
     });
   });
 });
