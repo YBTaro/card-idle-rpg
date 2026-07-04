@@ -263,6 +263,19 @@ describe('新原語：HoT / 驅散淨化 / 復活', () => {
   });
 });
 
+describe('中毒（%最大生命制）', () => {
+  it('中毒每跳＝目標最大生命 15%（與施放者攻擊力無關）', () => {
+    const weak = makeUnit({ team: 0, pos: 1, atk: 1 }); // 攻擊力極低也一樣痛
+    const foe = makeUnit({ team: 1, pos: 1, hp: 2000, class: 'tank' });
+    const ctx = ctxFor(weak, [weak], [foe]);
+    applyEffect({ type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target' }, weak, [foe], ctx, 'webBind');
+    const dot = foe.buffs.find((b) => b.kind === 'dot');
+    expect(dot.damage).toBe(300); // 2000 × 15%
+    dealDot(foe, dot, ctx);
+    expect(foe.hp).toBe(1700);
+  });
+});
+
 describe('屬性轉化（transmute）', () => {
   it('轉成施放者剋制的屬性、剋制倍率生效、到期還原', () => {
     const caster = makeUnit({ team: 0, pos: 1, element: 'fire', atk: 100 });

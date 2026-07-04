@@ -243,7 +243,7 @@ export const SKILLS = {
     { type: 'terrain', terrain: 'swamp' }, // 疫沼：場地轉為迷霧沼澤（DoT 加深）
     { type: 'damage', mult: 0.8, scope: 'target' },
     { type: 'damage', mult: 0.6, scope: 'target', where: { race: '人' } }, // 疫病剋人族追打
-    { type: 'dot', power: 0.3, duration: 2, scope: 'target', stackable: true }, // 可疊層劇毒
+    { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 中毒：每跳 15% 最大生命（%HP 制，取消疊層防爆量）
   ]},
   mindGnaw: { name: '蝕心', effects: [
     { type: 'castDrain', amount: 20, duration: 2, scope: 'self', stackable: true }, // 靈壓領域：敵方施法→其餘敵人 -20 能量
@@ -263,12 +263,12 @@ export const SKILLS = {
   voidBurst: { name: '虛爆', target: 'enemyColumn', effects: [
     { type: 'terrain', terrain: 'erosion' }, // 虛空侵蝕：非暗屬每回合流失 10% 最大生命
     { type: 'damage', mult: 1.6, scope: 'target' },
-    { type: 'dot', power: 0.35, duration: 2, scope: 'target' },
+    { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 中毒：每跳 15% 最大生命
   ]},
   webBind: { name: '縛絲', target: 'lowestHpEnemy', effects: [ // 補刀型選目標
     { type: 'damage', mult: 1.8, scope: 'target' },
     { type: 'control', control: 'stun', duration: 1, scope: 'target' },
-    { type: 'dot', power: 0.35, duration: 2, scope: 'target', chance: 0.7 }, // 70% 蛛毒 2 回合（暗屬專屬中毒）
+    { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target', chance: 0.7 }, // 70% 蛛毒 2 回合（每跳 15% 最大生命）
   ]},
   duskVeil: { name: '暮幕', effects: [ // 入夜：奪走敵人的光（全體驅散）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },

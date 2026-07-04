@@ -79,9 +79,10 @@ function describeEffect(effect, targetLabel) {
       text = `${who}${STAT_LABEL[effect.stat] ?? effect.stat} ${buffDelta(effect.op, effect.value)}${dur(effect.duration)}`;
       break;
     case 'dot': {
-      const name = effect.element === 'fire' ? '灼燒' : '持續傷害';
+      const name = effect.element === 'fire' ? '灼燒' : '中毒';
       const stack = effect.stackable ? '（可疊加）' : '';
-      text = `對${who}附加${name}${stack}（每次行動前受 ${pct(effect.power)} 攻擊力傷害${dur(effect.duration)}）`;
+      const basis = effect.basis === 'targetMaxHp' ? '最大生命' : '攻擊力';
+      text = `對${who}附加${name}${stack}（每次行動前受 ${pct(effect.power)} ${basis}傷害${dur(effect.duration)}）`;
       break;
     }
     case 'shield':
