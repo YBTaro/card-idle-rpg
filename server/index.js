@@ -2,6 +2,9 @@
 // 啟動：npm run server（port 8787；vite dev 以 /api 代理過來）。
 // 防作弊原則：戰鬥一律伺服器模擬（與前端共用 src/battle 引擎），客端只回報意圖。
 import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { config } from './config.js';
 import { loadDb, persistNow } from './db.js';
 import { authenticate, playerByToken, updateProfile, publicProfile, uploadSave, downloadSave, httpError } from './players.js';
 import * as arena from './arena.js';
@@ -9,7 +12,7 @@ import * as friends from './friends.js';
 import * as guild from './guild.js';
 import { runBattle } from './battleSim.js';
 
-const PORT = Number(process.env.PORT || 8787);
+const PORT = config.port;
 
 // 路由表：'METHOD /path' → handler({ player, body, query, params })
 // path 支援 :param 佔位。auth:false 的端點不需 token。
@@ -86,11 +89,20 @@ route('GET', '/api/health', () => ({ ok: true, at: Date.now() }), { auth: false 
 /* ---------------- HTTP 伺服器 ---------------- */
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  // CORS（開發期全開；vite proxy 下其實用不到，直連 8787 也能通）
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  // CORS（開發期全開；正式部署同源時可 CORS_ORIGIN=off 關掉）
+  if (config.corsOrigin !== 'off') {
+    res.setHeader('Access-Control-Allow-Origin', config.corsOrigin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  }
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+
+  // 非 /api → 靜態檔（STATIC_DIR 設定時；單容器部署＝前端+API 同源）
+  if (!url.pathname.startsWith('/api')) {
+    if (config.staticDir) { serveStatic(url.pathname, res); return; }
+    send(res, 404, { error: '不存在的端點' });
+    return;
+  }
 
   const match = routes.find((r) => r.method === req.method && r.pattern.test(url.pathname));
   if (!match) { send(res, 404, { error: '不存在的端點' }); return; }
@@ -114,6 +126,32 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+// 靜態檔伺服（SPA：找不到的路徑退回 index.html）。只在 STATIC_DIR 設定時啟用。
+const MIME = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp',
+  '.json': 'application/json', '.mp3': 'audio/mpeg', '.woff2': 'font/woff2', '.ico': 'image/x-icon',
+};
+function serveStatic(pathname, res) {
+  const root = path.resolve(config.staticDir);
+  let file = path.resolve(root, '.' + pathname.replaceAll('..', ''));
+  if (!file.startsWith(root)) { res.writeHead(403); res.end(); return; }
+  if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(root, 'index.html');
+  try {
+    const buf = fs.readFileSync(file);
+    const ext = path.extname(file).toLowerCase();
+    res.writeHead(200, {
+      'Content-Type': MIME[ext] ?? 'application/octet-stream',
+      // 帶 hash 的資產可長快取；HTML 不快取
+      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=86400',
+    });
+    res.end(buf);
+  } catch {
+    res.writeHead(404);
+    res.end();
+  }
+}
+
 function send(res, status, data) {
   const buf = JSON.stringify(data);
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -136,7 +174,10 @@ function readBody(req) {
 }
 
 loadDb();
-server.listen(PORT, () => console.log(`[server] http://localhost:${PORT}（Ctrl+C 結束）`));
+server.listen(PORT, () => {
+  console.log(`[server] http://localhost:${PORT}（Ctrl+C 結束）`);
+  console.log(`[server] 驅動=${config.dbDriver} 資料=${config.dataDir}${config.staticDir ? ` 靜態=${config.staticDir}` : ''}`);
+});
 for (const sig of ['SIGINT', 'SIGTERM']) {
   process.on(sig, () => { persistNow(); process.exit(0); });
 }

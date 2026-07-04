@@ -113,7 +113,7 @@ const rank = (await api('GET', '/api/guild/boss/rank', { token: A })).data;
 check('Boss 傷害排行', rank.length === 1 && rank[0].dmg === boss.dmg);
 
 const board = await api('POST', '/api/guild/board', { token: B, body: { text: '大家好！' } });
-const view = (await api('GET', '/api/guild', { token: A })).data;
+const view = (await api('GET', '/api/guild', { token: A })).data.guild;
 check('留言板', board.data?.ok && view.board.length === 1 && view.board[0].text === '大家好！');
 
 const shop = (await api('POST', '/api/guild/shop/buy', { token: A, body: { itemId: 'g_gold' } })).data;

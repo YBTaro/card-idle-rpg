@@ -1,0 +1,24 @@
+# 一鍵起整套遊戲（前端 + API 同容器同源）：docker compose up -d --build
+# 開發階段不需要用這個——照舊 npm run dev + npm run server。
+services:
+  game:
+    build: .
+    ports:
+      - '8787:8787'
+    volumes:
+      - game-data:/data # 玩家資料持久化（sqlite 單檔，備份=複製 volume）
+    restart: unless-stopped
+
+  # ---- 之後升級 Postgres 時打開（並為 server/ 加 pg repo 層）----
+  # db:
+  #   image: postgres:17-alpine
+  #   environment:
+  #     POSTGRES_DB: game
+  #     POSTGRES_USER: game
+  #     POSTGRES_PASSWORD: change-me
+  #   volumes:
+  #     - pg-data:/var/lib/postgresql/data
+
+volumes:
+  game-data:
+  # pg-data:
