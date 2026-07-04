@@ -101,6 +101,7 @@ export const SKILLS = {
   ]},
   warBanner: { name: '軍威', effects: [
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies' },
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.88, duration: 2, scope: 'allAllies', where: { series: '鐵壁' } }, // 鐵壁軍團減傷
     { type: 'energy', amount: 15, scope: 'allAllies' },
   ]},
   lionRoar: { name: '獅吼', target: 'enemyFrontRow', effects: [
@@ -127,9 +128,11 @@ export const SKILLS = {
   gentleBreeze: { name: '和風', effects: [
     { type: 'heal', power: 0.9, scope: 'allAllies' },
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies' },
+    { type: 'heal', power: 0.7, scope: 'allAllies', where: { race: '精靈' } }, // 精靈同族加護
   ]},
   thunderMark: { name: '雷紋', effects: [
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 1.2, duration: 2, scope: 'allEnemies' }, // 全體易傷
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies', where: { race: '獸' } }, // 獸魂共鳴
   ]},
   cloudPiercer: { name: '貫雲', target: 'enemyColumn', effects: [
     { type: 'damage', mult: 2.0, scope: 'target' },
@@ -173,12 +176,15 @@ export const SKILLS = {
     { type: 'heal', power: 1.4, scope: 'allAllies' },
     { type: 'hot', power: 0.35, duration: 2, scope: 'allAllies' }, // 持續回復
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.85, duration: 2, scope: 'allAllies' },
+    { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.15, duration: 2, scope: 'allAllies', where: { element: 'water' } }, // 水屬共鳴
   ]},
   tsunami: { name: '海嘯', target: 'allEnemies', effects: [
     { type: 'damage', mult: 1.35, scope: 'target' }, // 全場大 AoE
+    { type: 'damage', mult: 0.7, scope: 'target', where: { element: 'fire' } }, // 水滅火追打
   ]},
   pearlBulwark: { name: '貝盾', effects: [
     { type: 'shield', power: 1.0, duration: 3, scope: 'allAllies' },
+    { type: 'shield', power: 1.2, duration: 3, scope: 'allAllies', where: { race: '機械' } }, // 機械同構強化盾
     { type: 'buff', stat: 'def', op: 'mul', value: 1.2, duration: 2, scope: 'self' },
   ]},
 
@@ -190,6 +196,7 @@ export const SKILLS = {
   crystalGleam: { name: '晶輝', effects: [
     { type: 'buff', stat: 'critChance', op: 'add', value: 0.15, duration: 2, scope: 'allAllies' },
     { type: 'buff', stat: 'critMult', op: 'add', value: 0.3, duration: 2, scope: 'allAllies' },
+    { type: 'buff', stat: 'critChance', op: 'add', value: 0.1, duration: 2, scope: 'allAllies', where: { series: '星詠' } }, // 星詠共鳴
   ]},
   holyVerdict: { name: '審判', target: 'singleEnemyByColumn', effects: [
     { type: 'damage', mult: 2.6, scope: 'target', executeBelow: 0.35, executeBonus: 1.6 }, // 處決
@@ -197,6 +204,7 @@ export const SKILLS = {
   ]},
   morningSong: { name: '晨曲', effects: [
     { type: 'energy', amount: 25, scope: 'allAllies' }, // 群體充能
+    { type: 'energy', amount: 15, scope: 'allAllies', where: { series: '聖歌隊' } }, // 聖歌隊合唱加成
     { type: 'heal', power: 0.7, scope: 'allAllies' },
   ]},
   luminousWall: { name: '聖壁', effects: [
@@ -221,6 +229,7 @@ export const SKILLS = {
   // ---- 暗 ----
   plagueSpread: { name: '瘟疫', target: 'allEnemies', effects: [
     { type: 'damage', mult: 0.8, scope: 'target' },
+    { type: 'damage', mult: 0.6, scope: 'target', where: { race: '人' } }, // 疫病剋人族追打
     { type: 'dot', power: 0.3, duration: 2, scope: 'target', stackable: true }, // 可疊層劇毒
   ]},
   mindGnaw: { name: '蝕心', effects: [

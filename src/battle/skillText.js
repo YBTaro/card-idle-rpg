@@ -3,6 +3,7 @@
 import { SKILLS, CARD_SKILLS } from './skills.js';
 import { CLASSES } from '../data/classes.js';
 import { CARDS } from '../data/cards.js';
+import { ELEMENT_LABEL } from '../data/elements.js';
 
 const TARGET_LABEL = {
   singleEnemyByColumn: '對位敵人',
@@ -49,7 +50,9 @@ function buffDelta(op, value) {
 const dur = (d) => (d ? `，持續 ${d} 次行動` : '');
 
 function describeEffect(effect, targetLabel) {
-  const who = SCOPE_LABEL[effect.scope] ?? targetLabel ?? '目標';
+  let who = SCOPE_LABEL[effect.scope] ?? targetLabel ?? '目標';
+  // where 條件：作用對象限定（種族/屬性/系列主題技能）
+  if (effect.where) who = `${who}中的${describeWhere(effect.where)}單位`;
   const chance = effect.chance != null ? `${pct(effect.chance)} 機率` : '';
   let text = '';
   switch (effect.type) {
@@ -130,18 +133,23 @@ export function skillInfoForCard(cardId, cls) {
 
 const PASSIVE_TARGET_LABEL = { self: '自身', allAllies: '我方全體', allEnemies: '敵方全體' };
 
+const CLASS_LABEL = { dps: '輸出', tank: '坦克', support: '輔助' };
+
 function describeWhere(where) {
   if (!where) return '';
   if (where.race) return `「${where.race}」`;
-  if (where.element) return `「${where.element}」屬性`;
-  if (where.class) return `「${where.class}」`;
+  if (where.series) return `「${where.series}」`;
+  if (where.element) return `「${ELEMENT_LABEL[where.element] ?? where.element}」屬性`;
+  if (where.class) return `「${CLASS_LABEL[where.class] ?? where.class}」`;
   return '';
 }
 
 // 單條被動 → 描述字串。未知結構回空字串。
 export function describePassive(p) {
   if (!p || !p.effects || p.effects.length === 0) return '';
-  const who = PASSIVE_TARGET_LABEL[p.target] ?? '自身';
+  let who = PASSIVE_TARGET_LABEL[p.target] ?? '自身';
+  // targetWhere：光環只作用於特定種族/屬性/系列
+  if (p.targetWhere) who = `${who}${describeWhere(p.targetWhere)}單位`;
   let cond = '';
   if (p.when?.selfHpBelow != null) cond = `生命低於 ${pct(p.when.selfHpBelow)} 時，`;
   else if (p.when?.alliesAtLeast) {
@@ -153,7 +161,7 @@ export function describePassive(p) {
       if (e.perCountOf) {
         const side = e.perCountOf.side === 'enemies' ? '敵方' : '我方';
         const unitDesc = describeWhere(e.perCountOf.where) || '';
-        const per = e.op === 'mul' ? `+${pct(e.basePct || 0)}` : `+${e.valuePer || 0}`;
+        const per = e.op === 'mul' ? `+${pct(e.basePct || 0)}` : `+${pct(e.valuePer || 0)}`;
         return `${side}每有一名${unitDesc}單位，${who}${statLabel} ${per}`;
       }
       return `${who}${statLabel} ${buffDelta(e.op, e.value)}`;

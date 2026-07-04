@@ -19,13 +19,15 @@ describe('deriveStats 帶出種族/系列', () => {
 });
 
 describe('deriveStats 帶出被動', () => {
-  it('aegis 有 def 光環被動；無被動卡為空陣列', () => {
+  it('aegis 有 def 光環被動；不存在的卡為空陣列', () => {
     const s = deriveStats({ cardId: 'aegis', level: 1 });
     expect(Array.isArray(s.passives)).toBe(true);
     expect(s.passives.length).toBeGreaterThan(0);
     expect(s.passives[0].effects[0].stat).toBe('def');
+    // 全名冊 50 張都有被動（種族/屬性/系列主題）——zephyr 帶疾風系列成長被動
     const z = deriveStats({ cardId: 'zephyr', level: 1 });
-    expect(z.passives).toEqual([]);
+    expect(z.passives.length).toBe(1);
+    expect(z.passives[0].effects[0].perCountOf.where.series).toBe('疾風');
   });
 });
 
@@ -40,9 +42,11 @@ describe('升星', () => {
     expect(s3.atk).toBe(Math.round(rawAtk * 1.24)); // 3 星 ×1.24
     expect(s3.stars).toBe(3);
     // 里程碑：3 星已解鎖 2★（dmgDealt）；5 星 2/4/5★ 全解鎖
-    expect(s3.passives.length).toBe(1);
-    expect(s3.passives[0].effects[0].stat).toBe('dmgDealt');
-    expect(s5.passives.length).toBe(3);
+    // （zephyr 本身帶 1 條卡片被動，星級里程碑再往後追加）
+    const base = s0.passives.length;
+    expect(s3.passives.length).toBe(base + 1);
+    expect(s3.passives[s3.passives.length - 1].effects[0].stat).toBe('dmgDealt');
+    expect(s5.passives.length).toBe(base + 3);
     // 未帶 stars 欄位（舊存檔）＝ 0 星
     expect(deriveStats({ cardId: 'zephyr', level: 10 }).atk).toBe(s0.atk);
   });

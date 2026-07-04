@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { describeSkill, skillInfoForCard } from './skillText.js';
+import { describeSkill, skillInfoForCard, describePassive } from './skillText.js';
 
 describe('describeSkill（描述自動生成）', () => {
   it('焚天：前排傷害 + 灼燒', () => {
@@ -34,6 +34,32 @@ describe('describeSkill（描述自動生成）', () => {
 
   it('未知技能 → 空字串', () => {
     expect(describeSkill('nope')).toBe('');
+  });
+
+  it('where 條件效果：種族/屬性/系列限定要寫進描述', () => {
+    expect(describeSkill('holyVerdict')).toContain('「不死」'); // 剋不死追打
+    expect(describeSkill('tsunami')).toContain('「火」屬性'); // 水滅火（element 轉中文）
+    expect(describeSkill('thunderMark')).toContain('「獸」'); // 獸魂共鳴
+    expect(describeSkill('warBanner')).toContain('「鐵壁」'); // 系列 buff
+  });
+});
+
+describe('describePassive（targetWhere 主題光環）', () => {
+  it('種族限定光環：我方全體「不死」單位', () => {
+    const d = describePassive({ target: 'allAllies', targetWhere: { race: '不死' }, effects: [{ stat: 'def', op: 'mul', value: 1.12 }] });
+    expect(d).toContain('我方全體「不死」單位');
+    expect(d).toContain('防禦 +12%');
+  });
+
+  it('屬性限定光環：element 轉中文', () => {
+    const d = describePassive({ target: 'allAllies', targetWhere: { element: 'light' }, effects: [{ stat: 'atk', op: 'mul', value: 1.08 }] });
+    expect(d).toContain('「光」屬性');
+  });
+
+  it('perCountOf add 型：valuePer 以百分比呈現', () => {
+    const d = describePassive({ target: 'self', effects: [{ stat: 'critChance', op: 'add', valuePer: 0.03, perCountOf: { side: 'allies', where: { race: '不死' } } }] });
+    expect(d).toContain('+3%');
+    expect(d).toContain('「不死」');
   });
 });
 

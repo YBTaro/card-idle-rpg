@@ -47,6 +47,29 @@ describe('recomputePassives', () => {
     expect(owner.effAtk).toBe(150);
   });
 
+  it('targetWhere：光環只作用於符合條件的隊友（種族主題光環）', () => {
+    const p = [{ target: 'allAllies', targetWhere: { race: '不死' }, effects: [{ stat: 'def', op: 'mul', value: 1.2 }] }];
+    const owner = makeUnit({ team: 0, pos: 1, def: 100, race: '不死', passives: p });
+    const undead = makeUnit({ team: 0, pos: 2, def: 100, race: '不死' });
+    const human = makeUnit({ team: 0, pos: 3, def: 100, race: '人' });
+    const foe = makeUnit({ team: 1, pos: 1, def: 100, race: '不死' });
+    recomputePassives([[owner, undead, human], [foe]]);
+    expect(owner.effDef).toBe(120); // 自己也是不死 → 吃到
+    expect(undead.effDef).toBe(120);
+    expect(human.effDef).toBe(100); // 人族不吃
+    expect(foe.effDef).toBe(100); // 敵方不死不吃（allAllies 範圍）
+  });
+
+  it('targetWhere：屬性主題光環（element）', () => {
+    const p = [{ target: 'allAllies', targetWhere: { element: 'water' }, effects: [{ stat: 'atk', op: 'mul', value: 1.1 }] }];
+    const owner = makeUnit({ team: 0, pos: 1, atk: 100, element: 'light', passives: p });
+    const water = makeUnit({ team: 0, pos: 2, atk: 100, element: 'water' });
+    const foe = makeUnit({ team: 1, pos: 1 });
+    recomputePassives([[owner, water], [foe]]);
+    expect(water.effAtk).toBeCloseTo(110);
+    expect(owner.effAtk).toBe(100); // 光屬施放者自己不符條件
+  });
+
   it('重算不累積、非光環 buff 保留', () => {
     const tank = makeUnit({ team: 0, pos: 1, def: 100, passives: [{ target: 'self', effects: [{ stat: 'def', op: 'mul', value: 1.2 }] }] });
     const foe = makeUnit({ team: 1, pos: 1 });
