@@ -29,18 +29,16 @@ export const SKILLS = {
     { type: 'damage', mult: 1.8, scope: 'target' },
     { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target' },
   ]},
-  moltenBulwark: { name: '熔壁', target: 'enemyFrontRow', effects: [ // 灼熱裝甲：貼近我的人更怕火
+  moltenBulwark: { name: '熔壁', target: 'enemyFrontRow', effects: [ // 定位：灼熱裝甲坦——貼近我的人更怕火
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'shield', power: 1.5, duration: 3, scope: 'allAllies' },
     { type: 'buff', stat: 'dotTaken', op: 'mul', value: 1.3, duration: 2, scope: 'target' },
   ]},
   galeAssault: { name: '疾襲', target: 'enemyBackRow', effects: [ // 斬幕：突入後排並撕掉增益
     { type: 'damage', mult: 2.0, scope: 'target' },
     { type: 'dispel', what: 'buff', count: 1, scope: 'target' },
   ]},
-  windsong: { name: '風歌', effects: [
+  windsong: { name: '風歌', effects: [ // 定位：全隊集氣引擎（治療歸和風，集氣歸風歌）
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.5, duration: 3, scope: 'allAllies' },
-    { type: 'heal', power: 1.0, scope: 'allAllies' },
   ]},
   tidalPrison: { name: '潮牢', target: 'enemyColumn', effects: [
     { type: 'damage', mult: 1.6, scope: 'target' },
@@ -51,13 +49,11 @@ export const SKILLS = {
     { type: 'shield', power: 2.0, duration: 3, scope: 'self' },
   ]},
   radiantGrace: { name: '聖恩', target: 'lowestHpAlly', effects: [
-    { type: 'heal', power: 3.5, scope: 'target' },
-    { type: 'buff', stat: 'critChance', op: 'add', value: 0.2, duration: 2, scope: 'allAllies' },
+    { type: 'heal', power: 4.0, scope: 'target' }, // 定位：全遊戲最大單體治療（暴擊 buff 歸晶輝）
   ]},
-  dawnStrike: { name: '曙擊', target: 'singleEnemyByColumn', effects: [ // 曙光剋暗
+  dawnStrike: { name: '曙擊', target: 'singleEnemyByColumn', effects: [ // 定位：屠暗劍
     { type: 'damage', mult: 2.8, scope: 'target' },
     { type: 'damage', mult: 1.0, scope: 'target', where: { element: 'dark' } },
-    { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'self' },
   ]},
   shadowExecute: { name: '影誅', target: 'singleEnemyByColumn', effects: [
     { type: 'damage', mult: 3.0, scope: 'target' }, // 全遊戲最高單體倍率＝它的簽名
@@ -82,15 +78,13 @@ export const SKILLS = {
     { type: 'damage', mult: 1.5, scope: 'target' },
     { type: 'dot', power: 0.35, element: 'fire', duration: 2, scope: 'target', stackable: true }, // 可疊層灼燒
   ]},
-  emberWarmth: { name: '餘溫', effects: [
+  emberWarmth: { name: '餘溫', effects: [ // 定位：延燒輔助（淨化歸潮頌）
     { type: 'heal', power: 1.2, scope: 'allAllies' },
-    { type: 'dispel', what: 'debuff', count: 1, scope: 'allAllies' }, // 淨化
     { type: 'extend', what: 'dot', element: 'fire', turns: 1, scope: 'allEnemies' }, // 餘燼不熄：敵方灼燒 +1 回合
   ]},
-  shellAegis: { name: '殼護', effects: [
-    { type: 'thorns', pct: 0.3, duration: 2, scope: 'self' }, // 荊棘反傷
+  shellAegis: { name: '殼護', effects: [ // 定位：荊棘反傷坦（厚盾歸冰甲）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'shield', power: 2.2, duration: 3, scope: 'self' },
+    { type: 'thorns', pct: 0.35, duration: 2, scope: 'self' },
   ]},
   flameShift: { name: '引火', target: 'enemyColumn', effects: [ // 屬性轉化：敵直排變風屬 → 火隊穩吃剋制
     { type: 'damage', mult: 1.4, scope: 'target' },
@@ -101,15 +95,13 @@ export const SKILLS = {
     { type: 'damage', mult: 1.7, scope: 'target', ignoreDef: true }, // 無視防禦
     { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target' }, // 再點新火
   ]},
-  warBanner: { name: '軍威', effects: [
+  warBanner: { name: '軍威', effects: [ // 定位：攻擊號令（群體充能歸晨曲）
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies' },
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.88, duration: 2, scope: 'allAllies', where: { series: '鐵壁' } }, // 鐵壁軍團減傷
-    { type: 'energy', amount: 15, scope: 'allAllies' },
   ]},
-  lionRoar: { name: '獅吼', target: 'enemyFrontRow', effects: [
-    { type: 'counter', mult: 0.8, duration: 2, scope: 'self' }, // 反擊姿態
+  lionRoar: { name: '獅吼', effects: [ // 定位：反擊坦（攻擊弱化歸墓約）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'buff', stat: 'atk', op: 'mul', value: 0.8, duration: 2, scope: 'target' },
+    { type: 'counter', mult: 0.8, duration: 2, scope: 'self' }, // 反擊姿態
   ]},
 
   // ---- 風 ----
@@ -125,23 +117,20 @@ export const SKILLS = {
     { type: 'damage', mult: 1.9, scope: 'target' },
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 0.7, duration: 2, scope: 'target' }, // 緩速：壓制集氣
   ]},
-  gentleBreeze: { name: '和風', effects: [
-    { type: 'heal', power: 0.9, scope: 'allAllies' },
-    { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies' },
+  gentleBreeze: { name: '和風', effects: [ // 定位：精靈群奶（集氣加速歸風歌）
+    { type: 'heal', power: 1.2, scope: 'allAllies' },
     { type: 'heal', power: 0.7, scope: 'allAllies', where: { race: '精靈' } }, // 精靈同族加護
   ]},
-  thunderMark: { name: '雷紋', effects: [
-    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 1.2, duration: 2, scope: 'allEnemies' }, // 全體易傷
-    { type: 'buff', stat: 'atk', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies', where: { race: '獸' } }, // 獸魂共鳴
+  thunderMark: { name: '雷紋', effects: [ // 定位：風屬專屬狀態載體——全體易傷
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 1.2, duration: 2, scope: 'allEnemies' },
   ]},
   cloudPiercer: { name: '貫雲', target: 'enemyColumn', effects: [ // 乘風：貫穿直排並鼓舞風屬同袍
     { type: 'damage', mult: 2.0, scope: 'target' },
     { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies', where: { element: 'wind' } }, // 條件型＞全隊型
   ]},
-  forestWard: { name: '林護', effects: [ // 森林再生：嘲諷坦 + 全隊持續回復
+  forestWard: { name: '林護', effects: [ // 定位：再生坦——嘲諷 + 全隊持續回復
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'hot', power: 0.3, duration: 2, scope: 'allAllies' },
-    { type: 'buff', stat: 'def', op: 'mul', value: 1.25, duration: 2, scope: 'self' },
   ]},
   galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [ // 亂舞三連腿＋回氣
     { type: 'damage', mult: 0.9, scope: 'target' },
@@ -159,32 +148,28 @@ export const SKILLS = {
     { type: 'heal', power: 2.8, scope: 'target' },
     { type: 'dispel', what: 'debuff', scope: 'target' }, // 洗掉全部減益
   ]},
-  glacialArmor: { name: '冰甲', effects: [
+  glacialArmor: { name: '冰甲', effects: [ // 定位：全遊戲最厚自身盾（群體盾歸貝盾）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'shield', power: 2.4, duration: 3, scope: 'self' },
-    { type: 'shield', power: 0.8, duration: 3, scope: 'allAllies' },
+    { type: 'shield', power: 2.8, duration: 3, scope: 'self' },
   ]},
-  abyssBite: { name: '淵噬', target: 'singleEnemyByColumn', effects: [
-    { type: 'damage', mult: 2.2, scope: 'target', lifesteal: 0.35 }, // 吸血
-    { type: 'buff', stat: 'def', op: 'mul', value: 0.75, duration: 2, scope: 'target' }, // 破甲
+  abyssBite: { name: '淵噬', target: 'singleEnemyByColumn', effects: [ // 定位：吸血獠牙
+    { type: 'damage', mult: 2.2, scope: 'target', lifesteal: 0.35 },
   ]},
   mistShift: { name: '霧化', target: 'enemyColumn', effects: [ // 屬性轉化：敵直排變火屬 → 水隊穩吃剋制（暴雨下再 -20%）
     { type: 'damage', mult: 1.3, scope: 'target' },
     { type: 'transmute', duration: 2, scope: 'target' },
   ]},
-  springSurge: { name: '湧泉', effects: [
+  springSurge: { name: '湧泉', effects: [ // 定位：持續回復泉
     { type: 'heal', power: 1.4, scope: 'allAllies' },
-    { type: 'hot', power: 0.35, duration: 2, scope: 'allAllies' }, // 持續回復
-    { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies', where: { element: 'water' } }, // 水屬共鳴（條件型＞全隊型）
+    { type: 'hot', power: 0.35, duration: 2, scope: 'allAllies' },
   ]},
   tsunami: { name: '海嘯', target: 'allEnemies', effects: [
     { type: 'damage', mult: 1.35, scope: 'target' }, // 全場大 AoE
     { type: 'damage', mult: 0.7, scope: 'target', where: { element: 'fire' } }, // 水滅火追打
   ]},
-  pearlBulwark: { name: '貝盾', effects: [
+  pearlBulwark: { name: '貝盾', effects: [ // 定位：群體護盾（機械同構強化）
     { type: 'shield', power: 1.0, duration: 3, scope: 'allAllies' },
-    { type: 'shield', power: 1.2, duration: 3, scope: 'allAllies', where: { race: '機械' } }, // 機械同構強化盾
-    { type: 'buff', stat: 'def', op: 'mul', value: 1.2, duration: 2, scope: 'self' },
+    { type: 'shield', power: 1.2, duration: 3, scope: 'allAllies', where: { race: '機械' } },
   ]},
 
   // ---- 光 ----
@@ -192,24 +177,21 @@ export const SKILLS = {
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.75, duration: 2, key: 'guard', scope: 'allAllies' }, // 與守護/龍護互斥
   ]},
-  crystalGleam: { name: '晶輝', effects: [
+  crystalGleam: { name: '晶輝', effects: [ // 定位：唯一的暴擊增幅器
     { type: 'buff', stat: 'critChance', op: 'add', value: 0.15, duration: 2, scope: 'allAllies' },
     { type: 'buff', stat: 'critMult', op: 'add', value: 0.3, duration: 2, scope: 'allAllies' },
-    { type: 'buff', stat: 'critChance', op: 'add', value: 0.1, duration: 2, scope: 'allAllies', where: { series: '星詠' } }, // 星詠共鳴
   ]},
   holyVerdict: { name: '審判', target: 'singleEnemyByColumn', effects: [
     { type: 'damage', mult: 2.6, scope: 'target', executeBelow: 0.35, executeBonus: 1.6 }, // 處決
     { type: 'damage', mult: 1.0, scope: 'target', where: { race: '不死' } }, // 剋不死追打
   ]},
-  morningSong: { name: '晨曲', effects: [
-    { type: 'energy', amount: 25, scope: 'allAllies' }, // 群體充能
-    { type: 'energy', amount: 15, scope: 'allAllies', where: { series: '聖歌隊' } }, // 聖歌隊合唱加成
-    { type: 'heal', power: 0.7, scope: 'allAllies' },
+  morningSong: { name: '晨曲', effects: [ // 定位：群體充能號角（聖歌隊合唱加成）
+    { type: 'energy', amount: 25, scope: 'allAllies' },
+    { type: 'energy', amount: 15, scope: 'allAllies', where: { series: '聖歌隊' } },
   ]},
-  luminousWall: { name: '聖壁', effects: [ // 聖光自癒：扛著扛著自己就回滿了
+  luminousWall: { name: '聖壁', effects: [ // 定位：自癒坦——扛著扛著自己就回滿了（厚盾歸冰甲）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'shield', power: 2.6, duration: 3, scope: 'self' },
-    { type: 'hot', power: 0.5, duration: 2, scope: 'self' },
+    { type: 'hot', power: 0.8, duration: 2, scope: 'self' },
   ]},
   starfall: { name: '星隕', target: 'enemyBackRow', effects: [
     { type: 'damage', mult: 1.8, scope: 'target' },
@@ -226,25 +208,20 @@ export const SKILLS = {
   ]},
 
   // ---- 暗 ----
-  plagueSpread: { name: '瘟疫', target: 'allEnemies', effects: [
+  plagueSpread: { name: '瘟疫', target: 'allEnemies', effects: [ // 定位：全體中毒散布者
     { type: 'damage', mult: 0.8, scope: 'target' },
-    { type: 'damage', mult: 0.6, scope: 'target', where: { race: '人' } }, // 疫病剋人族追打
     { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 中毒：每跳 15% 最大生命
   ]},
-  mindGnaw: { name: '蝕心', effects: [
-    { type: 'castDrain', amount: 20, duration: 2, scope: 'self', stackable: true }, // 靈壓領域：敵方施法→其餘敵人 -20 能量
-    { type: 'buff', stat: 'atk', op: 'mul', value: 0.82, duration: 2, scope: 'allEnemies' },
-    { type: 'heal', power: 0.6, scope: 'allAllies' },
+  mindGnaw: { name: '蝕心', effects: [ // 定位：靈壓領域——戰略級效果獨立承載（同環境技原則）
+    { type: 'castDrain', amount: 20, duration: 2, scope: 'self', stackable: true }, // 敵方施法→其餘敵人 -20 能量
   ]},
-  boneRampart: { name: '骨牆', effects: [ // 白骨凝咒：把敵人身上所有壞事都拖長
+  boneRampart: { name: '骨牆', effects: [ // 定位：凝咒坦——把敵人身上所有壞事都拖長
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'shield', power: 2.0, duration: 3, scope: 'self' },
     { type: 'extend', what: 'negative', turns: 1, scope: 'allEnemies' },
   ]},
-  dreamEater: { name: '噬夢', target: 'randomEnemy', effects: [ // 隨機目標
-    { type: 'damage', mult: 2.1, scope: 'target', lifesteal: 0.3 }, // 吸血
-    { type: 'buff', stat: 'energyGain', op: 'mul', value: 0.6, duration: 1, scope: 'target' },
-    { type: 'energy', amount: 15, scope: 'self' }, // 汲取式回能
+  dreamEater: { name: '噬夢', target: 'randomEnemy', effects: [ // 定位：隨機汲取者——吸血又吸氣（緩速歸獵翎）
+    { type: 'damage', mult: 2.1, scope: 'target', lifesteal: 0.3 },
+    { type: 'energy', amount: 15, scope: 'self' },
   ]},
   voidBurst: { name: '虛爆', target: 'enemyColumn', effects: [
     { type: 'damage', mult: 1.6, scope: 'target' },
@@ -254,15 +231,13 @@ export const SKILLS = {
     { type: 'damage', mult: 1.8, scope: 'target' },
     { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target', chance: 0.7 }, // 70% 蛛毒 2 回合（每跳 15% 最大生命）
   ]},
-  duskVeil: { name: '暮幕', effects: [ // 入夜：奪走敵人的光（全體驅散）
+  duskVeil: { name: '暮幕', effects: [ // 定位：奪光坦——入夜，奪走敵人的增益
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'dispel', what: 'buff', count: 1, scope: 'allEnemies' },
-    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.85, duration: 2, scope: 'self' },
   ]},
-  requiem: { name: '安魂', target: 'deadAlly', effects: [
-    { type: 'revive', power: 0.35, scope: 'targetIncludingDead' }, // 復活
+  requiem: { name: '安魂', target: 'deadAlly', effects: [ // 定位：唯一的復活者
+    { type: 'revive', power: 0.35, scope: 'targetIncludingDead' },
     { type: 'heal', power: 1.1, scope: 'allAllies' },
-    { type: 'heal', power: 0.6, scope: 'allAllies', where: { race: '不死' } }, // 不死族額外治療
   ]},
 
   /* ================= 環境使專職技（開環境＋至多一個輕量副效果） =================

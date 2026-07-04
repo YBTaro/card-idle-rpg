@@ -25,11 +25,11 @@ describe('describeSkill（描述自動生成）', () => {
     expect(d).not.toContain('暈眩');
   });
 
-  it('聖恩：治療血量最低隊友 + 全隊暴擊率 +20%', () => {
+  it('聖恩：全遊戲最大單體治療（暴擊 buff 歸晶輝）', () => {
     const d = describeSkill('radiantGrace');
     expect(d).toContain('血量最低的隊友');
-    expect(d).toContain('350%');
-    expect(d).toContain('暴擊率 +20%');
+    expect(d).toContain('400%');
+    expect(d).not.toContain('暴擊率');
   });
 
   it('未知技能 → 空字串', () => {
@@ -46,7 +46,7 @@ describe('describeSkill（描述自動生成）', () => {
   it('where 條件效果：種族/屬性/系列限定要寫進描述', () => {
     expect(describeSkill('holyVerdict')).toContain('「不死」'); // 剋不死追打
     expect(describeSkill('tsunami')).toContain('「火」屬性'); // 水滅火（element 轉中文）
-    expect(describeSkill('thunderMark')).toContain('「獸」'); // 獸魂共鳴
+    expect(describeSkill('gentleBreeze')).toContain('「精靈」'); // 精靈同族加護
     expect(describeSkill('warBanner')).toContain('「鐵壁」'); // 系列 buff
   });
 });

@@ -77,13 +77,13 @@ describe('每卡專屬技', () => {
     expect(hasControl(foe, 'freeze')).toBe(true);
   });
 
-  it('windsong（galewind）：全隊 energyGain buff + 回血', () => {
+  it('windsong（galewind）：純全隊集氣引擎（不含治療）', () => {
     const caster = makeUnit({ team: 0, pos: 1, cardId: 'galewind', atk: 100 });
     const ally = makeUnit({ team: 0, pos: 2, hp: 1000 });
     ally.hp = 500;
     const ctx = ctxFor(caster, [caster, ally], []);
     castSkill(caster, skillFor(caster), ctx);
     expect(ally.buffs.some((b) => b.stat === 'energyGain')).toBe(true);
-    expect(ally.hp).toBeGreaterThan(500);
+    expect(ally.hp).toBe(500); // 治療是和風的定位，風歌不奶
   });
 });
