@@ -54,21 +54,25 @@ describe('天氣（烈日/暴雨）', () => {
 });
 
 describe('場地', () => {
-  it('湧能磁場：啟動時全體 +50 能量、光屬集氣 +15%', () => {
+  it('湧能磁場：啟動時全體 +50 能量、光屬集氣 +20% 且承傷 -15%', () => {
     const light = makeUnit({ team: 0, pos: 1, element: 'light' });
     const fire = makeUnit({ team: 1, pos: 1, element: 'fire' });
     const e = new BattleEngine([light], [fire], { rng: new Rng(1), env: { weather: null, terrain: 'surge' } });
     e.step();
     expect(light.energy).toBeGreaterThanOrEqual(50); // 開場 +50（行動可能再加）
     expect(fire.energy).toBeGreaterThanOrEqual(50);
-    expect(resolve(light, 'energyGain', 1)).toBeCloseTo(1.15);
+    expect(resolve(light, 'energyGain', 1)).toBeCloseTo(1.2);
+    expect(resolve(light, 'dmgTaken', 1)).toBeCloseTo(0.85);
     expect(resolve(fire, 'energyGain', 1)).toBe(1);
   });
 
-  it('侵蝕之地：每回合非暗屬流失 10% 最大生命、暗屬豁免', () => {
+  it('侵蝕之地：非暗屬每回合流失 10%、暗屬豁免且暴擊率 +10%', () => {
     const dark = makeUnit({ team: 0, pos: 1, element: 'dark', hp: 1000, def: 100000 });
     const fire = makeUnit({ team: 1, pos: 1, element: 'fire', hp: 1000, def: 100000 });
     const e = new BattleEngine([dark], [fire], { rng: new Rng(1), env: { weather: null, terrain: 'erosion' } });
+    e.step();
+    expect(dark.critChance).toBeCloseTo(0.05 + 0.1); // 基礎 5% + 場地 10%
+    expect(fire.critChance).toBeCloseTo(0.05);
     const envDmg = [];
     e.on('damage', (p) => { if (p.skill === 'env') envDmg.push([p.target.element, p.amount]); });
     // 打到第 2 回合觸發侵蝕（高防互打不掉血，衰減傷害可辨識）
