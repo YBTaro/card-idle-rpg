@@ -206,6 +206,38 @@
 .hs-stats .v small.up { color: #7cc4ff; font-weight: 800; }
 .hs-tag.cls { display: inline-flex; align-items: center; border-color: rgba(232, 196, 106, 0.5); }
 
+/* ---- 返回鈕：金環圓鈕 + 壓下回饋 ---- */
+.back-btn {
+  width: 2.8rem; height: 2.8rem;
+  background: linear-gradient(165deg, rgba(44, 39, 76, 0.95), rgba(22, 19, 42, 0.95));
+  border: 2px solid rgba(232, 196, 106, 0.55);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.back-btn:hover { border-color: var(--gold, #e8c46a); box-shadow: 0 3px 14px rgba(232, 196, 106, 0.3); }
+.back-btn:active { transform: scale(0.9); }
+
+/* ---- 隊伍卡底欄：金章等級 + 職業圓章（取代文字/emoji） ---- */
+.tcard .elb {
+  padding: 0; border: none; background: none;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+}
+.tcard .lvpanel {
+  padding: 0.3rem 0.45rem;
+  background: linear-gradient(180deg, rgba(35, 41, 65, 0.98), rgba(20, 17, 36, 0.98));
+  border-top: 1px solid rgba(232, 196, 106, 0.45);
+}
+.tcard .lvpanel .lvb {
+  background: linear-gradient(180deg, #f2cd6f, #d9a441);
+  color: #3a2b18; font-size: 0.72rem; font-weight: 800;
+  border-radius: 999px; padding: 0.06rem 0.55rem;
+  border: 1px solid #fff0c0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.tcard .lvpanel .sk {
+  width: auto; height: auto; background: none; border: none;
+  display: inline-flex; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
 /* ---- 隊伍頁：前後衛戰區 ---- */
 .tp-group {
   border-radius: 16px; padding: 10px 8px 14px;

@@ -27,7 +27,7 @@ export class BattleOverlay {
   _build() {
     clear(this.root);
 
-    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('back', 22)]));
 
     // 左上：我方
     this.avaLeft = el('div', { class: 'ava' });

@@ -36,7 +36,7 @@ export class GuildUI {
 
   render() {
     clear(this.root);
-    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('back', 22)]));
     this.root.appendChild(el('div', { class: 'page-title left', text: '公會' }));
 
     if (!net.authed) { this.root.appendChild(offlineHint('公會功能需要連線。')); return; }

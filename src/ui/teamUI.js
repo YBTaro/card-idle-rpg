@@ -49,7 +49,7 @@ export class TeamUI {
     const s = store.state;
     clear(this.root);
 
-    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('back', 22)]));
     this.root.appendChild(el('div', { class: 'page-title left', text: '隊伍' }));
     this.root.appendChild(
       el('div', { class: 'tp-power' }, [
@@ -123,14 +123,21 @@ export class TeamUI {
     const art = el('div', { class: 'art' });
     const src = artFor(card.id);
     if (src) art.appendChild(el('img', { src, alt: card.name, draggable: 'false' }));
-    art.appendChild(el('span', { class: `elb el-${card.element}`, text: ELEMENT_LABEL[card.element] }));
+    // 右上屬性寶石（與卡冊 TCG 徽章一致）
+    const elb = el('span', { class: 'elb' });
+    elb.appendChild(icon(`el_${card.element}`, 24));
+    art.appendChild(elb);
     art.appendChild(el('span', { class: 'nm', text: card.name }));
     node.appendChild(art);
+    // 底欄：金章等級 + 星帶 + 職業圓章（取代文字 Lv / emoji 職業符）
+    const lvBadge = el('span', { class: 'lvb', text: `Lv${inst.level}` });
+    const skBadge = el('span', { class: 'sk' });
+    skBadge.appendChild(icon(`cls_${card.class}`, 22));
     node.appendChild(
       el('div', { class: 'lvpanel' }, [
-        el('span', { text: `Lv${inst.level}` }),
+        lvBadge,
         (inst.stars ?? 0) > 0 ? el('span', { class: 'tstars', text: '★'.repeat(inst.stars) }) : null,
-        el('span', { class: 'sk', text: CLASS_GLYPH[card.class] || '✦' }),
+        skBadge,
       ])
     );
     longPress(node, () => this._openSheet(entry.instanceId), {

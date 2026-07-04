@@ -126,6 +126,13 @@ const ICONS = {
     <path d="M4.5 9 h15 M8.2 4.5 L10.5 9 12 20.5 M15.8 4.5 L13.5 9 12 20.5 M10.5 9 h3" stroke="#1e3a5c" stroke-width="1" opacity=".65"/>
     <path d="M8.8 5.6 l1.4 2.2" stroke="#dff1ff" stroke-width="1.4" stroke-linecap="round"/>`),
 
+  // 返回主城（粗箭頭 + 小屋頂）：語意「回去」優先，城堡只做暗示
+  back: S(`
+    <path d="M13.6 4.2 L5.4 11.2 a1.1 1.1 0 0 0 0 1.6 l8.2 7 c.7.6 1.8.1 1.8-.8 v-3.4 c2.6 0 4.6.9 6.2 3 .5.66 1.4.3 1.4-.5 0-5.4-3.2-8.7-7.6-9.2 V5 c0-.9-1.1-1.4-1.8-.8 Z"
+      fill="${G1}" stroke="${LN}" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M13.6 4.2 L5.4 11.2 a1.1 1.1 0 0 0 0 1.6 l3 2.6 c2-4 4-5.6 6.6-6.2 V5 c0-.9-1.1-1.4-1.8-.8 Z" fill="${G2}" opacity=".5"/>
+    <path d="M16.2 6.4 l2.2-1.8 2.2 1.8" fill="none" stroke="${HI}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>`),
+
   /* ---- 卡面徽章：屬性寶石（圓底 + 元素符號） ---- */
   el_fire: S(`
     <circle cx="12" cy="12" r="10" fill="#8f2f22" stroke="#ffd2b0" stroke-width="1.6"/>

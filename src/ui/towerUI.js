@@ -26,7 +26,7 @@ export class TowerUI {
 
   render() {
     clear(this.root);
-    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('back', 22)]));
     this.root.appendChild(el('div', { class: 'page-title left', text: '試煉塔' }));
 
     const s = store.state;

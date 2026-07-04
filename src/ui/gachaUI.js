@@ -32,7 +32,7 @@ export class GachaUI {
     const s = store.state;
     clear(this.root);
 
-    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('back', 22)]));
     this.root.appendChild(
       el('div', { class: 'gx-tickets' }, [
         el('div', { class: 'pill' }, [el('span', { class: 'ic', text: '🎟️' }), el('span', { text: fmt(s.currencies.tickets) })]),
