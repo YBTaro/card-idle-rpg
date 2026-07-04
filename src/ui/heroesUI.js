@@ -2,6 +2,8 @@
 // 卡冊格只留 4 個識別元素：卡面 / Lv / 元素框色 / 出戰旗標（P3 漸進揭露），
 // 點卡或長按 → 角色詳情頁；圖鑑未擁有者為灰色剪影（收集慾儀表板）。
 import { el, clear, toast } from './dom.js';
+import { icon } from './icons.js';
+import { staggerIn } from './anim.js';
 import { store } from '../core/state.js';
 import { nav } from './router.js';
 import { CARDS, CARD_LIST } from '../data/cards.js';
@@ -25,7 +27,7 @@ export class HeroesUI {
 
   render() {
     clear(this.root);
-    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '🏠', title: '回主城', onClick: () => nav.go('home') }));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
     this.root.appendChild(el('div', { class: 'page-title', text: this.tab === 'roster' ? '英雄' : '圖鑑' }));
 
     // 頁簽
@@ -73,8 +75,11 @@ export class HeroesUI {
     }
 
     const scroll = el('div', { class: 'hx-scroll' });
-    scroll.appendChild(this.tab === 'roster' ? this._rosterGrid() : this._codexGrid());
+    const grid = this.tab === 'roster' ? this._rosterGrid() : this._codexGrid();
+    scroll.appendChild(grid);
     this.root.appendChild(scroll);
+    // 卡冊進場：前兩排交錯浮現（後面的直接顯示，不拖捲動）
+    staggerIn(grid.children, { dy: 14, step: 0.03, maxN: 12 });
   }
 
   _sortedOwned() {

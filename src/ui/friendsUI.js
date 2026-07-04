@@ -1,5 +1,7 @@
 // 好友頁：搜尋/邀請/列表/一鍵送收/切磋/友情點商店。純連線功能，離線顯示提示。
 import { el, clear, toast, fmt } from './dom.js';
+import { icon } from './icons.js';
+import { staggerIn } from './anim.js';
 import { store } from '../core/state.js';
 import { saveGame } from '../core/save.js';
 import { nav } from './router.js';
@@ -36,7 +38,7 @@ export class FriendsUI {
 
   render() {
     clear(this.root);
-    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '🏠', title: '回主城', onClick: () => nav.go('home') }));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
     this.root.appendChild(el('div', { class: 'page-title left', text: '好友' }));
 
     if (!net.authed) {
@@ -95,6 +97,7 @@ export class FriendsUI {
       }
     }
     this.root.appendChild(list);
+    staggerIn(list.children, { dy: 14, step: 0.05 });
   }
 
   async _search(q) {

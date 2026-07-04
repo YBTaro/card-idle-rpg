@@ -1,6 +1,7 @@
 // 召喚頁：卡池看板版式——左卡池欄、中央看板英雄、右說明與召喚鈕、機率公示。
 // 券不足時按鈕顯示缺口並引導每日簽到（P7 引導閉環）。
 import { el, clear, toast, fmt } from './dom.js';
+import { icon } from './icons.js';
 import { store } from '../core/state.js';
 import { nav } from './router.js';
 import { pull, canPull } from '../systems/gacha.js';
@@ -31,7 +32,7 @@ export class GachaUI {
     const s = store.state;
     clear(this.root);
 
-    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '🏠', title: '回主城', onClick: () => nav.go('home') }));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
     this.root.appendChild(
       el('div', { class: 'gx-tickets' }, [
         el('div', { class: 'pill' }, [el('span', { class: 'ic', text: '🎟️' }), el('span', { text: fmt(s.currencies.tickets) })]),

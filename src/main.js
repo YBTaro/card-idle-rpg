@@ -14,6 +14,8 @@ import { GachaUI } from './ui/gachaUI.js';
 import { ArenaUI } from './ui/arenaUI.js';
 import { FriendsUI } from './ui/friendsUI.js';
 import { GuildUI } from './ui/guildUI.js';
+import { TowerUI } from './ui/towerUI.js';
+import { ShopUI } from './ui/shopUI.js';
 import { BattleOverlay } from './ui/battleOverlay.js';
 import { ensureQuests } from './systems/quests.js';
 import { bootAuth, cloudBackup, pushProfile, net } from './net/api.js';
@@ -39,6 +41,8 @@ async function main() {
   const arena = new ArenaUI(document.getElementById('screen-arena'), battle);
   const friends = new FriendsUI(document.getElementById('screen-friends'), battle);
   const guild = new GuildUI(document.getElementById('screen-guild'), battle);
+  const tower = new TowerUI(document.getElementById('screen-tower'), battle);
+  const shop = new ShopUI(document.getElementById('screen-shop'));
   const screens = { home, team, heroes, gacha };
 
   nav.register('home', document.getElementById('screen-home'), home);
@@ -48,6 +52,8 @@ async function main() {
   nav.register('arena', document.getElementById('screen-arena'), arena);
   nav.register('friends', document.getElementById('screen-friends'), friends);
   nav.register('guild', document.getElementById('screen-guild'), guild);
+  nav.register('tower', document.getElementById('screen-tower'), tower);
+  nav.register('shop', document.getElementById('screen-shop'), shop);
   nav.register('battle', document.getElementById('screen-battle'), null);
   nav.go('home');
 

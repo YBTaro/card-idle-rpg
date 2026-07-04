@@ -7,6 +7,7 @@
 //     ・點隊上英雄 → 直接移出隊伍（回到下方待命列）
 import { gsap } from 'gsap';
 import { el, clear, toast } from './dom.js';
+import { icon } from './icons.js';
 import { store } from '../core/state.js';
 import { nav } from './router.js';
 import { CARDS } from '../data/cards.js';
@@ -48,7 +49,7 @@ export class TeamUI {
     const s = store.state;
     clear(this.root);
 
-    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '🏠', title: '回主城', onClick: () => nav.go('home') }));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
     this.root.appendChild(el('div', { class: 'page-title left', text: '隊伍' }));
     this.root.appendChild(
       el('div', { class: 'tp-power' }, [

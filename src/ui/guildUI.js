@@ -1,6 +1,8 @@
 // 公會頁：未入會＝公會列表/創建；入會＝主頁（簽到/捐獻/商店/成員/留言板/Boss）。
 // 經濟閉環：金幣（本地扣）→ 公會幣（伺服器記）→ 精華/召喚券（伺服器回報、本地入帳）。
 import { el, clear, toast, fmt } from './dom.js';
+import { icon } from './icons.js';
+import { staggerIn } from './anim.js';
 import { store } from '../core/state.js';
 import { saveGame } from '../core/save.js';
 import { nav } from './router.js';
@@ -34,7 +36,7 @@ export class GuildUI {
 
   render() {
     clear(this.root);
-    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '🏠', title: '回主城', onClick: () => nav.go('home') }));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
     this.root.appendChild(el('div', { class: 'page-title left', text: '公會' }));
 
     if (!net.authed) { this.root.appendChild(offlineHint('公會功能需要連線。')); return; }
@@ -59,6 +61,7 @@ export class GuildUI {
     try {
       const guilds = await api.get('/api/guilds');
       clear(listBox);
+      requestAnimationFrame(() => staggerIn(listBox.children, { dy: 14, step: 0.05 }));
       if (!guilds.length) listBox.appendChild(el('div', { class: 'ar-empty', text: '還沒有公會——當第一位會長吧！' }));
       for (const g of guilds) {
         listBox.appendChild(el('div', { class: 'gd-row' }, [
@@ -203,6 +206,9 @@ export class GuildUI {
 
     body.appendChild(right);
     this.root.appendChild(body);
+
+    staggerIn(left.children, { dy: 10, step: 0.05 });
+    staggerIn(right.children, { dy: 14, step: 0.08 });
   }
 
   async _signin() {

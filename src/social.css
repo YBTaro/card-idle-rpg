@@ -142,6 +142,72 @@
 .gd-postrow { display: flex; gap: 8px; }
 .gd-postrow .pc-input { flex: 1; }
 
+/* ---- SVG 圖示集 ---- */
+.gicon { display: inline-flex; align-items: center; justify-content: center; flex: none; position: relative; }
+.gicon svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35)); }
+.hub-sci .ic, .hub-bar .bic { display: inline-flex; position: relative; }
+
+/* ---- 試煉塔頁 ---- */
+.tw-top { position: absolute; top: 14px; right: 16px; }
+.tw-progress { font-size: 13px; background: rgba(0, 0, 0, 0.35); border-radius: 99px; padding: 5px 14px; color: var(--gold, #e8c46a); font-weight: 700; }
+.tw-body { position: absolute; inset: 60px 16px 14px; display: flex; gap: 14px; min-height: 0; }
+.tw-track { flex: 1.7; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 6px 4px 2px; }
+.tw-floor {
+  display: flex; align-items: center; gap: 12px; flex: none;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border, #3a3550);
+  border-radius: 12px; padding: 10px 14px; position: relative;
+}
+.tw-floor.current { border-color: var(--gold, #e8c46a); background: rgba(232, 196, 106, 0.08); box-shadow: 0 0 14px rgba(232, 196, 106, 0.15); }
+.tw-floor.boss { border-style: double; border-width: 3px; }
+.tw-floor.cleared { opacity: 0.45; filter: saturate(0.4); }
+.tw-fno { text-align: center; width: 44px; flex: none; }
+.tw-fno b { font-size: 20px; color: var(--gold, #e8c46a); display: block; line-height: 1; }
+.tw-fno span { font-size: 11px; color: var(--text-dim, #a89f92); }
+.tw-ftheme { font-size: 12.5px; color: var(--text-dim, #a89f92); width: 108px; flex: none; }
+.tw-floor.boss .tw-ftheme { color: #ff9a84; font-weight: 700; }
+.tw-fdef { display: flex; gap: 4px; flex: 1; overflow: hidden; }
+.tw-fdef .cardframe.mini { width: 38px; height: 38px; flex: none; }
+.tw-frw { display: flex; flex-direction: column; gap: 2px; font-size: 11.5px; color: var(--text-dim, #a89f92); flex: none; }
+.tw-fight { flex: none; }
+.tw-clearmark { position: absolute; right: 14px; font-size: 22px; color: #7fd49a; font-weight: 800; }
+.tw-side { flex: 1; display: flex; flex-direction: column; gap: 10px; background: rgba(0, 0, 0, 0.25); border-radius: 12px; padding: 12px; overflow-y: auto; }
+.tw-mile { background: rgba(232, 196, 106, 0.08); border: 1px dashed rgba(232, 196, 106, 0.4); border-radius: 10px; padding: 10px 12px; }
+.tw-mile .m1 { font-weight: 800; font-size: 14px; }
+.tw-mile .m2 { font-size: 12.5px; color: var(--gold, #e8c46a); margin-top: 2px; }
+.tw-winrw { display: flex; justify-content: center; gap: 14px; font-size: 16px; font-weight: 800; margin: 10px 0 16px; }
+
+/* ---- 商店頁 ---- */
+.sh-body { position: absolute; inset: 58px 16px 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.sh-sub { color: var(--gold, #e8c46a); font-size: 13px; font-weight: 700; margin-top: 4px; }
+.sh-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.sh-item {
+  position: relative; width: 150px; text-align: center;
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border, #3a3550);
+  border-radius: 14px; padding: 14px 10px 10px; user-select: none;
+}
+.sh-item.deal { border-color: #ff9a84; }
+.sh-item.free { border-color: #7fd49a; }
+.sh-item.sold { opacity: 0.45; filter: saturate(0.3); }
+.sh-off {
+  position: absolute; top: -8px; right: -6px; background: linear-gradient(160deg, #ff8a6a, #e05a4a);
+  color: #fff; font-size: 11px; font-weight: 800; border-radius: 99px; padding: 3px 9px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); transform: rotate(6deg);
+}
+.sh-ic { font-size: 34px; line-height: 1.2; }
+.sh-name { font-weight: 800; font-size: 14px; margin-top: 4px; }
+.sh-desc { font-size: 11.5px; color: var(--text-dim, #a89f92); margin: 2px 0 8px; }
+.sh-price { display: flex; justify-content: center; align-items: baseline; gap: 8px; font-size: 14px; }
+.sh-price s { color: var(--text-dim, #a89f92); font-size: 11.5px; }
+.sh-price b { color: var(--gold, #e8c46a); }
+.sh-item.free .sh-price b { color: #7fd49a; }
+.sh-limit { font-size: 11px; color: var(--text-dim, #a89f92); margin-top: 6px; }
+
+/* ---- 獎勵飛行 ---- */
+.reward-fly {
+  position: fixed; z-index: 200; font-size: 22px; pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+}
+
 /* ---- 離線提示 ---- */
 .net-offline {
   position: absolute; inset: 0; display: flex; flex-direction: column;

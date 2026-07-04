@@ -17,6 +17,8 @@ import { runTutorial } from './tutorial.js';
 import { stageLabel, featuredHero } from '../systems/profile.js';
 import { openPlayerCard, myProfileData } from './profileCard.js';
 import { net } from '../net/api.js';
+import { icon } from './icons.js';
+import { staggerIn } from './anim.js';
 import { canSignin } from '../systems/signin.js';
 import { idlePending, canClaimIdle } from '../systems/idle.js';
 import { cutoutFor, portraitFor } from '../data/assets.js';
@@ -95,9 +97,9 @@ export class HomeUI {
         ava,
         el('div', { class: 'cols' }, [
           el('div', { class: 'prow' }, [
-            currencyPill('🪙', s.currencies.gold),
-            currencyPill('🎟️', s.currencies.tickets),
-            currencyPill('🔹', s.inventory.materials.essence || 0),
+            currencyPill('coin', s.currencies.gold),
+            currencyPill('ticket', s.currencies.tickets),
+            currencyPill('essence', s.inventory.materials.essence || 0),
           ]),
         ]),
       ])
@@ -116,39 +118,44 @@ export class HomeUI {
 
     // 左下：營運捷徑（社交按鈕與營運捷徑並列）
     const sc = el('div', { class: 'hub-sc' });
-    sc.appendChild(shortcut('👥', '好友', false, () => nav.go('friends')));
-    sc.appendChild(shortcut('📋', '任務', badges.quests, () => openQuestsSheet()));
-    sc.appendChild(shortcut('📅', '簽到', badges.signin, () => openSigninSheet()));
-    this._idleShortcut = shortcut(idlePending(s).capped ? '🎁' : '📦', '掛機箱', badges.idle, () => openIdleSheet());
+    sc.appendChild(shortcut('friends', '好友', false, () => nav.go('friends')));
+    sc.appendChild(shortcut('quests', '任務', badges.quests, () => openQuestsSheet()));
+    sc.appendChild(shortcut('signin', '簽到', badges.signin, () => openSigninSheet()));
+    this._idleShortcut = shortcut('idle', '掛機箱', badges.idle, () => openIdleSheet());
     sc.appendChild(this._idleShortcut);
     this.root.appendChild(sc);
 
     // 右側：菱形模式入口
     const dia = el('div', { class: 'hub-dia' });
-    this._battleDia = diamond('⚔', '戰役', { big: true, badge: false, onClick: () => nav.go('battle') });
+    this._battleDia = diamond('battle', '戰役', { big: true, badge: false, onClick: () => nav.go('battle') });
     dia.appendChild(this._battleDia);
-    dia.appendChild(diamond('🏆', '競技場', { onClick: () => nav.go('arena') }));
-    dia.appendChild(diamond('🏰', '公會', { onClick: () => nav.go('guild') }));
-    dia.appendChild(diamond('🗼', '試煉塔', { locked: true }));
+    dia.appendChild(diamond('arena', '競技場', { onClick: () => nav.go('arena') }));
+    dia.appendChild(diamond('guild', '公會', { onClick: () => nav.go('guild') }));
+    dia.appendChild(diamond('tower', '試煉塔', { onClick: () => nav.go('tower') }));
     this.root.appendChild(dia);
 
     // 右上：工具列
     this.root.appendChild(
       el('div', { class: 'hub-util' }, [
-        el('div', { class: 'icon-btn pressable', text: '⚙', onClick: () => openSettingsSheet({ onReset: () => this.render() }) }),
+        el('div', { class: 'icon-btn pressable', onClick: () => openSettingsSheet({ onReset: () => this.render() }) }, [icon('settings', 22)]),
       ])
     );
 
     // 底部飾條功能列
     const bar = el('div', { class: 'hub-bar' });
-    bar.appendChild(barItem('🏰', '主城', { on: true }));
-    bar.appendChild(barItem('🃏', '隊伍', { onClick: () => nav.go('team') }));
-    this._heroesBar = barItem('👥', '英雄', { onClick: () => nav.go('heroes') });
+    bar.appendChild(barItem('home', '主城', { on: true }));
+    bar.appendChild(barItem('team', '隊伍', { onClick: () => nav.go('team') }));
+    this._heroesBar = barItem('heroes', '英雄', { onClick: () => nav.go('heroes') });
     bar.appendChild(this._heroesBar);
-    this._gachaBar = barItem('🎴', '召喚', { onClick: () => nav.go('gacha') });
+    this._gachaBar = barItem('gacha', '召喚', { onClick: () => nav.go('gacha') });
     bar.appendChild(this._gachaBar);
-    bar.appendChild(barItem('🛒', '商店', { locked: true }));
+    bar.appendChild(barItem('shop', '商店', { onClick: () => nav.go('shop') }));
     this.root.appendChild(bar);
+
+    // 進場動效：捷徑/入口/功能列交錯浮現（登入的儀式感，不瞬間全亮）
+    staggerIn(sc.children, { dy: 10, step: 0.05 });
+    staggerIn(dia.children, { dy: 12, step: 0.07 });
+    staggerIn(bar.children, { dy: 8, step: 0.04 });
   }
 
   _nextSpeech() {
@@ -195,39 +202,38 @@ export class HomeUI {
   }
 }
 
-function currencyPill(icon, value) {
-  return el('div', { class: 'pill' }, [el('span', { class: 'ic', text: icon }), el('span', { text: fmt(value) })]);
+function currencyPill(iconName, value) {
+  const ic = el('span', { class: 'ic' });
+  ic.appendChild(icon(iconName, 17));
+  return el('div', { class: 'pill' }, [ic, el('span', { text: fmt(value) })]);
 }
 
-function shortcut(icon, label, badge, onClick) {
-  const node = el('div', { class: 'hub-sci pressable', onClick }, [
-    el('span', { class: 'ic', text: icon }),
-    el('span', { text: label }),
-  ]);
-  if (badge) node.querySelector('.ic').appendChild(dot());
+function shortcut(iconName, label, badge, onClick) {
+  const ic = el('span', { class: 'ic' });
+  ic.appendChild(icon(iconName, 24));
+  const node = el('div', { class: 'hub-sci pressable', onClick }, [ic, el('span', { text: label })]);
+  if (badge) ic.appendChild(dot());
   return node;
 }
 
-function diamond(icon, label, { big = false, locked = false, badge = false, onClick } = {}) {
+function diamond(iconName, label, { big = false, locked = false, badge = false, onClick } = {}) {
+  const sq = el('div', { class: 'dsq' });
+  sq.appendChild(icon(iconName, big ? 34 : 26));
   const node = el('div', {
     class: `dia${big ? ' big' : ''}${locked ? ' locked' : ' pressable'}`,
     onClick: locked ? () => toast('敬請期待') : onClick,
-  }, [
-    el('div', { class: 'dsq' }, [el('span', { text: icon })]),
-    el('span', { class: 'dl', text: label }),
-  ]);
+  }, [sq, el('span', { class: 'dl', text: label })]);
   if (badge) node.appendChild(dot());
   return node;
 }
 
-function barItem(icon, label, { on = false, locked = false, badge = false, onClick } = {}) {
+function barItem(iconName, label, { on = false, locked = false, badge = false, onClick } = {}) {
+  const ic = el('span', { class: 'bic' });
+  ic.appendChild(icon(iconName, 22));
   const node = el('div', {
     class: `bn${on ? ' on' : ''}${locked ? ' locked' : ' pressable'}`,
     onClick: locked ? () => toast('敬請期待') : onClick,
-  }, [
-    el('span', { class: 'bic', text: icon }),
-    el('span', { text: label }),
-  ]);
+  }, [ic, el('span', { text: label })]);
   if (badge) node.appendChild(dot());
   return node;
 }

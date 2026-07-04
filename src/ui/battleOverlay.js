@@ -3,6 +3,7 @@
 // 右下戰速/跳過菱形鈕、底部戰報 ticker、勝敗橫幅（勝利金幣飛入 / 戰敗導流調整陣容）。
 import { gsap } from 'gsap';
 import { el, clear } from './dom.js';
+import { icon } from './icons.js';
 import { store } from '../core/state.js';
 import { nav } from './router.js';
 import { stageLabel } from '../systems/profile.js';
@@ -26,7 +27,7 @@ export class BattleOverlay {
   _build() {
     clear(this.root);
 
-    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '🏠', title: '回主城', onClick: () => nav.go('home') }));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
 
     // 左上：我方
     this.avaLeft = el('div', { class: 'ava' });

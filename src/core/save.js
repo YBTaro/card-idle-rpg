@@ -59,6 +59,9 @@ function migrate(data) {
     };
   }
   data.arena ??= { rating: 1000, day: '', used: 0, defense: [], reports: [] };
+  // v5：試煉塔進度與商店每日購買記錄
+  data.tower ??= { floor: 1 };
+  data.shop ??= { day: '', bought: {} };
   data.version = SCHEMA_VERSION;
   return data;
 }

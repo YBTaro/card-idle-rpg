@@ -1,6 +1,8 @@
 // 競技場頁：異步 PvP。連線＝伺服器真人快照；離線＝本地機器人（規則相同）。
 // 挑戰 → （伺服器/本地）模擬 log → 既有戰場回放 → 回來結算積分。
 import { el, clear, toast, fmt } from './dom.js';
+import { icon } from './icons.js';
+import { staggerIn } from './anim.js';
 import { store } from '../core/state.js';
 import { saveGame } from '../core/save.js';
 import { nav } from './router.js';
@@ -55,7 +57,7 @@ export class ArenaUI {
 
   render() {
     clear(this.root);
-    this.root.appendChild(el('div', { class: 'back-btn pressable', text: '🏠', title: '回主城', onClick: () => nav.go('home') }));
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('home', 22)]));
     this.root.appendChild(el('div', { class: 'page-title left', text: '競技場' }));
 
     const s = store.state;
@@ -119,6 +121,10 @@ export class ArenaUI {
     ]));
     body.appendChild(right);
     this.root.appendChild(body);
+
+    // 進場動效：對手卡由上而下、側欄稍後浮現
+    staggerIn(left.children, { dy: 18, step: 0.07 });
+    staggerIn(right.children, { dy: 12, step: 0.05 });
   }
 
   _foeCard(foe) {
