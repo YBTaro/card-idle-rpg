@@ -5,7 +5,7 @@
 import { gsap } from 'gsap';
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { SKILLS } from '../battle/skills.js';
-import { fxTl, fxTo } from './fx.js';
+import { fxTl, fxTo, fxDelay } from './fx.js';
 
 const HEAL_COLOR = 0x8ef2ae;
 const SHIELD_COLOR = 0x9adcff;
@@ -224,6 +224,77 @@ export function volley(fxLayer, x0, y0, x1, y1, color, dotTex) {
         if (alive === 0) safeDestroy(cont);
       },
     });
+  }
+}
+
+// 隕星雨：全體攻擊專屬——流星自天頂斜落、砸遍敵方整片區域，落地閃爆＋餘燼。
+// （全體技不再用直線砲——束狀特效只留給「直排」，面攻擊要有「整片都被砸到」的畫面語言。）
+export function meteorRain(fxLayer, cx, midY, span, color, dotTex) {
+  if (!dotTex) return;
+  const cont = new Container();
+  fxLayer.addChild(cont);
+  const N = 8;
+  let alive = N;
+  for (let i = 0; i < N; i += 1) {
+    // 落點鋪滿敵方區域（橫 ±span*0.55、縱 ±span*0.4）
+    const tx = cx + (Math.random() * 2 - 1) * span * 0.55;
+    const ty = midY + (Math.random() * 2 - 1) * span * 0.4;
+    const sx = tx + 90 + Math.random() * 80; // 起點：右上方天頂外（斜落）
+    const sy = -60 - Math.random() * 80;
+    const ang = Math.atan2(ty - sy, tx - sx);
+
+    const head = new Sprite(dotTex);
+    head.anchor.set(0.5);
+    head.blendMode = 'add';
+    head.tint = 0xfff2c8;
+    head.scale.set(0.85);
+    head.position.set(sx, sy);
+    cont.addChild(head);
+    const tail = new Graphics(); // 斜向拖尾（跟著頭走）
+    tail.moveTo(0, 0).lineTo(46, 0).stroke({ width: 4, color, alpha: 0.7 });
+    tail.blendMode = 'add';
+    tail.rotation = ang + Math.PI; // 尾巴朝來向
+    cont.addChild(tail);
+
+    const delay = i * 0.06 + Math.random() * 0.05;
+    const tl = fxTl()
+      .to(head, { x: tx, y: ty, duration: 0.3 + Math.random() * 0.1, ease: 'power2.in', delay,
+        onUpdate: () => { tail.position.set(head.x, head.y); },
+        onComplete: () => {
+          if (cont.destroyed) return;
+          tail.visible = false;
+          // 落地閃爆：白核急縮 + 色環擴散 + 火花
+          const flash = new Graphics();
+          flash.circle(0, 0, 20).fill({ color: 0xfff6d8, alpha: 0.95 });
+          flash.blendMode = 'add';
+          flash.position.set(tx, ty);
+          cont.addChild(flash);
+          const ring = new Graphics();
+          ring.circle(0, 0, 14).stroke({ width: 3, color, alpha: 0.85 });
+          ring.blendMode = 'add';
+          ring.position.set(tx, ty);
+          cont.addChild(ring);
+          fxTo(flash, { alpha: 0, duration: 0.22, ease: 'power2.out' });
+          fxTl().to(ring.scale, { x: 3, y: 2.1, duration: 0.3, ease: 'power2.out' }, 0)
+            .to(ring, { alpha: 0, duration: 0.3, ease: 'power1.in' }, 0.05);
+          for (let k = 0; k < 4; k += 1) {
+            const s = new Sprite(dotTex);
+            s.anchor.set(0.5);
+            s.blendMode = 'add';
+            s.tint = k % 2 ? color : 0xffd27a;
+            s.scale.set(0.3 + Math.random() * 0.25);
+            s.position.set(tx, ty);
+            cont.addChild(s);
+            fxTo(s, {
+              x: tx + (Math.random() * 90 - 45), y: ty - Math.random() * 60,
+              alpha: 0, duration: 0.35 + Math.random() * 0.2, ease: 'power1.out',
+            });
+          }
+          head.visible = false;
+          alive -= 1;
+          if (alive === 0) fxDelay(0.6, () => safeDestroy(cont)); // 等最後一顆的爆花放完
+        },
+      });
   }
 }
 
@@ -509,8 +580,10 @@ export function casterVfx({ fxLayer, dotTex, rowMidY = 340, rowSpan = 240 }, spr
       volley(fxLayer, fromX, fromY, tx, rowMidY, color, dotTex);
     } else if (def.target === 'enemyFrontRow') {
       flameWall(fxLayer, tx, rowMidY, rowSpan, color, dotTex);
+    } else if (def.target === 'allEnemies') {
+      meteorRain(fxLayer, tx + dir * 90, rowMidY, rowSpan, color, dotTex); // 全體＝隕星雨鋪面
     } else {
-      beamLane(fxLayer, fromX, fromY, tx + dir * 140, ty, color, dotTex); // 直排 / 全體
+      beamLane(fxLayer, fromX, fromY, tx + dir * 140, ty, color, dotTex); // 直排＝能量束
     }
   }
   if (types.has('heal')) healRise(sprite, dotTex);
