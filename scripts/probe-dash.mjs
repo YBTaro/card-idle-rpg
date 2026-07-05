@@ -38,17 +38,31 @@ await page.evaluate(() => {
       const s = sc.sprites.get(attackerUid);
       const t = targetUid != null ? sc.sprites.get(targetUid) : null;
       if (!s || !t) return;
-      const style = s._info.class === 'support' ? 'ranged' : 'melee';
-      if (s._info.team !== 0 || style !== 'melee') return; // 只看玩家近戰
-      const dx = Math.round(t.x - s.x); // >0 往右(敵方)、<0 往左(自己方)
-      const dead = !rp.aliveOf(targetUid);
-      console.log(`[PROBE] pos${s._info.pos}(${s._info.name}) → team${t._info.team} pos${t._info.pos}(${t._info.name}) dx=${dx}${dx < 60 ? '  <<< 疑似往自己方向' : ''}${dead ? ' [目標已死]' : ''}`);
+      if (s._info.team !== 0) return; // 只看玩家
+      const homeX = Math.round(s._homeX ?? s.x);
+      const homeY = Math.round(s._homeY ?? s.y);
+      // 攻擊後 1.6s 應已回位——若離自己家 >40px＝卡在半路（可能停在隊友格）
+      setTimeout(() => {
+        if (s.destroyed) return;
+        const restX = Math.round(s.x), restY = Math.round(s.y);
+        const off = Math.abs(restX - homeX) + Math.abs(restY - homeY);
+        if (off <= 40) return;
+        // 找最近的隊友格
+        let near = null, nd = 1e9;
+        for (const sp of sc.sprites.values()) {
+          if (sp === s || sp._info.team !== 0) continue;
+          const d = Math.abs((sp._homeX ?? sp.x) - restX) + Math.abs((sp._homeY ?? sp.y) - restY);
+          if (d < nd) { nd = d; near = sp._info; }
+        }
+        console.log(`[PROBE] ⚠卡位 pos${s._info.pos}(${s._info.name}) 應停(${homeX},${homeY}) 實停(${restX},${restY}) 偏移${off}`
+          + (near && nd < 50 ? `  <<<<< 卡在隊友 pos${near.pos}(${near.name}) 格！` : ''));
+      }, 1600);
     });
   };
   window.__probeTimer = setInterval(install, 150);
   document.querySelector('.hub-adv')?.click(); // 大冒險鈕 → 戰役
 });
-console.log('[PROBE] installed, watching 30s...');
-await sleep(30000);
+console.log('[PROBE] installed, watching 90s (多場)...');
+await sleep(90000);
 console.log('[PROBE] done');
 await browser.close();

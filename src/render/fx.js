@@ -34,7 +34,11 @@ export function meleeDash(sprite, tx, ty, dir) {
   sprite._homeY = hy;
   gsap.killTweensOf(sprite, 'x,y,rotation');
   const ax = tx - dir * 58; // 目標面前一步
-  fxTl()
+  // _dashing 旗標：整個突進期間（含返回前的頓點空檔）為 true。
+  // 用旗標而非 gsap.isTweening——後者對 timeline 內補間與空檔判斷不可靠，
+  // 曾導致受擊/迴避處理在空檔誤判「沒在動」而打斷回位補間 → 卡在半路（隊友格）。
+  sprite._dashing = true;
+  fxTl({ onComplete: () => { sprite._dashing = false; sprite.x = hx; sprite.y = hy; } })
     .to(sprite, { x: hx - dir * 14, rotation: -dir * 0.06, duration: 0.09, ease: 'power1.in' }) // 預備後搖
     .to(sprite, { x: ax, y: ty, rotation: dir * 0.09, duration: 0.16, ease: 'power3.in' }) // 突進
     .to(sprite, { rotation: -dir * 0.14, duration: 0.07, ease: 'power2.out' }) // 揮擊
@@ -97,7 +101,8 @@ export function lunge(sprite, dir) {
   const baseX = sprite._homeX ?? sprite.x;
   sprite._homeX = baseX;
   gsap.killTweensOf(sprite, 'x,rotation');
-  fxTl()
+  sprite._dashing = true;
+  fxTl({ onComplete: () => { sprite._dashing = false; sprite.x = baseX; } })
     .to(sprite, { x: baseX - dir * 10, rotation: -dir * 0.05, duration: 0.08, ease: 'power1.in' })
     .to(sprite, { x: baseX + dir * 46, rotation: dir * 0.09, duration: 0.11, ease: 'power3.out' })
     .to(sprite, { x: baseX, rotation: 0, duration: 0.26, ease: 'power2.inOut' });
@@ -110,10 +115,9 @@ export function hitFlash(sprite, body, dir = 0) {
     .set(body, { tint: 0xff5555 })
     .to(body, { tint: 0xffffff, duration: 0.28, ease: 'power1.out' });
 
-  // 本體位置正在補間（自己的突進還沒回位）→ 只閃紅不擊退。
-  // 荊棘/反擊/獵印等會在攻擊者突進途中對它發 damage，此時 killTweensOf
-  // 會切斷回位補間、且擊退只還原 x —— 棋子就永遠卡在目標排的 y 上（擠成一團）。
-  if (gsap.isTweening(sprite)) return;
+  // 本體突進中（含返回前空檔）→ 只閃紅不擊退。用 _dashing 旗標而非 isTweening，
+  // 後者對 timeline 空檔誤判「沒在動」→ 打斷回位補間 → 棋子卡在半路/隊友格。
+  if (sprite._dashing || gsap.isTweening(sprite)) return;
   const baseX = sprite._homeX ?? sprite.x;
   const baseY = sprite._homeY ?? sprite.y;
   sprite._homeX = baseX;

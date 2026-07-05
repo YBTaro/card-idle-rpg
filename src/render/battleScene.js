@@ -910,6 +910,15 @@ export class BattleScene {
       const energy = this.replayer.energyOf(uid);
       const full = energy >= ENERGY_MAX;
 
+      // 回位保險網：存活單位若「沒在突進、沒有任何補間、卻離家 >3px」＝被意外中斷卡住，
+      // 平滑拉回家（不碰死者——死者由 deathFade 自行沉沒；不碰突進中/有補間的正常動畫）。
+      if (!this._instant && this.replayer.aliveOf(uid) && !sprite._dashing
+          && (sprite._homeX != null)
+          && (Math.abs(sprite.x - sprite._homeX) + Math.abs(sprite.y - sprite._homeY) > 3)
+          && gsap.getTweensOf(sprite).length === 0) {
+        gsap.to(sprite, { x: sprite._homeX, y: sprite._homeY, rotation: 0, duration: 0.2, ease: 'power2.out' });
+      }
+
       // 掉血殘影：只有「新傷害」（本幀血量比上一幀低）才重置停留 0.28s，
       // 之後殘影持續收攏直到追上實際血量——不會有白段永遠掛著。
       const gh = (sprite._ghost ??= { hp, lastHp: hp, hold: 0 });
@@ -1229,7 +1238,7 @@ export class BattleScene {
         // 若本體正在補間（例如自己的突進攻擊還沒回位）就只飄字——
         // 不可 killTweensOf 打斷回位補間，否則棋子會卡在半路。
         const dir = s._info.team === 0 ? -1 : 1;
-        if (!gsap.isTweening(s)) {
+        if (!s._dashing && !gsap.isTweening(s)) {
           const x0 = s._homeX ?? s.x;
           gsap.timeline()
             .to(s, { x: x0 + dir * 26, duration: 0.08, ease: 'power2.out' })
