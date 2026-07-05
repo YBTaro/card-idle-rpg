@@ -315,9 +315,20 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .ov-close {
   position: absolute; top: .7rem; right: .7rem; width: 2rem; height: 2rem; border-radius: 99px;
   border: 1px solid rgba(255, 255, 255, .28); background: rgba(10, 12, 22, .55); color: #fff;
-  font-size: .9rem; display: flex; align-items: center; justify-content: center; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
   padding: 0; box-shadow: none;
 }
+
+/* 關閉鈕的 ✕ 用 CSS 畫（兩條旋轉線）——不靠字型，永遠正中不歪。
+   隱藏原本的 ✕ 文字（font-size:0），改由 ::before/::after 繪製。 */
+.ov-close, .up-close { position: relative; font-size: 0; } /* relative：既維持 flex 排版又當 ::before/::after 定位基準 */
+.ov-close::before, .ov-close::after,
+.up-close::before, .up-close::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 48%; height: 1.6px; border-radius: 1px; background: currentColor;
+}
+.ov-close::before, .up-close::before { transform: translate(-50%, -50%) rotate(45deg); }
+.ov-close::after, .up-close::after { transform: translate(-50%, -50%) rotate(-45deg); }
 
 .ov-confirm { width: 24rem; text-align: center; }
 .ovc-title { font-size: 1.05rem; font-weight: 900; margin-bottom: .5rem; }
@@ -981,7 +992,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 
 /* 戰鬥統計面板（D2）：結算「詳情」——輸出/承傷/治療三排行 */
 .bo-stats {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  position: absolute; left: 50%; top: 50%; /* 置中的 -50% 位移交給 gsap xPercent/yPercent 管（見 showStatsPanel） */
   width: min(92%, 42rem); max-height: 78%; overflow-y: auto;
   padding: .8rem .9rem; border-radius: 1rem; z-index: 30;
   background: linear-gradient(160deg, rgba(56, 40, 22, .97), rgba(30, 20, 9, .97));

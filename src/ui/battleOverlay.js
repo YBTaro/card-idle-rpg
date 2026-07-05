@@ -189,6 +189,9 @@ export class BattleOverlay {
     mkSection('👹 敵方', rows.filter((r) => r.team === 1), 'foe', envDmg?.[1] ?? 0);
     this.root.appendChild(panel);
     this._statsPanel = panel;
+    // 用 gsap 的 xPercent/yPercent 管置中——否則動畫 y 會覆蓋掉 CSS 的 translate(-50%,-50%)，
+    // 面板就會往下/往邊跑掉。CSS 該處已改為只設 left/top 不設 transform。
+    gsap.set(panel, { xPercent: -50, yPercent: -50 });
     gsap.fromTo(panel, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.2, ease: 'power2.out' });
   }
 
