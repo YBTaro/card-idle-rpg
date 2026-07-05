@@ -16,6 +16,10 @@ export function makeUnit(opts = {}) {
     series: opts.series ?? [],
     passives: opts.passives ?? [],
     triggers: opts.triggers ?? [],
+    basicAttack: opts.basicAttack ?? null,
+    skillLv: opts.skillLv ?? 1,
+    bossTag: opts.bossTag ?? false,
+    bossKit: opts.bossKit ?? null,
     onEnter: opts.onEnter ?? null,
   };
   const u = new Unit(stats, { team: opts.team ?? 0, pos: opts.pos ?? 1 });

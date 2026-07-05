@@ -746,6 +746,9 @@ export class BattleScene {
     if (b.kind === 'castDrain') return '🌀';
     if (b.kind === 'element') return '🔮';
     if (b.kind === 'nightmare') return '😱';
+    if (b.kind === 'debuffBlock') return '🧿';
+    if (b.kind === 'mark') return '🎯';
+    if (b.kind === 'cheatDeath') return '🕊';
     if (b.kind === 'control') {
       return b.control === 'silence' ? '🤫' : b.control === 'freeze' ? '❄' : '🎯';
     }
@@ -771,14 +774,15 @@ export class BattleScene {
       t.anchor.set(0.5);
       t.x = x;
       icons.addChild(t);
-      // 剩餘回合小數字（右下角標；無期限狀態不顯示）
-      if (b.turns != null && b.turns > 0) {
+      // 剩餘回合小數字（右下角標；無期限狀態不顯示）；格擋護符改顯示剩餘層數
+      const badgeN = b.kind === 'debuffBlock' ? b.charges : b.turns;
+      if (badgeN != null && badgeN > 0) {
         const badge = new Graphics();
         badge.circle(x + SIZE / 2 - 1, SIZE / 2 - 1, 5).fill({ color: 0x0b0d16, alpha: 0.95 });
         badge.circle(x + SIZE / 2 - 1, SIZE / 2 - 1, 5).stroke({ color: b.neg ? 0xff8a8a : 0x8ef2ae, width: 1, alpha: 0.7 });
         icons.addChild(badge);
         const n = new Text({
-          text: String(Math.min(9, b.turns)),
+          text: String(Math.min(9, badgeN)),
           style: { fontSize: 7, fill: 0xffffff, fontWeight: '800' },
         });
         n.anchor.set(0.5);
@@ -860,6 +864,11 @@ export class BattleScene {
         g.clear();
         this._bar(g, 0, hpRatio, hpColor, 0x232d26, 0, ghostRatio);
         this._bar(g, 8, Math.min(1, energy / ENERGY_MAX), 0xf5c451, 0x2e2a1c, full ? this._pulse.v : 0);
+        // 超充段（100→200）：能量條上疊第二層金白光——溢出多少一眼可見
+        const over = Math.max(0, Math.min(1, (energy - ENERGY_MAX) / ENERGY_MAX));
+        if (over > 0) {
+          g.roundRect(-BAR_W / 2, 8 - 1.5, BAR_W * over, 3, 1.5).fill({ color: 0xfff2c8, alpha: 0.95 });
+        }
       }
 
       const buffs = this.replayer.buffsOf(uid);
@@ -1146,6 +1155,52 @@ export class BattleScene {
           style: { fontSize: 18, fill: 0xbfe8d8, fontStyle: 'italic', fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
         });
         floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
+      }),
+      rp.on('resist', ({ uid }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(uid);
+        if (!s) return;
+        const txt = new Text({ text: '抵抗', style: { fontSize: 17, fill: 0x9aa3b8, fontWeight: '800', stroke: { color: 0x000000, width: 3 } } });
+        floatText(this.fxLayer, s.x, this._chestY(s) - 26, txt);
+      }),
+      rp.on('blocked', ({ uid }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(uid);
+        if (!s) return;
+        const txt = new Text({ text: '免疫', style: { fontSize: 18, fill: 0x7fd4c8, fontWeight: '800', stroke: { color: 0x000000, width: 3 } } });
+        floatText(this.fxLayer, s.x, this._chestY(s) - 26, txt);
+        purifyBurst(s, this._dotTex, { hostile: false }); // 護符閃光
+      }),
+      rp.on('cheated', ({ uid }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(uid);
+        if (!s) return;
+        const txt = new Text({ text: '免死！', style: { fontSize: 24, fill: 0xffe9b0, fontWeight: '900', stroke: { color: 0x000000, width: 4 } } });
+        floatText(this.fxLayer, s.x, this._chestY(s) - 30, txt);
+        spark(this.fxLayer, s.x, this._chestY(s), 0xffe9b0, this._dotTex, 10);
+      }),
+      rp.on('bossPhase', ({ uid, phase }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(uid);
+        const txt = new Text({ text: `⚠ Boss 第 ${phase + 1} 階段！`, style: { fontSize: 30, fill: 0xff6b5c, fontWeight: '900', letterSpacing: 3, stroke: { color: 0x000000, width: 5 } } });
+        floatText(this.fxLayer, STAGE_W / 2, STAGE_H * 0.28, txt);
+        if (s) { ultPulse(s, s._body, 0xff6b5c); screenShake(this.root, 6); }
+      }),
+      rp.on('bossBreak', ({ uid }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(uid);
+        if (!s) return;
+        const txt = new Text({ text: '破防！', style: { fontSize: 26, fill: 0xffb066, fontWeight: '900', stroke: { color: 0x000000, width: 4 } } });
+        floatText(this.fxLayer, s.x, this._chestY(s) - 34, txt);
+        hitFlash(s._body);
+        screenShake(this.root, 5);
+      }),
+      rp.on('bossEnrage', ({ uid }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(uid);
+        const txt = new Text({ text: '🔥 狂暴！', style: { fontSize: 30, fill: 0xff4d3a, fontWeight: '900', letterSpacing: 3, stroke: { color: 0x000000, width: 5 } } });
+        floatText(this.fxLayer, STAGE_W / 2, STAGE_H * 0.28, txt);
+        if (s) { ultPulse(s, s._body, 0xff4d3a); screenShake(this.root, 7); }
       }),
       rp.on('trigger', ({ uid, name }) => {
         if (this._instant) return;

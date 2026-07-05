@@ -54,7 +54,7 @@ import { Rng } from '../core/rng.js';
 import { ENERGY_MAX } from './unit.js';
 import { TURN_SEQUENCE } from './positions.js';
 import { normalAttack, castSkill, skillFor } from './skills.js';
-import { tickBuffs, dotEntries, hotEntries, hasControl, summarizeBuffs } from './buffs.js';
+import { tickBuffs, dotEntries, hotEntries, hasControl, summarizeBuffs, applyBuff } from './buffs.js';
 import { dealDot, dealDirect, healAmount, resolveScope, applyEffect } from './effects.js';
 import { triggerMatches } from './triggers.js';
 import { recomputePassives, applyEnvAuras } from './passives.js';
@@ -93,14 +93,35 @@ export class BattleEngine {
     this.on('damage', (p) => {
       if (!p.target) return;
       // 受擊觸發：普攻 vs 技能直傷（DoT/荊棘/反擊/惡夢/環境/觸發傷害不算「受擊」）
+      // payload 帶 source（攻擊者）——觸發效果 scope:'attacker' 可對打我的人反打/上狀態
       const passive = ['thorns', 'counter', 'dot', 'nightmare', 'env'].includes(p.skill) || String(p.skill).startsWith('trigger:');
-      if (p.skill === 'normal') this._fireTriggers('hit', p.target, { via: 'normal' });
-      else if (!passive && p.source) this._fireTriggers('hit', p.target, { via: 'skill' });
+      if (p.skill === 'normal') this._fireTriggers('hit', p.target, { via: 'normal', source: p.source });
+      else if (!passive && p.source) this._fireTriggers('hit', p.target, { via: 'skill', source: p.source });
+      // 印記連動：隊友直接命中帶印記的敵人 → markedHit（觸發者通常是上印記的獵人）
+      if (!passive && p.source && p.source.team !== p.target.team
+        && (p.target.buffs ?? []).some((b) => b.kind === 'mark')) {
+        this._fireTriggers('markedHit', p.target, { source: p.source });
+      }
       // 血線跌破（damage 事件在扣血後發出 → 用 amount 還原扣血前比例）
       if (p.amount > 0) {
         const before = Math.min(1, (p.target.hp + p.amount) / p.target.maxHp);
         const after = p.target.hp / p.target.maxHp;
         if (after < before) this._fireTriggers('hpBelow', p.target, { before, after });
+        this._bossPhaseCheck(p.target, before, after);
+      }
+      this._bossBreakCheck(p);
+    });
+    this.on('round', ({ round }) => {
+      // Boss 狂暴：回合數到，一次性全體強化
+      for (const u of this.units) {
+        const enrage = u.bossKit?.enrage;
+        if (!enrage || !u.alive || u._enraged || round < enrage.round) continue;
+        u._enraged = true;
+        this.emit('bossEnrage', { unit: u });
+        const ctx = this._ctxFor(u);
+        for (const effect of enrage.effects ?? []) {
+          applyEffect(effect, u, resolveScope(effect.scope, u, [u], ctx), ctx, 'boss:enrage');
+        }
       }
     });
   }
@@ -124,7 +145,10 @@ export class BattleEngine {
         try {
           const ctx = this._ctxFor(owner);
           for (const effect of trig.effects) {
-            const units = resolveScope(effect.scope, owner, [subject], ctx);
+            // scope:'attacker' ＝事件攻擊者（hit/markedHit 專用）——「被打就反打」「印記追打」
+            const prim = effect.scope === 'attacker' ? [extra.source].filter(Boolean) : [subject];
+            const scope = effect.scope === 'attacker' ? 'target' : effect.scope;
+            const units = resolveScope(scope, owner, prim, ctx);
             applyEffect(effect, owner, units, ctx, `trigger:${on}`);
           }
           // 不在此呼叫 _checkEnd：觸發可能在技能結算中途發生，
@@ -133,6 +157,39 @@ export class BattleEngine {
           this._trigDepth -= 1;
         }
       }
+    }
+  }
+
+  // ---- Boss 機制（bossKit：{ phases, breakBar, enrage }；一般單位 null 零成本）----
+  // 階段：血線首次跌破 phases[i].hpBelow → 施放該階段效果（一次性）
+  _bossPhaseCheck(u, before, after) {
+    const phases = u.bossKit?.phases;
+    if (!phases || !u.alive) return;
+    u._phaseFired ??= new Set();
+    for (let i = 0; i < phases.length; i += 1) {
+      const ph = phases[i];
+      if (u._phaseFired.has(i) || !(after < ph.hpBelow && before >= ph.hpBelow)) continue;
+      u._phaseFired.add(i);
+      this.emit('bossPhase', { unit: u, phase: i + 1 });
+      const ctx = this._ctxFor(u);
+      for (const effect of ph.effects ?? []) {
+        applyEffect(effect, u, resolveScope(effect.scope, u, [u], ctx), ctx, 'boss:phase');
+      }
+    }
+  }
+
+  // 破盾條：受「技能直傷」命中累積，滿 N 下 → 破防（承傷 +50% 一回合）、計數歸零
+  _bossBreakCheck(p) {
+    const bar = p.target?.bossKit?.breakBar;
+    if (!bar || !p.target.alive || p.amount <= 0) return;
+    const passive = ['thorns', 'counter', 'dot', 'nightmare', 'env', 'normal'].includes(p.skill) || String(p.skill).startsWith('trigger:') || String(p.skill).startsWith('boss:');
+    if (passive || !p.source) return;
+    p.target._breakHits = (p.target._breakHits ?? 0) + 1;
+    if (p.target._breakHits >= (bar.hits ?? 6)) {
+      p.target._breakHits = 0;
+      applyBuff(p.target, { kind: 'stat', stat: 'dmgTaken', op: 'mul', value: 1.5, duration: bar.stunTurns ?? 1, key: 'bossBreak' });
+      this.emit('bossBreak', { unit: p.target });
+      this.emit('buffchange', { unit: p.target, buffs: summarizeBuffs(p.target) });
     }
   }
 

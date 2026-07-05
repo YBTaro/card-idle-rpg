@@ -7,6 +7,8 @@ export const DELAYS = {
   miss: 0.22, // 迴避：側移殘影 + MISS 飄字要看得清
   steal: 0.3, // 竊能：奪走→轉移兩端飄字要有拍點
   trigger: 0.25, // 觸發：金色 ⚡ 標示要讓玩家看清是誰的什麼觸發了
+  resist: 0.2, blocked: 0.22, cheated: 0.4, // 抵抗/免疫/免死 各有一拍
+  bossPhase: 0.8, bossBreak: 0.5, bossEnrage: 0.8, // Boss 機制是大事件，拍點要重
 };
 
 export class AnimationDirector {

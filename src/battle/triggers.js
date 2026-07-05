@@ -21,6 +21,7 @@ export const DEFAULT_WHO = {
   hit: 'self',
   hpBelow: 'self',
   buffGained: 'self',
+  markedHit: 'enemy', // 主體＝帶印記的敵人被打；效果 scope:'attacker' 可指向出手的隊友
 };
 
 export function relationOf(owner, subject) {

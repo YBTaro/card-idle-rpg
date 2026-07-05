@@ -11,6 +11,8 @@ export const DEF_SOFTCAP = 120; // 防禦軟上限 K：承傷比例 = K / (K + d
 // attacker / defender 為 Unit；mult 為技能倍率（普攻 1.0、大招更高）。
 // opts.ignoreDef＝無視防禦（防禦視為 0）。
 // 讀取有效值 getter（effAtk/effDef/critChance/critMult/dmgTakenMult/dmgDealtMult）。
+// 抗暴（critRes）：實際被暴率＝攻方暴擊率−守方抗暴（下限 0）；只影響機率不影響倍率。
+// 元素抗性（res_火/水/風/光/暗）：剋制倍率之後再乘「守方對該屬性的承傷率」（預設 1）。
 export function computeDamage(attacker, defender, mult, rng, opts = {}) {
   const elemMult = elementMultiplier(attacker.element, defender.element);
   const base = attacker.effAtk * mult;
@@ -19,10 +21,12 @@ export function computeDamage(attacker, defender, mult, rng, opts = {}) {
   const def = opts.ignoreDef ? 0 : Math.max(0, defender.effDef);
   const afterDef = base * (DEF_SOFTCAP / (DEF_SOFTCAP + def));
   const variance = rng ? 1 + (rng.next() * 2 - 1) * DAMAGE_VARIANCE : 1;
-  const isCrit = rng ? rng.next() < attacker.critChance : false;
+  const critChance = Math.max(0, attacker.critChance - defender.critRes);
+  const isCrit = rng ? rng.next() < critChance : false;
   const critMult = isCrit ? attacker.critMult : 1;
+  const elemRes = defender.elementRes(attacker.element);
   const raw =
-    afterDef * elemMult * defender.dmgTakenMult * attacker.dmgDealtMult * variance * critMult * DAMAGE_GLOBAL;
+    afterDef * elemMult * elemRes * defender.dmgTakenMult * attacker.dmgDealtMult * variance * critMult * DAMAGE_GLOBAL;
   return {
     amount: Math.max(1, Math.round(raw)),
     elementMult: elemMult,

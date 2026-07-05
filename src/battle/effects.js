@@ -5,9 +5,13 @@ import { elementMultiplier, COUNTERS } from '../data/elements.js';
 import { applyBuff, summarizeBuffs, dispelBuffs, isNegative, resolve } from './buffs.js';
 
 // power 的基準：預設 caster.effAtk（含 buff 加成）；basis:'targetMaxHp' 用目標 maxHp。
+// Boss 保護：bossTag 單位不吃 %最大生命（否則巨型血條被毒隊融化）——改按施放者攻擊 ×3 結算。
 export function resolvePower(effect, caster, target) {
-  const base = effect.basis === 'targetMaxHp' ? target.maxHp : caster.effAtk;
-  return base * effect.power;
+  if (effect.basis === 'targetMaxHp') {
+    if (target.bossTag) return caster.effAtk * effect.power * 3;
+    return target.maxHp * effect.power;
+  }
+  return caster.effAtk * effect.power;
 }
 
 export function resolveScope(scope, caster, primary, ctx) {
@@ -50,6 +54,8 @@ export function rollHit(caster, target, ctx) {
 
 // 可被迴避的效果型別：攻擊與「上狀態」；瞬發操作類（dispel/extend/detonateDot/energy）不判定。
 const DODGEABLE = new Set(['damage', 'dot', 'control', 'buff', 'transmute', 'nightmare']);
+// 敵對「狀態」型別（不含傷害）：效果抗性與格擋 buff 只擋這些——傷害照常命中，狀態可被抵抗/彈開。
+const HOSTILE_STATUS = new Set(['dot', 'control', 'buff', 'transmute', 'nightmare', 'mark']);
 
 // 共用傷害：走完整公式、護盾/hp、被擊回能、事件。
 // opts.ignoreDef＝無視防禦；opts.noRetaliate＝不觸發荊棘/反擊（避免連鎖遞迴）。
@@ -64,6 +70,7 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
     trueDmg: !!opts.ignoreDef, execute: !!opts.execute, // 演出用旗標（真傷/處決）
     element: caster?.element ?? null, // 傷害字色＝攻擊者屬性（演出用）
   });
+  if (target._cheated) { target._cheated = false; ctx.emit('cheated', { unit: target }); } // 免死演出
   if (!target.alive) ctx.emit('death', { unit: target });
 
   // 惡夢印記：受普攻/技能直接傷害後額外損失 pct 最大生命（DoT/引爆/侵蝕不觸發）
@@ -90,6 +97,7 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
       const counter = (target.buffs || []).find((b) => b.kind === 'counter');
       if (counter) dealDamage(target, caster, counter.mult, ctx, 'counter', { noRetaliate: true });
     }
+    if (caster._cheated) { caster._cheated = false; ctx.emit('cheated', { unit: caster }); } // 荊棘反殺被免死
   }
   return dealt;
 }
@@ -99,7 +107,16 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
 // 新的「繞盾扣血」效果一律走這裡，不要再開新的 hp -= 路徑。
 export function dealDirect(target, amount, ctx, { skill = 'dot', source = null, flags = {} } = {}) {
   if (!target.alive || amount <= 0) return 0;
-  const dealt = Math.min(target.hp, Math.round(amount));
+  let dealt = Math.min(target.hp, Math.round(amount));
+  // 免死標記：繞盾直傷（DoT/引爆/侵蝕/惡夢）也吃同一條規則
+  if (dealt >= target.hp) {
+    const cd = target.buffs?.find((b) => b.kind === 'cheatDeath');
+    if (cd) {
+      target.buffs = target.buffs.filter((b) => b !== cd);
+      dealt = target.hp - 1;
+      ctx.emit('cheated', { unit: target });
+    }
+  }
   target.hp -= dealt;
   ctx.emit('damage', {
     source, target, amount: dealt, skill,
@@ -115,9 +132,11 @@ export function healAmount(ctx, amount) {
 }
 
 // DoT：套用預存 damage。吃 dotTaken 易傷（「增加受到的灼燒傷害%」型 debuff）。
+// source 掛回上毒者（dot.src）——傷害歸屬正確：Boss 戰傷害計分/戰鬥統計都算得到毒隊頭上。
 export function dealDot(target, dot, ctx) {
   return dealDirect(target, dot.damage * resolve(target, 'dotTaken', 1), ctx, {
     skill: 'dot',
+    source: dot.src ?? null,
     flags: { element: dot.element ?? null }, // 灼燒橘紅/無屬性毒白（演出字色）
   });
 }
@@ -165,6 +184,24 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
     if (effect.chance != null) {
       const roll = ctx.rng ? ctx.rng.next() : Math.random();
       if (roll >= effect.chance) continue;
+    }
+    // 敵對狀態的第二道防線（傷害段不受影響）：
+    //   1. 效果抗性：上狀態機率 ×(1＋施放者效果命中−目標效果抗性)，抵抗＝飄「抵抗」
+    //   2. 格擋 buff（debuffBlock）：彈掉一個負面狀態、消耗一層，飄「免疫」
+    if (HOSTILE_STATUS.has(effect.type) && caster && u.team !== caster.team) {
+      const p = 1 + resolve(caster, 'effectHit', 0) - resolve(u, 'effectRes', 0);
+      if (p < 1 && (ctx.rng ? ctx.rng.next() : Math.random()) >= Math.max(0, p)) {
+        ctx.emit('resist', { target: u, skill: skillId });
+        continue;
+      }
+      const block = (u.buffs ?? []).find((b) => b.kind === 'debuffBlock' && (b.charges ?? 0) > 0);
+      if (block) {
+        block.charges -= 1;
+        if (block.charges <= 0) u.buffs = u.buffs.filter((b) => b !== block);
+        ctx.emit('blocked', { target: u, skill: skillId });
+        emitBuffs(u);
+        continue;
+      }
     }
     switch (effect.type) {
       case 'damage': {
@@ -295,7 +332,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         const damage = Math.round(resolvePower(effect, caster, u) * elem);
         if (effect.stackable) {
           // 明示可疊層（業火/瘟疫）：同人也疊新層
-          applyBuffN(u, { kind: 'dot', damage, element: effect.element, duration: effect.duration, stackable: true });
+          applyBuffN(u, { kind: 'dot', damage, element: effect.element, duration: effect.duration, stackable: true, src: caster });
         } else {
           // DoT 身分＝施放者＋技能＋屬性：
           //   同人再上 → 原層剩餘回合 +1、每跳傷害更新為新值（不重置、不疊層）
@@ -306,7 +343,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
             existing.duration = (existing.duration ?? 0) + 1;
             existing.damage = damage;
           } else {
-            applyBuffN(u, { kind: 'dot', damage, element: effect.element, duration: effect.duration, key });
+            applyBuffN(u, { kind: 'dot', damage, element: effect.element, duration: effect.duration, key, src: caster });
           }
         }
         emitBuffs(u);
@@ -332,6 +369,48 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         break;
       case 'nightmare': // 惡夢印記：永久（無 duration、不隨回合消退）、可被淨化；觸發見 dealDamage
         applyBuffN(u, { kind: 'nightmare', pct: effect.pct ?? 0.05, key: defaultKey('nightmare') });
+        emitBuffs(u);
+        break;
+      case 'debuffBlock': // 格擋護符：接下來 N 個負面狀態被彈掉（每彈一層；可被驅散）
+        applyBuffN(u, {
+          kind: 'debuffBlock', charges: effect.charges ?? 1,
+          duration: effect.duration, key: defaultKey('debuffBlock'), stackable: effect.stackable,
+        });
+        emitBuffs(u);
+        break;
+      case 'mark': // 印記：本身無效果的連動旗標——隊友打到帶印記目標時觸發 markedHit（見引擎）
+        applyBuffN(u, { kind: 'mark', duration: effect.duration, key: defaultKey('mark') });
+        emitBuffs(u);
+        break;
+      case 'stealBuff': {
+        // 偷取增益：把目標最多 count 個增益（非光環、非 sticky）搬到施放者身上
+        const takeable = (u.buffs ?? []).filter((b) => !b.aura && !b.sticky && !isNegative(b));
+        const taken = takeable.slice(0, effect.count ?? 1);
+        if (!taken.length) break;
+        u.buffs = u.buffs.filter((b) => !taken.includes(b));
+        for (const b of taken) applyBuff(caster, b);
+        ctx.emit('dispel', { unit: u, what: 'buff', count: taken.length }); // 沿用驅散演出（拆增益）
+        emitBuffs(u);
+        emitBuffs(caster);
+        break;
+      }
+      case 'transferDebuff': {
+        // 轉移減益：把施放者身上最多 count 個減益（非光環、非 sticky）丟給目標
+        const movable = (caster.buffs ?? []).filter((b) => !b.aura && !b.sticky && isNegative(b));
+        const moved = movable.slice(0, effect.count ?? 1);
+        if (!moved.length) break;
+        caster.buffs = caster.buffs.filter((b) => !moved.includes(b));
+        for (const b of moved) applyBuff(u, b);
+        ctx.emit('dispel', { unit: caster, what: 'debuff', count: moved.length }); // 沿用淨化演出
+        emitBuffs(caster);
+        emitBuffs(u);
+        break;
+      }
+      case 'cheatDeath': // 免死標記：致死傷害改留 1 血、消耗標記（結算見 Unit.takeDamage/dealDirect）
+        applyBuffN(u, {
+          kind: 'cheatDeath',
+          duration: effect.duration, key: defaultKey('cheatDeath'),
+        });
         emitBuffs(u);
         break;
       case 'energySteal': {

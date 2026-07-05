@@ -44,6 +44,14 @@ const STAT_LABEL = {
   dodge: '迴避率',
   accuracy: '命中率',
   healTaken: '受治療量',
+  effectHit: '效果命中',
+  effectRes: '效果抗性',
+  critRes: '抗暴率',
+  res_fire: '火屬承傷',
+  res_water: '水屬承傷',
+  res_wind: '風屬承傷',
+  res_light: '光屬承傷',
+  res_dark: '暗屬承傷',
 };
 
 const CONTROL_LABEL = { taunt: '嘲諷', silence: '沉默（無法行動）', freeze: '凍結（無法回能）' };
@@ -121,6 +129,21 @@ function describeEffect(effect, targetLabel) {
       break;
     case 'energySteal':
       text = `奪走${who}當前全部能量，轉移給我方能量最低的隊友`;
+      break;
+    case 'debuffBlock':
+      text = `為${who}套上格擋護符（彈開接下來 ${effect.charges ?? 1} 個負面狀態${dur(effect.duration)}）`;
+      break;
+    case 'mark':
+      text = `對${who}烙上獵印${dur(effect.duration)}（隊友攻擊帶獵印的目標時可觸發連動效果）`;
+      break;
+    case 'stealBuff':
+      text = `偷取${who}的增益效果（最多 ${effect.count ?? 1} 個，轉為己用）`;
+      break;
+    case 'transferDebuff':
+      text = `將自身的減益效果轉移給${who}（最多 ${effect.count ?? 1} 個）`;
+      break;
+    case 'cheatDeath':
+      text = `為${who}套上不滅意志（致死傷害改為保留 1 點生命，觸發後消失${dur(effect.duration)}）`;
       break;
     case 'nightmare':
       text = `對${who}烙上惡夢印記（受到普攻或技能直接傷害時，額外損失 ${pct(effect.pct ?? 0.05)} 最大生命；永久，可被淨化）`;
@@ -269,6 +292,7 @@ const TRIGGER_WHEN = {
   death: { self: '自身倒下時', ally: '有隊友倒下時', enemy: '有敵人倒下時', any: '有單位倒下時' },
   cast: { self: '施放絕技後', ally: '隊友施放絕技後', enemy: '敵方施放絕技後', any: '任一方施放絕技後' },
   normal: { self: '普攻時' },
+  markedHit: { enemy: '隊友攻擊帶獵印的敵人時' },
   buffGained: { self: '' }, // 由 negative 決定文案
   hpBelow: { self: '' }, // 由 pct 決定文案
   hit: { self: '' }, // 由 via 決定文案

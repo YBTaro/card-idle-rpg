@@ -29,6 +29,12 @@ export function simulateBattle(teamA, teamB, { rng, env = null } = {}) {
   engine.on('stunned', ({ unit, reason }) => log.push({ type: 'stunned', uid: uidOf(unit), reason: reason ?? 'silence' }));
   engine.on('miss', ({ source, target, skill }) => log.push({ type: 'miss', sourceUid: uidOf(source), targetUid: uidOf(target), skill }));
   engine.on('trigger', ({ unit, on, name }) => log.push({ type: 'trigger', uid: uidOf(unit), on, name }));
+  engine.on('resist', ({ target, skill }) => log.push({ type: 'resist', uid: uidOf(target), skill }));
+  engine.on('blocked', ({ target, skill }) => log.push({ type: 'blocked', uid: uidOf(target), skill }));
+  engine.on('cheated', ({ unit }) => log.push({ type: 'cheated', uid: uidOf(unit) }));
+  engine.on('bossPhase', ({ unit, phase }) => log.push({ type: 'bossPhase', uid: uidOf(unit), phase }));
+  engine.on('bossBreak', ({ unit }) => log.push({ type: 'bossBreak', uid: uidOf(unit) }));
+  engine.on('bossEnrage', ({ unit }) => log.push({ type: 'bossEnrage', uid: uidOf(unit) }));
   engine.on('buffchange', ({ unit, buffs }) => log.push({ type: 'buffchange', uid: uidOf(unit), buffs: buffs ?? [] }));
   engine.on('battleEnd', ({ winner }) => log.push({ type: 'battleEnd', winner }));
 

@@ -1,7 +1,7 @@
 // src/battle/skills.js
 // 技能即資料：SKILLS registry + castSkill。普攻與傷害共用 effects.dealDamage。
-import { singleEnemyByColumn, SELECTORS } from './targeting.js';
-import { dealDamage, resolveScope, applyEffect, rollHit } from './effects.js';
+import { singleEnemyByColumn, lowestHpAlly, SELECTORS } from './targeting.js';
+import { dealDamage, resolveScope, applyEffect, rollHit, healAmount } from './effects.js';
 
 // 技能資料（占位平衡值）。所有 power = % × 施放者 effAtk（見 spec 數值約定）。
 export const SKILLS = {
@@ -410,29 +410,80 @@ export function skillFor(unit) {
   return CARD_SKILLS[unit.cardId] ?? unit.classDef.ultimate;
 }
 
+// 技能等級縮放：效果帶 perLv（{欄位: 每級增量}）時按 skillLv 展開。
+// 例 { mult: 2.6, perLv: { mult: 0.15 } } → Lv3 ＝ 2.9。無 perLv 或 Lv1＝原值（現況零影響）。
+function scaleEffect(effect, lv) {
+  if (lv <= 1 || !effect.perLv) return effect;
+  const out = { ...effect };
+  for (const [field, inc] of Object.entries(effect.perLv)) {
+    out[field] = (effect[field] ?? 0) + inc * (lv - 1);
+  }
+  return out;
+}
+
 // 施放技能：解析主目標 → 逐效果依 scope 套用。
 // overcharge＝超充倍率（施放瞬間 energy/100），只放大 damage 直傷（見 applyEffect）。
 export function castSkill(caster, skillId, ctx, { overcharge = 1 } = {}) {
   const def = SKILLS[skillId];
   if (!def) return;
+  const lv = caster.skillLv ?? 1;
   const primary = def.target ? SELECTORS[def.target](caster, ctx) : [];
   ctx.emit('ultimate', { caster, skill: skillId, target: primary[0], overcharge });
   const castCtx = overcharge > 1 ? { ...ctx, overcharge } : ctx;
   for (const effect of def.effects) {
-    const units = resolveScope(effect.scope, caster, primary, ctx);
-    applyEffect(effect, caster, units, castCtx, skillId);
+    const eff = scaleEffect(effect, lv);
+    const units = resolveScope(eff.scope, caster, primary, ctx);
+    applyEffect(eff, caster, units, castCtx, skillId);
   }
 }
 
 // 普攻：直行對位選敵、施放者集氣、其餘存活隊友各獲 energyOnAllyAction。
+// 普攻變體（卡片 basicAttack 欄位，不填＝1.0 單體）：
+//   { hits:2, mult:0.6 }  連擊：多段各自判定命中/暴擊
+//   { splash:0.35 }       濺射：同排相鄰位吃 35% 傷害
+//   { heal:0.6 }          奶攻：出手後治療血量最低隊友（直接治療＝吃暴擊）
+//   { everyN:3, mult:2.2 }蓄力：每第 N 次普攻放大一擊
 export function normalAttack(caster, ctx) {
   const target = singleEnemyByColumn(caster, ctx.enemies);
   if (!target) return;
+  const ba = caster.basicAttack ?? null;
   ctx.emit('attack', { attacker: caster, target, skill: 'normal' });
-  if (rollHit(caster, target, ctx)) {
-    dealDamage(caster, target, 1.0, ctx, 'normal');
-  } else {
-    ctx.emit('miss', { source: caster, target, skill: 'normal' }); // 迴避：整次普攻無效（仍照常回能）
+
+  caster._basicCount = (caster._basicCount ?? 0) + 1;
+  let mult = 1.0;
+  let hits = 1;
+  if (ba?.hits) { hits = ba.hits; mult = ba.mult ?? 1 / ba.hits; }
+  if (ba?.everyN && caster._basicCount % ba.everyN === 0) mult = ba.mult ?? 2.0;
+
+  for (let i = 0; i < hits; i += 1) {
+    if (!target.alive) break;
+    if (rollHit(caster, target, ctx)) {
+      dealDamage(caster, target, mult, ctx, 'normal');
+    } else {
+      ctx.emit('miss', { source: caster, target, skill: 'normal' }); // 迴避：該段無效（仍照常回能）
+    }
+  }
+  // 濺射：對位目標同排、相鄰直行的敵人
+  if (ba?.splash) {
+    const neighbors = ctx.enemies.filter(
+      (e) => e.alive && e !== target && e.row === target.row && Math.abs(e.column - target.column) === 1
+    );
+    for (const n of neighbors) {
+      if (rollHit(caster, n, ctx)) dealDamage(caster, n, ba.splash, ctx, 'normal');
+      else ctx.emit('miss', { source: caster, target: n, skill: 'normal' });
+    }
+  }
+  // 奶攻：直接治療（吃施放者暴擊，同技能治療規則）
+  if (ba?.heal) {
+    const ally = lowestHpAlly(ctx.allies);
+    if (ally) {
+      let amount = healAmount(ctx, caster.effAtk * ba.heal);
+      let hCrit = false;
+      const roll = ctx.rng ? ctx.rng.next() : Math.random();
+      if (roll < caster.critChance) { amount = Math.round(amount * caster.critMult); hCrit = true; }
+      const healed = ally.heal(amount);
+      if (healed > 0) ctx.emit('heal', { source: caster, target: ally, amount: healed, isCrit: hCrit });
+    }
   }
   caster.gainEnergy(caster.classDef.energyOnAction);
   ctx.emit('energy', { unit: caster, value: caster.energy });

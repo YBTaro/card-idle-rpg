@@ -55,13 +55,13 @@ export function hotEntries(unit) {
   return unit.buffs ? unit.buffs.filter((b) => b.kind === 'hot') : [];
 }
 
-// 驅散/淨化：移除最多 count 個（非光環）buff。negative=true 淨化減益、false 驅散增益。
+// 驅散/淨化：移除最多 count 個（非光環、非 sticky）buff。negative=true 淨化減益、false 驅散增益。
 // 回傳實際移除數。
 export function dispelBuffs(unit, { negative = true, count = Infinity } = {}) {
   if (!unit.buffs) return 0;
   let removed = 0;
   unit.buffs = unit.buffs.filter((b) => {
-    if (b.aura || removed >= count) return true;
+    if (b.aura || b.sticky || removed >= count) return true;
     if (isNegative(b) === negative) {
       removed += 1;
       return false;
@@ -91,6 +91,7 @@ export function summarizeBuffs(unit) {
       element: b.element,
       neg: isNegative(b),
       turns: b.duration ?? null, // 剩餘回合（無期限＝null，前端不顯示數字）
+      charges: b.charges ?? null, // 格擋層數（debuffBlock 的角標數字）
     }));
 }
 
@@ -98,6 +99,7 @@ export function isNegative(b) {
   if (b.kind === 'dot') return true;
   if (b.kind === 'element') return true; // 被轉化屬性＝減益（可被淨化解除）
   if (b.kind === 'nightmare') return true; // 惡夢印記：永久但可被淨化
+  if (b.kind === 'mark') return true; // 連動印記：可被淨化
   if (b.kind === 'shield') return false;
   if (b.kind === 'control') return b.control !== 'taunt'; // 嘲諷是自己開的戰術狀態
   if (b.kind === 'stat') {

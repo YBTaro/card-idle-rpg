@@ -52,6 +52,10 @@ export function deriveStats(cardInst) {
     def: Math.round(raw.def * cls.statMods.def * race.def * starMul),
     passives,
     triggers: card.triggers ? [...card.triggers] : [], // 觸發（亡語/受擊/血線…見 triggers.js）
+    basicAttack: card.basicAttack ?? null, // 普攻變體（連擊/濺射/奶攻/蓄力；null＝1.0 單體）
+    skillLv: cardInst.skillLv ?? 1, // 技能等級（perLv 縮放；升級入口之後開）
+    bossTag: card.bossTag ?? false,
+    bossKit: card.bossKit ?? null, // Boss 機制（階段/破盾/狂暴；一般卡 null）
     onEnter: card.onEnter ?? null, // 進場被動（開天氣/場地）
   };
 }
