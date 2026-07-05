@@ -24,8 +24,10 @@ import { openModal } from './modal.js';
 import { describePassive } from '../battle/skillText.js';
 import { longPress } from './gestures.js';
 import { cardFrame } from './cardFrame.js';
+import { getPresets, saveCurrentAsPreset, overwritePreset, loadPreset, renamePreset, deletePreset, MAX_PRESETS } from '../systems/teamPresets.js';
 
 const CLASS_GLYPH = { tank: '🛡', dps: '⚔', support: '✚' };
+const ELEM_HEX = { fire: '#ff7d5c', wind: '#7fe497', water: '#6cb2ff', light: '#ffe789', dark: '#bb8cff' };
 // 版面順序：左群後衛、右群前衛；組內由右到左＝站位 1→6（與戰鬥出手序一致，
 // 最右＝前排 1 號位最先出手）。左→右渲染順序因此是 [6,5,4] | [3,2,1]。
 const BACK_POSITIONS = [6, 5, 4];
@@ -83,6 +85,7 @@ export class TeamUI {
     this.root.appendChild(
       el('div', { class: 'tp-bottom' }, [
         el('div', { class: 'hint', text: '拖曳卡片調整站位；點卡查看詳細數值與技能' }),
+        el('button', { class: 'btn', text: `📁 隊伍預設 ${getPresets().length}/${MAX_PRESETS}`, onClick: () => this._openPresets() }),
         el('button', {
           class: 'btn-gold',
           text: this.drawerOpen ? '完成' : '英雄替換',
@@ -97,6 +100,62 @@ export class TeamUI {
     );
 
     if (this.drawerOpen) this._mountDrawer();
+  }
+
+  // 隊伍預設槽（最多 10 組）：存/覆蓋/載入/改名/刪除。
+  _openPresets() {
+    const rebuild = (panel) => {
+      clear(panel);
+      const presets = getPresets();
+      panel.appendChild(el('div', { class: 'ovc-title', text: `📁 隊伍預設（${presets.length}/${MAX_PRESETS}）` }));
+      panel.appendChild(el('div', { class: 'pr-sub', text: '載入會替換目前出戰隊；已賣掉的角色會自動略過' }));
+      const list = el('div', { class: 'pr-list' });
+      presets.forEach((p, i) => {
+        // 每組的隊員頭像（依站位由右到左＝1~6）
+        const members = [...p.slots].sort((a, b) => b.pos - a.pos).map((sl) => {
+          const inst = store.getCard(sl.instanceId);
+          const card = inst ? CARDS[inst.cardId] : null;
+          const dot = el('i', { class: 'pr-el', style: card ? `background:${ELEM_HEX[card.element] ?? '#999'}` : 'background:#555;opacity:.4' });
+          return dot;
+        });
+        list.appendChild(el('div', { class: 'pr-row' }, [
+          el('div', { class: 'pr-info' }, [
+            el('b', { text: p.name }),
+            el('div', { class: 'pr-members' }, members),
+          ]),
+          el('div', { class: 'pr-acts' }, [
+            el('button', { class: 'btn-gold sm', text: '載入', onClick: () => {
+              const r = loadPreset(i);
+              if (r.ok) toast(`已載入「${p.name}」${r.skipped ? `（略過 ${r.skipped} 名已失去的角色）` : ''}`, { icon: '📥' });
+              this.render();
+            } }),
+            el('button', { class: 'btn sm', text: '覆蓋', onClick: () => {
+              overwritePreset(i); toast(`已用目前隊伍覆蓋「${p.name}」`, { icon: '💾' }); rebuild(panel);
+            } }),
+            el('button', { class: 'btn sm', text: '改名', onClick: () => {
+              const nm = prompt('隊伍名稱（最多 12 字）', p.name);
+              if (nm != null) { renamePreset(i, nm.trim()); rebuild(panel); }
+            } }),
+            el('button', { class: 'btn sm danger', text: '✕', onClick: () => { deletePreset(i); rebuild(panel); } }),
+          ]),
+        ]));
+      });
+      panel.appendChild(list);
+      // 存新槽
+      const canSave = presets.length < MAX_PRESETS && store.state.formation.length > 0;
+      panel.appendChild(el('button', {
+        class: `btn-gold${canSave ? '' : ' disabled'}`,
+        text: presets.length >= MAX_PRESETS ? '預設槽已滿（10）' : '＋ 儲存目前隊伍',
+        onClick: () => {
+          if (!canSave) { toast(presets.length >= MAX_PRESETS ? '預設槽已滿' : '目前沒有出戰隊'); return; }
+          saveCurrentAsPreset(); rebuild(panel);
+        },
+      }));
+    };
+    openModal({ className: 'ov-presets', build: (panel, close) => {
+      rebuild(panel);
+      panel.appendChild(el('button', { class: 'btn', text: '關閉', onClick: () => close() }));
+    } });
   }
 
   // 目前陣容的羈絆摘要：≥2 名的系列/種族計數 + 已觸發的隊伍技（含持有者名）。
@@ -333,10 +392,11 @@ export class TeamUI {
     return target?.dataset.pos ? Number(target.dataset.pos) : null;
   }
 
-  // 隊上卡開詳情：左右切換只在「出戰 6 人」內循環（依站位順序）。
+  // 隊上卡開詳情：左右切換順序＝畫面左到右（站位由右到左＝1~6，故左到右為 pos 降序 6→1），
+  // 讓「›」切到畫面右邊那張卡，不再與視覺相反。
   _openSheet(instanceId) {
     const s = store.state;
-    const formationIds = [...s.formation].sort((a, b) => a.pos - b.pos).map((e) => e.instanceId);
+    const formationIds = [...s.formation].sort((a, b) => b.pos - a.pos).map((e) => e.instanceId);
     openHeroSheet(instanceId, { list: formationIds });
   }
 

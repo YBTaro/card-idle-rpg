@@ -514,6 +514,23 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .ov-syn .syn-row span { font-size: .74rem; color: #f0e3c8; line-height: 1.45; }
 .ov-syn > .btn { align-self: flex-end; }
 
+/* 隊伍預設槽 */
+.ov-presets { display: flex; flex-direction: column; gap: .5rem; max-width: 30rem; width: min(92vw, 30rem); }
+.ov-presets .pr-sub { font-size: .72rem; color: #cbb691; }
+.ov-presets .pr-list { display: flex; flex-direction: column; gap: .45rem; max-height: 52vh; overflow-y: auto; }
+.ov-presets .pr-row {
+  display: flex; align-items: center; gap: .5rem; padding: .45rem .55rem; border-radius: .6rem;
+  background: rgba(232, 196, 106, .08); border: 1px solid rgba(232, 196, 106, .25);
+}
+.ov-presets .pr-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .25rem; }
+.ov-presets .pr-info b { font-size: .82rem; color: #ffe9b0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-presets .pr-members { display: flex; gap: .22rem; }
+.ov-presets .pr-el { width: .7rem; height: .7rem; border-radius: 99px; border: 1px solid rgba(0, 0, 0, .4); }
+.ov-presets .pr-acts { display: flex; gap: .3rem; flex: none; }
+.ov-presets .btn.sm, .ov-presets .btn-gold.sm { font-size: .72rem; padding: .28rem .55rem; border-radius: .5rem; }
+.ov-presets .btn.sm.danger { color: #f0a08c; border-color: rgba(240, 130, 120, .5); }
+.ov-presets .disabled { opacity: .5; cursor: not-allowed; }
+
 /* 英雄替換抽屜：篩選列 */
 .sd-filter { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; padding: .1rem .2rem .3rem; }
 .sd-fc {

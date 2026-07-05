@@ -38,7 +38,7 @@ export const SKILLS = {
     { type: 'dispel', what: 'buff', count: 1, scope: 'target' },
   ]},
   windsong: { name: '風歌', effects: [ // 定位：全隊集氣引擎（治療歸和風，集氣歸風歌）
-    { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.5, duration: 3, scope: 'allAllies' },
+    { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.2, duration: 3, scope: 'allAllies' },
   ]},
   tidalPrison: { name: '潮牢', target: 'enemyColumn', effects: [
     { type: 'damage', mult: 1.6, scope: 'target' },

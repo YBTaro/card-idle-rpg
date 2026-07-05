@@ -17,7 +17,8 @@ export function createNewGame() {
     currencies: { tickets: DEV_RESOURCES.tickets, gold: DEV_RESOURCES.gold }, // 初始資源（開發期加量）
     inventory: { materials: { essence: DEV_RESOURCES.essence } },
     cards: [], // { instanceId, cardId, level }
-    formation: [], // [{ instanceId, pos: 1..6 }] 最多 6
+    formation: [], // [{ instanceId, pos: 1..6 }] 最多 6（＝當前出戰隊）
+    teamPresets: [], // 隊伍預設槽（最多 10 組）：[{ name, slots: [{ instanceId, pos }] }]
     daily: { lastClaim: 0, streak: 0, quests: null }, // streak=七日簽到進度；quests=每日任務（見 systems/quests.js）
     idle: { lastClaim: Date.now() }, // 掛機獎勵箱上次領取時間
     progress: { wins: 0, losses: 0, stage: 1 },

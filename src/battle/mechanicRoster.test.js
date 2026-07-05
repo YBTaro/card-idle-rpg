@@ -64,18 +64,20 @@ describe('機制拼圖批次：內容接線', () => {
     expect(tanks[0].effAtk).toBe(205);
   });
 
-  it('聖詠齊鳴（全輔隊）：湊 4 輔 → 全隊最大生命 +70%、防禦 +35%，且開場血量補滿', () => {
+  it('聖詠齊鳴：湊 4 輔 → 我方「輔助」最大生命 +70%、防禦 +35%（非輔助不吃），且開場血量補滿', () => {
     const choir = makeUnit({ team: 0, pos: 4, hp: 1000, def: 100, class: 'support', passives: CARDS.warchoir.passives });
-    const sups = [5, 6, 1].map((pos) => makeUnit({ team: 0, pos, hp: 1000, def: 100, class: 'support' }));
-    const foe = makeUnit({ team: 1, pos: 1 });
-    const teams = [[choir, ...sups], [foe]];
+    const sups = [5, 6].map((pos) => makeUnit({ team: 0, pos, hp: 1000, def: 100, class: 'support' }));
+    const sup4 = makeUnit({ team: 0, pos: 1, hp: 1000, def: 100, class: 'support' }); // 湊滿 4 輔
+    const dps = makeUnit({ team: 0, pos: 2, hp: 1000, def: 100, class: 'dps' }); // 非輔助
+    const foe = makeUnit({ team: 1, pos: 3 });
+    const teams = [[choir, ...sups, sup4, dps], [foe]];
     recomputePassives(teams);
-    choir.reconcileMaxHp();
-    sups.forEach((u) => u.reconcileMaxHp());
-    expect(choir.maxHp).toBe(1700); // 1000 × 1.7
-    expect(choir.effDef).toBe(135); // 100 × 1.35
-    expect(choir.hp).toBe(1700); // 開場等比補滿（不是停在 1000/1700）
-    expect(choir.hpRatio).toBe(1);
+    [choir, ...sups, sup4, dps].forEach((u) => u.reconcileMaxHp());
+    expect(choir.maxHp).toBe(1700); // 輔助吃：1000 × 1.7
+    expect(choir.effDef).toBe(135);
+    expect(choir.hp).toBe(1700); // 開場等比補滿
+    expect(dps.maxHp).toBe(1000); // 非輔助不吃
+    expect(dps.effDef).toBe(100);
   });
 
   it('職業隊伍技：坦不足 4 名 → 不生效', () => {

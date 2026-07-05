@@ -63,6 +63,7 @@ function migrate(data) {
   // v5：試煉塔進度與商店每日購買記錄
   data.tower ??= { floor: 1 };
   data.shop ??= { day: '', bought: {} };
+  data.teamPresets ??= []; // 隊伍預設槽（最多 10 組）
   // 裝備插座（E2）：每張卡帶 gear 陣列（裝備系統之後開；空陣列＝數值乘區 ×1 零影響）
   for (const c of data.cards) c.gear ??= [];
   // 遊戲設定：自動戰鬥（關＝結算後停住等玩家按「下一關」）
