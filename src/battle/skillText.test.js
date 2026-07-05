@@ -7,7 +7,7 @@ describe('describeSkill（描述自動生成）', () => {
     expect(d).toContain('敵方前排');
     expect(d).toContain('180%');
     expect(d).toContain('灼燒');
-    expect(d).toContain('持續 2 次行動');
+    expect(d).toContain('持續 3 次行動');
   });
 
   it('龍護：全隊承傷 -30% + 自身護盾', () => {
