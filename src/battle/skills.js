@@ -326,6 +326,86 @@ export const SKILLS = {
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.25, duration: 2, scope: 'target' },
     { type: 'energy', amount: 10, scope: 'target' },
   ]},
+
+  /* ================= 機制拼圖批次（17 招，對應 cards.js 同名段落）=================
+     每招把一個「引擎已支援、內容未用」的機制軸做成招牌；仍守單一定位原則。 */
+  // 機械：格擋工程
+  aegisProtocol: { name: '壁壘協定', effects: [ // 定位：前排工事——盾+自身絕緣
+    { type: 'shield', power: 1.8, duration: 3, scope: 'frontAllies' },
+    { type: 'debuffBlock', charges: 1, scope: 'self' },
+  ]},
+  nullField: { name: '絕緣力場', effects: [ // 定位：全隊格擋護符唯一承載者（下一個負面狀態直接彈開）
+    { type: 'debuffBlock', charges: 1, scope: 'allAllies' },
+  ]},
+  // 妖：偷與嫁禍
+  graceTheft: { name: '奪華', target: 'singleEnemyByColumn', effects: [ // 定位：偷增益刺客——你的 buff 現在是我的了
+    { type: 'damage', mult: 2.0, scope: 'target' },
+    { type: 'stealBuff', count: 1, scope: 'target' },
+  ]},
+  blameShift: { name: '嫁禍', target: 'randomEnemy', effects: [ // 定位：轉嫁詛咒——把我方的壞東西丟回去再補一口毒
+    { type: 'transferDebuff', count: 2, scope: 'target' },
+    { type: 'dot', power: 0.12, basis: 'targetMaxHp', duration: 2, scope: 'target' },
+  ]},
+  // 不死：不滅與亡語
+  undyingOath: { name: '不滅誓約', effects: [ // 定位：免死坦——致死傷害改留 1 血（不死的種族語言）
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'cheatDeath', scope: 'self' },
+  ]},
+  spiteSlash: { name: '怨斬', target: 'singleEnemyByColumn', effects: [ // 定位：亡語刺客的主動軸（亡語見卡片觸發「遺恨爆發」）
+    { type: 'damage', mult: 2.6, scope: 'target' },
+  ]},
+  // 精靈：獵印
+  huntDecree: { name: '獵殺令', target: 'singleEnemyByColumn', effects: [ // 定位：獵印——隊友打標記目標會回能（見觸發「獵印連動」）
+    { type: 'damage', mult: 1.8, scope: 'target' },
+    { type: 'mark', duration: 3, scope: 'target' },
+  ]},
+  mistHeal: { name: '霧癒', effects: [ // 定位：前排再生+淨化（精靈霧的治療面）
+    { type: 'hot', power: 1.2, duration: 2, scope: 'frontAllies' },
+    { type: 'dispel', what: 'debuff', count: 1, scope: 'frontAllies' },
+  ]},
+  // 獸：血怒與月吼
+  hornCrash: { name: '角衝', target: 'enemyFrontRow', effects: [ // 定位：衝撞坦（血怒觸發見卡片）
+    { type: 'damage', mult: 1.5, scope: 'target' },
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+  ]},
+  lunarHowl: { name: '月吼', target: 'allEnemies', effects: [ // 定位：全體壓制+疊怒（每吼一次更兇）
+    { type: 'damage', mult: 1.1, scope: 'target' },
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.1, duration: 99, scope: 'self', stackable: true },
+  ]},
+  // 龍：龍息與超充推手
+  dragonflare: { name: '龍炎滅陣', target: 'allEnemies', effects: [ // 定位：全體吐息+回能（配蓄力普攻＝輸出循環）
+    { type: 'damage', mult: 1.4, scope: 'target' },
+    { type: 'energy', amount: 15, scope: 'self' },
+  ]},
+  dragonSurge: { name: '龍血沸騰', target: 'highestAtkAlly', effects: [ // 定位：超充推手——灌爆主 C 的能量條（溢出＝超充傷害）
+    { type: 'energy', amount: 40, scope: 'target' },
+    { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.2, duration: 1, scope: 'target' },
+  ]},
+  // 神：奇蹟與聖域
+  miracleWard: { name: '神蹟', target: 'lowestHpAlly', effects: [ // 定位：免死護符（隊友版）唯一承載者+大治療
+    { type: 'cheatDeath', scope: 'target' },
+    { type: 'heal', power: 2.2, scope: 'target' },
+  ]},
+  sanctumWall: { name: '聖域壁壘', effects: [ // 定位：聖域坦（全隊抗暗光環見卡片被動）
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'shield', power: 1.6, duration: 2, scope: 'self' },
+  ]},
+  smite: { name: '天罰之鋒', target: 'enemyColumn', effects: [ // 定位：神輸出——裁決直排、以聖光自癒
+    { type: 'damage', mult: 1.9, scope: 'target' },
+    { type: 'heal', power: 0.6, scope: 'self' },
+  ]},
+  // 人：職業純隊核心的主動軸
+  siegeHorn: { name: '攻城號角', target: 'enemyFrontRow', effects: [ // 定位：坦隊隊長——破陣+築牆
+    { type: 'damage', mult: 1.3, scope: 'target' },
+    { type: 'buff', stat: 'def', op: 'mul', value: 1.15, duration: 2, scope: 'frontAllies' },
+  ]},
+  battleHymn: { name: '戰歌', effects: [ // 定位：輔隊隊長——後排戰歌（窄範圍：後排值高於全隊版）
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'backAllies' },
+    { type: 'hot', power: 0.8, duration: 2, scope: 'backAllies' },
+  ]},
+  oathBlade: { name: '誓刃', target: 'singleEnemyByColumn', effects: [ // 定位：殺陣盟主的主動軸——乾淨的高倍率單體
+    { type: 'damage', mult: 2.4, scope: 'target' },
+  ]},
 };
 
 // cardId → skillId
@@ -404,6 +484,25 @@ export const CARD_SKILLS = {
   gearmedic: 'repairProtocol',
   drakebastion: 'wyrmBulwark',
   dragonoracle: 'drakeInfusion',
+  // ---- 機制拼圖批次（17）----
+  bulwarkengine: 'aegisProtocol',
+  insulatower: 'nullField',
+  mirrorfox: 'graceTheft',
+  hexweaver: 'blameShift',
+  deathlessking: 'undyingOath',
+  vengefulshade: 'spiteSlash',
+  huntmarshal: 'huntDecree',
+  mistwarden: 'mistHeal',
+  hornchief: 'hornCrash',
+  moonhowler: 'lunarHowl',
+  flamewyrm: 'dragonflare',
+  wyrmmatriarch: 'dragonSurge',
+  miraclenun: 'miracleWard',
+  sanctumjudge: 'sanctumWall',
+  godblade: 'smite',
+  siegemarshal: 'siegeHorn',
+  warchoir: 'battleHymn',
+  bladeoath: 'oathBlade',
 };
 
 export function skillFor(unit) {

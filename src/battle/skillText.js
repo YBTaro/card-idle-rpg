@@ -30,6 +30,7 @@ const SCOPE_LABEL = {
   frontAllies: '我方前排',
   backAllies: '我方後排',
   columnAllies: '同直排的隊友',
+  attacker: '出手的隊友', // 觸發限定（獵印連動：效果指向攻擊者）
 };
 
 const STAT_LABEL = {

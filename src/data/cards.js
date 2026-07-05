@@ -136,6 +136,51 @@ export const CARDS = {
   gearmedic: { id: 'gearmedic', name: '齒輪醫官', element: 'light', class: 'support', attackStyle: 'ranged', race: '機械', series: ['守護者'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'allAllies', targetWhere: { race: '機械' }, effects: [{ stat: 'def', op: 'mul', value: 1.12 }] }] },
   drakebastion: { id: 'drakebastion', name: '龍晶壁壘', element: 'water', class: 'tank', attackStyle: 'melee', race: '龍', series: ['潮汐', '守護者'], base: { hp: 730, atk: 55, def: 79 }, growth: { hp: 82, atk: 6, def: 9 }, passives: [{ when: { selfHpBelow: 0.5 }, target: 'self', effects: [{ stat: 'def', op: 'mul', value: 1.3 }] }] },
   dragonoracle: { id: 'dragonoracle', name: '龍語咏者', element: 'wind', class: 'support', attackStyle: 'ranged', race: '龍', series: ['蒼雷', '星詠'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'allAllies', targetWhere: { race: '龍' }, effects: [{ stat: 'atk', op: 'mul', value: 1.08 }] }] },
+
+  /* ================= 機制拼圖批次（17 名，2026-07）=================
+     原則：引擎已支援但內容未使用的機制，每個機制軸配一名專屬承載者——
+       機械＝格擋護符（debuffBlock）/抗暴裝甲（critRes）
+       妖＝偷增益（stealBuff）/轉嫁減益（transferDebuff）＋詛咒命中（effectHit）
+       不死＝免死不滅（cheatDeath 自身）/亡語爆發（death 觸發）
+       精靈＝獵印連動（mark + markedHit 觸發 scope:attacker）/妖精霧（effectRes 全隊唯一）
+       獸＝血怒（hpBelow 觸發）/疊怒＋連擊普攻
+       龍＝蓄力吐息（everyN 普攻）/超充推手（灌能量給主 C）
+       神＝奇蹟免死（cheatDeath 隊友版）/聖域抗暗（res_dark 全隊唯一）
+       人＝職業純隊核心（全坦/全輔/全 DPS 隊伍技——補足純隊弱項，讓極端隊可玩） */
+
+  // ---- 機械 ----
+  bulwarkengine: { id: 'bulwarkengine', name: '堡壘引擎', element: 'water', class: 'tank', attackStyle: 'melee', race: '機械', series: ['守護者', '鐵壁'], base: { hp: 730, atk: 55, def: 79 }, growth: { hp: 82, atk: 6, def: 9 }, passives: [{ target: 'self', effects: [{ stat: 'critRes', op: 'add', value: 0.25 }] }] }, // 裝甲核心：不吃暴擊
+  insulatower: { id: 'insulatower', name: '絕緣尖塔', element: 'light', class: 'support', attackStyle: 'ranged', race: '機械', series: ['守護者'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 } }, // 全隊格擋護符唯一承載者（技能）
+
+  // ---- 妖 ----
+  mirrorfox: { id: 'mirrorfox', name: '竊華妖狐', element: 'dark', class: 'dps', attackStyle: 'melee', race: '妖', series: ['深淵', '星詠'], base: { hp: 495, atk: 95, def: 38 }, growth: { hp: 54, atk: 11, def: 4 } },
+  hexweaver: { id: 'hexweaver', name: '嫁禍織蛛', element: 'dark', class: 'support', attackStyle: 'ranged', race: '妖', series: ['深淵', '影之眷屬'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'self', effects: [{ stat: 'effectHit', op: 'add', value: 0.15 }] }] }, // 咒絲必中
+
+  // ---- 不死 ----
+  deathlessking: { id: 'deathlessking', name: '不滅骸王', element: 'dark', class: 'tank', attackStyle: 'melee', race: '不死', series: ['影之眷屬', '守護者'], base: { hp: 774, atk: 58, def: 70 }, growth: { hp: 87, atk: 6, def: 8 } },
+  vengefulshade: { id: 'vengefulshade', name: '怨靈劍鬼', element: 'dark', class: 'dps', attackStyle: 'melee', race: '不死', series: ['影之眷屬'], base: { hp: 475, atk: 101, def: 38 }, growth: { hp: 52, atk: 12, def: 4 }, triggers: [{ name: '遺恨爆發', on: 'death', who: 'self', effects: [{ type: 'damage', mult: 1.2, scope: 'allEnemies' }] }] }, // 亡語：死也要拉墊背
+
+  // ---- 精靈 ----
+  huntmarshal: { id: 'huntmarshal', name: '獵印統帥', element: 'wind', class: 'dps', attackStyle: 'ranged', race: '精靈', series: ['獵團'], base: { hp: 495, atk: 95, def: 38 }, growth: { hp: 54, atk: 11, def: 4 }, triggers: [{ name: '獵印連動', on: 'markedHit', effects: [{ type: 'energy', amount: 6, scope: 'attacker' }] }] }, // 打獵印目標的隊友回能
+  mistwarden: { id: 'mistwarden', name: '霧語護法', element: 'water', class: 'support', attackStyle: 'ranged', race: '精靈', series: ['秘林', '霜語'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'allAllies', effects: [{ stat: 'effectRes', op: 'add', value: 0.15 }] }] }, // 妖精之霧：全隊狀態抗性唯一承載者
+
+  // ---- 獸 ----
+  hornchief: { id: 'hornchief', name: '蠻角戰酋', element: 'fire', class: 'tank', attackStyle: 'melee', race: '獸', series: ['大地'], base: { hp: 730, atk: 58, def: 73 }, growth: { hp: 82, atk: 6, def: 8 }, triggers: [{ name: '血怒', on: 'hpBelow', pct: 0.5, effects: [{ type: 'buff', stat: 'atk', op: 'mul', value: 1.3, duration: 99, scope: 'self' }] }] }, // 血線觸發：越打越兇
+  moonhowler: { id: 'moonhowler', name: '月吼狼王', element: 'wind', class: 'dps', attackStyle: 'melee', basicAttack: { hits: 2, mult: 0.58 }, race: '獸', series: ['大地', '秘林'], base: { hp: 475, atk: 101, def: 38 }, growth: { hp: 52, atk: 12, def: 4 }, passives: [{ when: { alliesAtLeast: { count: 2, where: { race: '獸' } } }, target: 'self', effects: [{ stat: 'critChance', op: 'add', value: 0.12 }] }] },
+
+  // ---- 龍 ----
+  flamewyrm: { id: 'flamewyrm', name: '曜鱗龍將', element: 'fire', class: 'dps', attackStyle: 'melee', basicAttack: { everyN: 3, mult: 2.4 }, race: '龍', series: ['炎之眷屬', '蒼雷'], base: { hp: 525, atk: 95, def: 36 }, growth: { hp: 57, atk: 11, def: 4 } }, // 龍息蓄力：每第 3 次普攻噴吐強化一擊
+  wyrmmatriarch: { id: 'wyrmmatriarch', name: '龍血聖母', element: 'wind', class: 'support', attackStyle: 'ranged', race: '龍', series: ['蒼雷', '星詠'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 } }, // 超充推手：灌能量給主 C
+
+  // ---- 神 ----
+  miraclenun: { id: 'miraclenun', name: '奇蹟聖女', element: 'light', class: 'support', attackStyle: 'ranged', race: '神', series: ['光輝', '聖歌隊'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 } }, // 免死護符（隊友版）唯一承載者
+  sanctumjudge: { id: 'sanctumjudge', name: '聖域裁定者', element: 'light', class: 'tank', attackStyle: 'melee', race: '神', series: ['光輝', '守護者'], base: { hp: 730, atk: 58, def: 73 }, growth: { hp: 82, atk: 6, def: 8 }, passives: [{ target: 'allAllies', effects: [{ stat: 'res_dark', op: 'add', value: 0.15 }] }] }, // 聖域帷幕：全隊抗暗唯一承載者
+  godblade: { id: 'godblade', name: '神鋒審判者', element: 'light', class: 'dps', attackStyle: 'melee', race: '神', series: ['光輝'], base: { hp: 495, atk: 95, def: 38 }, growth: { hp: 54, atk: 11, def: 4 } }, // 神族輸出補位（神隊坦/輸出/輔助齊全）
+
+  // ---- 人（職業純隊核心）----
+  siegemarshal: { id: 'siegemarshal', name: '攻城軍長', element: 'fire', class: 'tank', attackStyle: 'melee', race: '人', series: ['鐵壁'], base: { hp: 730, atk: 58, def: 73 }, growth: { hp: 82, atk: 6, def: 8 }, passives: [{ when: { alliesAtLeast: { count: 4, where: { class: 'tank' } } }, target: 'allAllies', effects: [{ stat: 'atk', op: 'mul', value: 2.05 }] }] }, // 堅城怒吼：全坦隊的輸出來源。倍率大是因為坦攻基值低；且「磨得贏奶」有懸崖（2.0→28%、2.05→58%、2.1→81%），改平衡時務必重跑 pure-team 模擬
+  warchoir: { id: 'warchoir', name: '戰歌指揮', element: 'light', class: 'support', attackStyle: 'ranged', race: '人', series: ['聖歌隊'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ when: { alliesAtLeast: { count: 4, where: { class: 'support' } } }, target: 'allAllies', effects: [{ stat: 'atk', op: 'mul', value: 1.7 }, { stat: 'dmgDealt', op: 'mul', value: 1.35 }] }] }, // 聖詠齊鳴：全輔隊也能打（奶量續航+聖詠火力）
+  bladeoath: { id: 'bladeoath', name: '誓刃盟主', element: 'dark', class: 'dps', attackStyle: 'melee', race: '人', series: ['疾風', '深淵'], base: { hp: 475, atk: 101, def: 38 }, growth: { hp: 52, atk: 12, def: 4 }, passives: [{ when: { alliesAtLeast: { count: 5, where: { class: 'dps' } } }, target: 'allAllies', effects: [{ stat: 'dmgTaken', op: 'mul', value: 0.6 }, { stat: 'dodge', op: 'add', value: 0.12 }] }] }, // 殺陣：殺氣護體——減傷+迴避（全DPS隊的保命皮；0.62→45%、0.58→62%）
 };
 
 export const CARD_LIST = Object.values(CARDS);
