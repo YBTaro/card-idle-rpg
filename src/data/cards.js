@@ -27,7 +27,7 @@
 
 export const CARDS = {
   // ---- 火 ----
-  ifrit: { id: 'ifrit', name: '炎獄魔將', element: 'fire', class: 'dps', attackStyle: 'melee', race: '妖', series: ['炎之眷屬'], base: { hp: 495, atk: 95, def: 38 }, growth: { hp: 54, atk: 11, def: 4 }, passives: [{ when: { selfHpBelow: 0.5 }, target: 'self', effects: [{ stat: 'atk', op: 'mul', value: 1.3 }] }] },
+  ifrit: { id: 'ifrit', name: '炎獄魔將', element: 'fire', class: 'dps', attackStyle: 'melee', race: '妖', series: ['燼火'], base: { hp: 495, atk: 95, def: 38 }, growth: { hp: 54, atk: 11, def: 4 }, passives: [{ when: { selfHpBelow: 0.5 }, target: 'self', effects: [{ stat: 'atk', op: 'mul', value: 1.3 }] }] },
   emberguard: { id: 'emberguard', name: '熔岩守衛', element: 'fire', class: 'tank', attackStyle: 'melee', race: '機械', series: ['炎之眷屬', '守護者'], base: { hp: 730, atk: 55, def: 79 }, growth: { hp: 82, atk: 6, def: 9 }, passives: [{ target: 'allAllies', targetWhere: { series: '守護者' }, effects: [{ stat: 'def', op: 'mul', value: 1.15 }] }] },
 
   // ---- 風 ----
