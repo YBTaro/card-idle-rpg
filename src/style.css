@@ -745,6 +745,12 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .hs-btn small { display: block; font-size: .68rem; font-weight: 800; color: #7a5a10; }
 .hs-btn.disabled { opacity: .5; cursor: not-allowed; }
 .hs-btn .dot { top: -.2rem; right: .6rem; }
+/* 次要動作（升到頂）：暗金空心，不與主鈕搶眼 */
+.hs-btn.sub {
+  flex: .8; background: rgba(232, 196, 106, .1); color: #ffe9b0;
+  border-color: rgba(232, 196, 106, .5); box-shadow: none;
+}
+.hs-btn.sub small { color: #cbb691; }
 
 /* =====================================================================
    召喚頁：卡池看板
@@ -842,7 +848,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 #battle-overlay > * { pointer-events: auto; }
 
 .bo-av { position: absolute; top: 1rem; display: flex; align-items: flex-start; gap: .5rem; }
-.bo-av.left { left: 1.2rem; }
+.bo-av.left { left: 4.6rem; } /* 讓開左上返回鈕（原 1.2rem 會和返回鈕疊在一起） */
 .bo-av.right { right: 1.2rem; flex-direction: row-reverse; }
 .bo-av .ava {
   width: 2.9rem; height: 2.9rem; border-radius: 99px; flex: none; overflow: hidden;
@@ -929,22 +935,6 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .bo-result .vnext { font-size: .78rem; color: var(--dim); }
 .bo-result .btn { margin-top: .4rem; border-radius: 99px; }
 
-/* 敵情條（D4）：右上敵方頭列下方的 5 顆 chips——屬性色點 + 職業符 + 等級 */
-.bo-foes {
-  position: absolute; right: 1.2rem; top: 4.4rem;
-  display: none; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; max-width: 16rem;
-}
-.bo-foes.on { display: flex; }
-.bo-foe {
-  display: flex; align-items: center; gap: .28rem;
-  padding: .12rem .5rem; border-radius: 99px;
-  background: linear-gradient(160deg, rgba(56, 40, 22, .85), rgba(34, 22, 10, .85));
-  border: 1px solid rgba(232, 196, 106, .4);
-  font-size: .68rem; color: #f0e3c8; text-shadow: 0 1px 2px #000;
-}
-.bo-foe i { width: .55rem; height: .55rem; border-radius: 99px; border: 1px solid rgba(0, 0, 0, .5); }
-.bo-foe b { font-weight: 800; color: #ffe9b0; font-variant-numeric: tabular-nums; }
-
 /* 單位狀態面板（D1）：點戰場棋子彈出的目前狀態清單 */
 .bo-unitpanel {
   position: absolute; left: 50%; bottom: 3.6rem; transform: translateX(-50%);
@@ -970,6 +960,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .up-row:last-child { border-bottom: 0; }
 .up-row.neg { color: #f0b9a9; }
 .up-row .tn { flex: none; font-size: .7rem; color: #cbb691; font-variant-numeric: tabular-nums; }
+.up-row .env-dot { display: inline-block; width: .6rem; height: .6rem; border-radius: 99px; border: 1px solid rgba(0, 0, 0, .5); vertical-align: -1px; }
 
 /* 戰鬥統計面板（D2）：結算「詳情」——輸出/承傷/治療三排行 */
 .bo-stats {
@@ -989,6 +980,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .bo-stats .st-side.ally { color: #9fe0a8; }
 .bo-stats .st-side.foe { color: #f0a08c; }
 .bo-stats .st-side:first-of-type { margin-top: .1rem; }
+.bo-stats .st-env { font-size: .68rem; color: #cbb691; margin-top: .25rem; }
 .bo-stats .st-h { font-size: .78rem; font-weight: 900; text-align: center; margin-bottom: .3rem; letter-spacing: .15em; }
 .bo-stats .st-row {
   display: flex; align-items: center; gap: .3rem; font-size: .72rem; color: #f0e3c8; padding: .16rem 0;
@@ -1038,7 +1030,10 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .el-wind { background: var(--wind); }
 .el-water { background: var(--water); }
 .el-light { background: var(--light); }
-.el-dark { background: var(--dark); color: #fff !important; }
+.el-dark { background: var(--dark); }
+/* 深底元素標籤才需要白字（gacha 看板等 .el 標籤）；
+   不可用裸 .el-dark + !important——會外溢到英雄頁篩選 chip，讓「暗」一顆字色跟別人不同 */
+.el.el-dark { color: #fff; }
 .bd-fire { border-color: var(--fire) !important; }
 .bd-wind { border-color: var(--wind) !important; }
 .bd-water { border-color: var(--water) !important; }

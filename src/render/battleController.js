@@ -79,7 +79,7 @@ export class BattleController {
     const env = campaignEnv(stage); // 章節環境（第 1 章中立）
     const sim = simulateBattle(player, enemy, { rng: new Rng(), env });
     this._mount(sim, env);
-    this.overlay?.setBattle({ stage, env, enemies: this._foesOf(sim.setup) });
+    this.overlay?.setBattle({ stage, env });
   }
 
   // 播放外部戰報（競技場/切磋/公會 Boss/試煉塔：{setup, log}）。
@@ -87,15 +87,7 @@ export class BattleController {
   playCustom(sim, { title = '競技場', env = null, onDone } = {}) {
     this._custom = { onDone, title };
     this._mount(sim, env);
-    this.overlay?.setBattle({ stage: store.state.progress.stage || 1, title, env, enemies: this._foesOf(sim.setup) });
-  }
-
-  // 敵情條摘要（依站位排序，與出手序一致）
-  _foesOf(setup) {
-    return setup
-      .filter((u) => u.team === 1)
-      .sort((a, b) => a.pos - b.pos)
-      .map((u) => ({ name: u.name, element: u.element, class: u.class, level: u.level }));
+    this.overlay?.setBattle({ stage: store.state.progress.stage || 1, title, env });
   }
 
   _mount(sim, env = null) {
@@ -107,9 +99,13 @@ export class BattleController {
     this.scene.onUnitTap = (uid) => this._showUnitStatus(uid);
     // 戰鬥統計：per-uid 累計輸出/承傷/治療（結算「詳情」面板的資料源）
     this._stats = new Map(sim.setup.map((u) => [u.uid, { dealt: 0, taken: 0, healed: 0, shielded: 0 }]));
+    this._envDmg = { 0: 0, 1: 0 }; // 場地傷害（無來源者）per 隊伍——統計面板獨立列出
+    const teamOf = new Map(sim.setup.map((u) => [u.uid, u.team]));
     this.replayer.on('damage', (e) => {
-      if (e.sourceUid != null && this._stats.has(e.sourceUid)) this._stats.get(e.sourceUid).dealt += e.amount;
+      // 輸出＝實際扣血 + 護盾吸收（打掉盾也是輸出）；承傷＝實際扣血
+      if (e.sourceUid != null && this._stats.has(e.sourceUid)) this._stats.get(e.sourceUid).dealt += e.amount + (e.absorbed ?? 0);
       if (this._stats.has(e.targetUid)) this._stats.get(e.targetUid).taken += e.amount;
+      if (e.skill === 'env') this._envDmg[teamOf.get(e.targetUid)] += e.amount;
     });
     this.replayer.on('heal', (e) => {
       if (e.sourceUid != null && this._stats.has(e.sourceUid)) this._stats.get(e.sourceUid).healed += e.amount;
@@ -192,7 +188,7 @@ export class BattleController {
     // 開統計面板時暫停自動開下一場（關掉面板才續跑）
     const onStats = () => {
       this._holdRestart = true;
-      this.overlay?.showStatsPanel?.(this._statRows(), () => { this._holdRestart = false; });
+      this.overlay?.showStatsPanel?.(this._statRows(), () => { this._holdRestart = false; }, this._envDmg);
     };
     // 自訂回放：不動關卡進度與獎勵，短暫展示勝敗後交還 onDone。
     if (this._custom) {

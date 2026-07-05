@@ -239,20 +239,39 @@ export class BattleScene {
       return;
     }
     if (weather.id === 'sunny') {
-      // 烈日：右上角旋轉光束扇（緩慢擺動）＋上升熱屑
-      const rays = new Container();
-      rays.position.set(STAGE_W * 0.78, -30);
-      for (let i = 0; i < 4; i += 1) {
+      // 烈日 2.0：右上「實體太陽」（多層光暈+亮核）＋自太陽輻射的寬幅光束扇（各自明滅）＋地面暖光斑
+      const sun = new Container();
+      sun.position.set(STAGE_W * 0.82, 34);
+      // 光束：自太陽向左下輻射的長楔形（寬窄交錯、逐束呼吸——體積光的「丁達爾」感）
+      for (let i = 0; i < 6; i += 1) {
         const ray = new Graphics();
-        ray.moveTo(0, 0).lineTo(-90 - i * 34, STAGE_H * 1.1).lineTo(-160 - i * 34, STAGE_H * 1.1).closePath()
-          .fill({ color: 0xffd98a, alpha: 0.05 + i * 0.012 });
+        const halfW = 22 + (i % 3) * 16;
+        ray.moveTo(0, 0).lineTo(-halfW, STAGE_H * 1.5).lineTo(halfW, STAGE_H * 1.5).closePath()
+          .fill({ color: 0xffd98a, alpha: 0.055 });
         ray.blendMode = 'add';
-        ray.rotation = -0.28 + i * 0.17;
-        rays.addChild(ray);
+        ray.rotation = 0.16 + i * 0.17; // 扇形鋪向戰場（0=正下方，漸轉向左下）
+        sun.addChild(ray);
+        gsap.fromTo(ray, { alpha: 0.35 }, { alpha: 1, duration: 1.8 + i * 0.4, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: i * 0.3 });
       }
-      layer.addChild(rays);
-      gsap.to(rays, { rotation: 0.09, duration: 5.5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-      gsap.fromTo(rays, { alpha: 0.65 }, { alpha: 1, duration: 2.4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      // 太陽本體：亮白核 + 多層暖金光暈（畫在光束之上，束從日面後方射出）
+      const core = new Graphics();
+      for (let i = 9; i >= 1; i -= 1) {
+        const t = i / 9;
+        core.circle(0, 0, 24 + 120 * t).fill({ color: 0xffdf9a, alpha: 0.03 + (1 - t) * 0.045 });
+      }
+      core.circle(0, 0, 34).fill({ color: 0xfff6d8, alpha: 0.9 });
+      core.circle(0, 0, 22).fill({ color: 0xffffff, alpha: 0.95 });
+      core.blendMode = 'add';
+      sun.addChild(core);
+      layer.addChild(sun);
+      gsap.fromTo(sun.scale, { x: 0.97, y: 0.97 }, { x: 1.04, y: 1.04, duration: 3.2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      gsap.to(sun, { rotation: 0.07, duration: 6.5, yoyo: true, repeat: -1, ease: 'sine.inOut' }); // 整扇緩擺
+      // 地面暖光斑：被曬得發燙的地板
+      const patch = new Graphics();
+      patch.ellipse(STAGE_W * 0.55, GROUND_Y + 130, STAGE_W * 0.42, 120).fill({ color: 0xffc46a, alpha: 0.1 });
+      patch.blendMode = 'add';
+      layer.addChild(patch);
+      gsap.fromTo(patch, { alpha: 0.5 }, { alpha: 1, duration: 2.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
     }
     if (weather.id === 'gale') {
       // 颶風：橫掃風痕（細長弧線快速掠過）
@@ -353,47 +372,96 @@ export class BattleScene {
         });
       }
     } else if (terrain.id === 'erosion') {
-      // 侵蝕之地：暗紫地霧塊脈動 + 緩慢下沉的腐蝕光點
-      for (let i = 0; i < 5; i += 1) {
-        const fog = new Graphics();
-        const w = 160 + Math.random() * 180;
-        fog.ellipse(0, 0, w, 34).fill({ color, alpha: 0.18 });
-        fog.blendMode = 'add';
-        fog.position.set(STAGE_W * (0.12 + Math.random() * 0.76), GROUND_Y + 90 + Math.random() * 150);
-        layer.addChild(fog);
-        gsap.fromTo(fog, { alpha: 0.4 }, { alpha: 1, duration: 1.4 + Math.random(), yoyo: true, repeat: -1, delay: i * 0.4, ease: 'sine.inOut' });
-        gsap.to(fog, { x: fog.x + 40, duration: 6 + Math.random() * 3, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      // 侵蝕之地 2.0：地面染成暗紫（normal blend 壓暗，不發光）＋裂隙紫光明滅＋黑暗能量自地面湧出
+      // 1) 暗化地面：近黑紫多層橢圓——「這塊地已經被侵蝕」的底色
+      const darkGround = new Graphics();
+      for (let k = 5; k >= 1; k -= 1) {
+        const t = k / 5;
+        darkGround.ellipse(STAGE_W / 2, GROUND_Y + 150, STAGE_W * 0.68 * t, 205 * t).fill({ color: 0x160a28, alpha: 0.15 });
       }
-      for (let i = 0; i < 8; i += 1) {
+      layer.addChild(darkGround);
+      gsap.fromTo(darkGround, { alpha: 0.75 }, { alpha: 1, duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      // 2) 裂隙紫光：地面幾道鋸齒裂縫明滅（能量從地底滲出的出口）
+      for (let i = 0; i < 6; i += 1) {
+        const crack = new Graphics();
+        const len = 46 + Math.random() * 76;
+        crack.moveTo(0, 0).lineTo(len * 0.3, 4).lineTo(len * 0.55, -3).lineTo(len, 2)
+          .stroke({ width: 2, color: 0xb27dff, alpha: 0.8 });
+        crack.blendMode = 'add';
+        crack.position.set(STAGE_W * (0.14 + Math.random() * 0.72), GROUND_Y + 75 + Math.random() * 155);
+        layer.addChild(crack);
+        gsap.fromTo(crack, { alpha: 0.12 }, { alpha: 0.85, duration: 1 + Math.random() * 1.4, yoyo: true, repeat: -1, delay: Math.random() * 1.4, ease: 'sine.inOut' });
+      }
+      // 3) 黑暗能量湧出：暗紫煙縷自地面升起、邊升邊脹大淡出（流出感的主體）
+      for (let i = 0; i < 12; i += 1) {
         const p = new Sprite(this._dotTex);
         p.anchor.set(0.5);
         p.blendMode = 'add';
-        p.tint = color;
-        p.scale.set(0.2 + Math.random() * 0.25);
-        const x0 = STAGE_W * (0.15 + Math.random() * 0.7);
-        const y0 = GROUND_Y + 40;
+        p.tint = 0x8a4fd0;
+        const s0 = 0.25 + Math.random() * 0.3;
+        const x0 = STAGE_W * (0.12 + Math.random() * 0.76);
+        const y0 = GROUND_Y + 70 + Math.random() * 150;
         p.position.set(x0, y0);
+        p.alpha = 0;
         layer.addChild(p);
+        const dur = 2.4 + Math.random() * 1.6;
+        const delay = i * 0.3;
         gsap.fromTo(p, { y: y0, alpha: 0.7 }, {
-          y: y0 + 150, alpha: 0, duration: 2.4 + Math.random(),
-          delay: i * 0.45, repeat: -1, ease: 'power1.in',
+          y: y0 - 170, alpha: 0, x: x0 + (Math.random() * 40 - 20),
+          duration: dur, delay, repeat: -1, ease: 'power1.out',
+        });
+        gsap.fromTo(p.scale, { x: s0, y: s0 }, {
+          x: s0 * 2.4, y: s0 * 2.4, duration: dur, delay, repeat: -1, ease: 'power1.out',
         });
       }
     } else if (terrain.id === 'swamp') {
-      // 迷霧沼澤：貼地霧帶橫向緩飄（雙層交錯）
-      for (let i = 0; i < 6; i += 1) {
-        const mist = new Graphics();
-        const w = 220 + Math.random() * 200;
-        mist.ellipse(0, 0, w, 26 + Math.random() * 14).fill({ color, alpha: 0.2 });
-        mist.blendMode = 'add';
-        const y0 = GROUND_Y + 70 + Math.random() * 180;
-        mist.position.set(STAGE_W * Math.random(), y0);
-        layer.addChild(mist);
-        gsap.to(mist, {
-          x: `+=${140 + Math.random() * 120}`, duration: 7 + Math.random() * 4,
+      // 迷霧沼澤 2.1：整個下半場浸在白霧裡——底部霧海漸層 + 大幅霧堤視差橫飄 + 霧泡
+      const mistColor = 0xdcefe4; // 蒼白帶沼綠的霧色
+      // 1) 霧海底層：越貼地越濃的漸層（多條疊加模擬 gradient；normal blend＝遮不發光）
+      const sea = new Graphics();
+      const seaTop = GROUND_Y + 20;
+      const STEPS = 6;
+      for (let k = 0; k < STEPS; k += 1) {
+        const y = seaTop + ((STAGE_H - seaTop) * k) / STEPS;
+        sea.rect(0, y, STAGE_W, STAGE_H - y).fill({ color: mistColor, alpha: 0.045 });
+      }
+      layer.addChild(sea);
+      gsap.fromTo(sea, { alpha: 0.75 }, { alpha: 1, duration: 4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      // 2) 霧堤：大幅軟邊霧團（明顯可見的「霧在飄」主體）
+      for (let i = 0; i < 9; i += 1) {
+        const fog = new Graphics();
+        const w = 420 + Math.random() * 380;
+        const h = 55 + Math.random() * 45;
+        for (let k = 4; k >= 1; k -= 1) {
+          const t = k / 4;
+          fog.ellipse(0, 0, w * t, h * t).fill({ color: mistColor, alpha: 0.05 + (1 - t) * 0.045 });
+        }
+        const y0 = GROUND_Y + 40 + Math.random() * 210;
+        fog.position.set(STAGE_W * Math.random(), y0);
+        layer.addChild(fog);
+        gsap.to(fog, {
+          x: `+=${150 + Math.random() * 170}`, duration: 8 + Math.random() * 6,
           yoyo: true, repeat: -1, ease: 'sine.inOut', delay: i * 0.5,
         });
-        gsap.fromTo(mist, { alpha: 0.5 }, { alpha: 1, duration: 2 + Math.random(), yoyo: true, repeat: -1, ease: 'sine.inOut' });
+        gsap.fromTo(fog, { alpha: 0.6 }, { alpha: 1, duration: 3 + Math.random() * 2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+        gsap.to(fog.scale, { x: 1.16, duration: 7 + Math.random() * 3, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      }
+      // 3) 霧泡：貼地緩升即散（沼氣冒泡的細節）
+      for (let i = 0; i < 6; i += 1) {
+        const p = new Sprite(this._dotTex);
+        p.anchor.set(0.5);
+        p.tint = mistColor;
+        p.alpha = 0;
+        const s0 = 0.7 + Math.random() * 0.6;
+        p.scale.set(s0);
+        const x0 = STAGE_W * (0.1 + Math.random() * 0.8);
+        const y0 = GROUND_Y + 110 + Math.random() * 130;
+        p.position.set(x0, y0);
+        layer.addChild(p);
+        gsap.fromTo(p, { y: y0, alpha: 0.45 }, {
+          y: y0 - 70, alpha: 0, duration: 3.5 + Math.random() * 2,
+          delay: i * 0.7, repeat: -1, ease: 'sine.out',
+        });
       }
     }
   }
@@ -683,8 +751,7 @@ export class BattleScene {
     // 立繪（async 載入後替換佔位）
     this._loadArt(c, info);
 
-    // 頭頂資訊條：屬性外環 + 卡面同款職業章壓在中央 + 血條/能量條
-    // ——外環顏色＝屬性、中央徽章＝職業（與卡面右下角職業章同一套 SVG）
+    // 頭頂資訊條：左＝屬性外環+職業章（原設計）；右＝對稱的等級小圓章（Lv 掛角色身上）
     const infoBar = new Container();
     infoBar.y = -BODY_H - 16;
     const chipX = -BAR_W / 2 - 11;
@@ -701,6 +768,19 @@ export class BattleScene {
       badge.position.set(chipX, 5);
       infoBar.addChild(badge);
     });
+    // 等級圓章：右側鏡像位置、深底金邊（與左章同視覺語言，不再用菱形寶石+裸字）
+    const lvX = BAR_W / 2 + 11;
+    const lvBg = new Graphics();
+    lvBg.circle(lvX, 5, 8.5).fill({ color: 0x1c1408, alpha: 0.95 });
+    lvBg.circle(lvX, 5, 8.5).stroke({ color: 0xe8c46a, width: 1.5, alpha: 0.9 });
+    infoBar.addChild(lvBg);
+    const lv = new Text({
+      text: String(info.level),
+      style: { fontSize: info.level >= 100 ? 7 : 9, fill: 0xffe9b0, fontWeight: '900' },
+    });
+    lv.anchor.set(0.5);
+    lv.position.set(lvX, 5);
+    infoBar.addChild(lv);
     const bars = new Graphics();
     infoBar.addChild(bars);
     c._bars = bars;

@@ -94,6 +94,7 @@ export class Unit {
   takeDamage(amount) {
     const incoming = Math.max(0, Math.round(amount));
     const toHp = absorbWithShields(this, incoming);
+    this._absorbed = incoming - toHp; // 護盾吃掉的量（統計歸攻擊者輸出；dealDamage 讀後即清）
     let dealt = Math.min(this.hp, toHp);
     if (dealt >= this.hp && this.hp > 0) {
       const cd = this.buffs?.find((b) => b.kind === 'cheatDeath');

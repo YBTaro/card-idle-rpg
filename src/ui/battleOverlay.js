@@ -60,12 +60,9 @@ export class BattleOverlay {
     // 上中：關卡菱標 + 環境徽章（天氣/場地；hover 看效果說明）
     this.waveText = el('span', { text: '1-1' });
     this.root.appendChild(el('div', { class: 'bo-wave' }, [this.waveText]));
-    this.envChip = el('div', { class: 'bo-env' });
+    this.envChip = el('div', { class: 'bo-env pressable', title: '點擊查看目前環境效果' });
+    this.envChip.addEventListener('click', () => this.showEnvPanel());
     this.root.appendChild(this.envChip);
-
-    // 右上下方：敵情條（敵方 5 人屬性/職業/等級一眼掌握——屬性剋制策略的情報來源）
-    this.foesStrip = el('div', { class: 'bo-foes' });
-    this.root.appendChild(this.foesStrip);
 
     // 左下：回合圓章
     this.roundEl = el('div', { class: 'bo-round', text: 'R1' });
@@ -105,8 +102,8 @@ export class BattleOverlay {
   }
 
   // 每場開打時同步靜態資訊。title 有值＝自訂回放（競技場/切磋/公會 Boss）。
-  // enemies＝敵方單位摘要 [{name, element, class, level}]（敵情條）。
-  setBattle({ stage, title = null, env = null, enemies = [] }) {
+  // （敵我的屬性/職業/等級直接掛在戰場角色頭上，資訊層不另設敵情條。）
+  setBattle({ stage, title = null, env = null }) {
     const label = stageLabel(stage);
     this.waveText.textContent = title ?? label;
     this.nmLeft.textContent = '我方';
@@ -117,16 +114,6 @@ export class BattleOverlay {
     this.hideResult();
     this.hideUnitStatus();
     this.hideStatsPanel();
-    // 敵情條
-    clear(this.foesStrip);
-    for (const f of enemies) {
-      this.foesStrip.appendChild(el('div', { class: 'bo-foe', title: `${f.name}（${ELEMENT_LABEL[f.element] ?? ''}）` }, [
-        el('i', { style: `background:${ELEMENT_HEX[f.element] ?? '#999'}` }),
-        el('span', { text: CLASS_GLYPH[f.class] ?? '' }),
-        el('b', { text: `Lv${f.level}` }),
-      ]));
-    }
-    this.foesStrip.classList.toggle('on', enemies.length > 0);
   }
 
   // ---- 單位狀態面板（點戰鬥中的棋子 → 目前狀態清單） ----
@@ -162,9 +149,10 @@ export class BattleOverlay {
     this._unitPanel = null;
   }
 
-  // ---- 戰鬥統計面板（結算的「詳情」）：輸出/承傷/治療 三排行 ----
+  // ---- 戰鬥統計面板（結算的「詳情」）：我方/敵方分區的 輸出/承傷/治療/護盾 排行 ----
   // onClose：面板收起時回呼（controller 靠它恢復自動開下一場）。
-  showStatsPanel(rows, onClose = null) {
+  // envDmg：{0, 1} per 隊伍的場地傷害總量（無來源者，獨立列出不進個人榜）。
+  showStatsPanel(rows, onClose = null, envDmg = null) {
     this.hideUnitStatus();
     this.hideStatsPanel();
     const panel = el('div', { class: 'bo-stats' });
@@ -186,7 +174,7 @@ export class BattleOverlay {
       }
       return box;
     };
-    const mkSection = (label, side, cls) => {
+    const mkSection = (label, side, cls, env) => {
       panel.appendChild(el('div', { class: `st-side ${cls}`, text: label }));
       const cols = el('div', { class: 'st-cols' });
       cols.appendChild(mkCol(side, '輸出', 'dealt', '#ff9a5c'));
@@ -194,9 +182,11 @@ export class BattleOverlay {
       cols.appendChild(mkCol(side, '治療', 'healed', '#8ef2ae'));
       cols.appendChild(mkCol(side, '護盾', 'shielded', '#8ecfe8'));
       panel.appendChild(cols);
+      // 場地傷害（侵蝕之地等）：無施放者，不進個人輸出榜，單獨列出
+      if (env > 0) panel.appendChild(el('div', { class: 'st-env', text: `🌑 承受場地傷害 ${env.toLocaleString()}（已計入個別承傷）` }));
     };
-    mkSection('⚔ 我方', rows.filter((r) => r.team === 0), 'ally');
-    mkSection('👹 敵方', rows.filter((r) => r.team === 1), 'foe');
+    mkSection('⚔ 我方', rows.filter((r) => r.team === 0), 'ally', envDmg?.[0] ?? 0);
+    mkSection('👹 敵方', rows.filter((r) => r.team === 1), 'foe', envDmg?.[1] ?? 0);
     this.root.appendChild(panel);
     this._statsPanel = panel;
     gsap.fromTo(panel, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.2, ease: 'power2.out' });
@@ -211,17 +201,43 @@ export class BattleOverlay {
   }
 
   // 環境徽章：天氣/場地色點 + 名稱；戰鬥中被技能覆蓋時即時更新（controller 轉發事件）。
+  // 點擊 → 彈出面板列出當前天氣/場地的固定效果（效果不寫在技能文裡，統一在這看）。
   setEnv(ids) {
+    this._envIds = ids ?? null;
     clear(this.envChip);
     const has = !!(ids?.weather || ids?.terrain);
     this.envChip.classList.toggle('on', has);
     if (!has) return;
-    this.envChip.title = envDescOf(ids.weather, ids.terrain);
     const w = weatherOf(ids.weather);
     const t = terrainOf(ids.terrain);
     if (w) this.envChip.appendChild(el('i', { style: `background:${w.color}` }));
     if (t) this.envChip.appendChild(el('i', { style: `background:${t.color}` }));
     this.envChip.appendChild(el('span', { text: envLabelOf(ids.weather, ids.terrain) }));
+  }
+
+  // 當前環境效果面板（環境效果全遊戲固定——這裡是唯一詳情出口）
+  showEnvPanel() {
+    const ids = this._envIds;
+    const w = weatherOf(ids?.weather);
+    const t = terrainOf(ids?.terrain);
+    if (!w && !t) return;
+    this.hideUnitStatus();
+    const panel = el('div', { class: 'bo-unitpanel' });
+    panel.appendChild(el('div', { class: 'up-head' }, [
+      el('b', { text: '目前環境' }),
+      el('button', { class: 'up-close pressable', text: '✕', onClick: () => this.hideUnitStatus() }),
+    ]));
+    const row = (label, e) => el('div', { class: 'up-row' }, [
+      el('span', { class: 'lb' }, [
+        el('i', { class: 'env-dot', style: `background:${e.color}` }),
+        el('span', { text: ` ${label}「${e.name}」：${e.desc}` }),
+      ]),
+    ]);
+    if (w) panel.appendChild(row('天氣', w));
+    if (t) panel.appendChild(row('場地', t));
+    this.root.appendChild(panel);
+    this._unitPanel = panel;
+    gsap.fromTo(panel, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.16, ease: 'power2.out' });
   }
 
   // 每 tick 呼叫，但只在值變化時寫 DOM（避免每幀 style/layout 重算、

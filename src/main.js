@@ -33,6 +33,7 @@ async function main() {
 
   const overlay = new BattleOverlay(document.getElementById('battle-overlay'));
   const battle = new BattleController(app, overlay);
+  if (import.meta.env.DEV) window.__battle = battle; // 開發鉤子：console/截圖腳本直接操作戰鬥（prod 不暴露）
 
   // 各功能畫面
   const home = new HomeUI(document.getElementById('screen-home'));

@@ -372,7 +372,7 @@ export class BattleEngine {
     if (!u.alive) return;
     for (const hot of hotEntries(u)) {
       const healed = u.heal(healAmount(ctx, hot.amount)); // 治療倍率唯一入口
-      if (healed > 0) ctx.emit('heal', { source: null, target: u, amount: healed, kind: 'hot' });
+      if (healed > 0) ctx.emit('heal', { source: hot.src ?? null, target: u, amount: healed, kind: 'hot' });
     }
     this.emit('turn', { unit: u });
     // 沉默＝技能與普攻皆不可用（跳過行動）；凍結不影響行動、只擋回能

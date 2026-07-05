@@ -113,12 +113,9 @@ function describeEffect(effect, targetLabel) {
       text = `對${who}施加${CONTROL_LABEL[effect.control] ?? effect.control}${dur(effect.duration)}`;
       break;
     case 'weather': {
-      const w = {
-        sunny: '烈日（火屬傷害 +20%、水屬 -20%）',
-        rain: '暴雨（水屬傷害 +20%、火屬 -20%）',
-        gale: '颶風（風屬傷害 +20%、風屬承傷 -10%）',
-      }[effect.weather];
-      text = `使天候轉為${w ?? effect.weather}`;
+      // 天氣效果全遊戲固定，不在技能文重複——戰鬥中點上方環境標籤即可看當前效果
+      const w = { sunny: '烈日', rain: '暴雨', gale: '颶風' }[effect.weather];
+      text = `使天候轉為「${w ?? effect.weather}」`;
       break;
     }
     case 'terrain':

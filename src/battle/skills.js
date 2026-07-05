@@ -27,7 +27,7 @@ export const SKILLS = {
   },
   infernoNova: { name: '焚天', target: 'enemyFrontRow', effects: [
     { type: 'damage', mult: 1.8, scope: 'target' },
-    { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target' },
+    { type: 'dot', power: 0.3, element: 'fire', duration: 2, scope: 'target' }, // 主傷在直擊，餘燼是配菜（灼燒係數依角色定位差異化）
   ]},
   moltenBulwark: { name: '熔壁', target: 'enemyFrontRow', effects: [ // 定位：灼熱裝甲坦——貼近我的人更怕火
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
@@ -72,11 +72,11 @@ export const SKILLS = {
     { type: 'damage', mult: 1.2, scope: 'target' },
     { type: 'damage', mult: 1.2, scope: 'target' },
     { type: 'damage', mult: 0.8, scope: 'target', executeBelow: 0.3, executeBonus: 2.0 },
-    { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target', chance: 0.7 }, // 70% 燃燒 2 回合（同人再上＝回合數疊加）
+    { type: 'dot', power: 0.35, element: 'fire', duration: 2, scope: 'target', chance: 0.7 }, // 70% 燃燒 2 回合（同人再上＝回合數疊加）
   ]},
   karmicFire: { name: '業火', target: 'enemyFrontRow', effects: [
     { type: 'damage', mult: 1.5, scope: 'target' },
-    { type: 'dot', power: 0.35, element: 'fire', duration: 2, scope: 'target', stackable: true }, // 可疊層灼燒
+    { type: 'dot', power: 0.45, element: 'fire', duration: 2, scope: 'target', stackable: true }, // 可疊層灼燒——灼燒流本命，單層最痛
   ]},
   emberWarmth: { name: '餘溫', effects: [ // 定位：延燒輔助（淨化歸潮頌）——治療收窄前排、數值加厚
     { type: 'heal', power: 1.5, scope: 'frontAllies' },
@@ -209,7 +209,7 @@ export const SKILLS = {
   // ---- 暗 ----
   plagueSpread: { name: '瘟疫', target: 'allEnemies', effects: [ // 定位：全體中毒散布者
     { type: 'damage', mult: 0.8, scope: 'target' },
-    { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 中毒：每跳 15% 最大生命
+    { type: 'dot', power: 0.1, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 全體散布：每跳低（毒係數依角色差異化——面寬毒淺）
   ]},
   mindGnaw: { name: '蝕心', effects: [ // 定位：靈壓領域——戰略級效果獨立承載（同環境技原則）
     { type: 'castDrain', amount: 20, duration: 2, scope: 'self', stackable: true }, // 敵方施法→其餘敵人 -20 能量
@@ -224,11 +224,11 @@ export const SKILLS = {
   ]},
   voidBurst: { name: '虛爆', target: 'enemyColumn', effects: [
     { type: 'damage', mult: 1.6, scope: 'target' },
-    { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 中毒：每跳 15% 最大生命
+    { type: 'dot', power: 0.14, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 直排中毒：每跳 14% 最大生命
   ]},
   webBind: { name: '縛絲', target: 'lowestHpEnemy', effects: [ // 補刀型選目標
     { type: 'damage', mult: 1.8, scope: 'target' },
-    { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target', chance: 0.7 }, // 70% 蛛毒 2 回合（每跳 15% 最大生命）
+    { type: 'dot', power: 0.18, basis: 'targetMaxHp', duration: 2, scope: 'target', chance: 0.7 }, // 70% 蛛毒（單體補刀＝毒最深：每跳 18% 最大生命）
   ]},
   duskVeil: { name: '暮幕', effects: [ // 定位：遁影奪光坦——入夜奪增益、自身沒入暮色（精靈＝迴避值最高）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },

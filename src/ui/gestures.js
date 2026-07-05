@@ -69,10 +69,19 @@ export function holdRepeat(el, onFire, { delayMs = 350, repeatMs = 110 } = {}) {
   };
   el.addEventListener('pointerdown', (e) => {
     if (e.button != null && e.button !== 0) return;
+    stop();
     onFire();
     delayTimer = setTimeout(() => {
-      repeatTimer = setInterval(onFire, repeatMs);
+      repeatTimer = setInterval(() => {
+        // 按鈕被重繪拆離 DOM 後放開事件收不到 → 計時器會在背景永動。
+        // 一旦偵測到已拆離立刻自停（曾造成「一路自動升到 60 等」）。
+        if (!el.isConnected) { stop(); return; }
+        onFire();
+      }, repeatMs);
     }, delayMs);
+    // 放開不一定發生在按鈕上（重繪換新節點/拖出畫面）→ window 層兜底
+    window.addEventListener('pointerup', stop, { once: true });
+    window.addEventListener('pointercancel', stop, { once: true });
   });
   el.addEventListener('pointerup', stop);
   el.addEventListener('pointerleave', stop);

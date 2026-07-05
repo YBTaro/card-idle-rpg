@@ -14,7 +14,6 @@ import { deriveStats, MAX_STARS, STAR_STAT_BONUS, STAR_MILESTONES } from '../cor
 import { levelUp, levelUpCost, canLevelUp, MAX_LEVEL } from '../systems/leveling.js';
 import { skillInfoForCard, passiveInfoForCard, triggerInfoForCard, teamSkillInfoForCard, onEnterInfoForCard, basicInfoForCard } from '../battle/skillText.js';
 import { trackQuest } from '../systems/quests.js';
-import { holdRepeat } from './gestures.js';
 import { icon } from './icons.js';
 
 const SHEET_IN_S = 0.28;
@@ -254,26 +253,42 @@ class HeroSheet {
       p.appendChild(skillRow('👥', '隊伍技', `<b>隊伍技</b>${desc}`));
     }
 
-    // 6) 行動列：只留「強化」（上陣/下陣歸隊伍頁管）
+    // 6) 行動列：「強化」一次一級 ＋「升到頂」一鍵升到資源上限（玩家自己選節奏）
     const cta = el('div', { class: 'hs-cta' });
     const upBtn = el('div', {
       class: `hs-btn pressable${maxed || !affordable ? ' disabled' : ''}`,
       html: maxed
         ? '已滿級<small>MAX</small>'
         : `強　化<small>🔹${cost.essence} · 🪙${cost.gold}</small>`,
+      onClick: () => {
+        if (maxed) return;
+        const r = levelUp(inst.instanceId);
+        if (r.ok) trackQuest('levelup');
+        else if (r.reason === 'no-essence') toast('養成精華不足');
+        else if (r.reason === 'no-gold') toast('金幣不足');
+      },
     });
     if (!maxed && affordable) upBtn.appendChild(el('span', { class: 'dot' }));
-    if (!maxed) {
-      holdRepeat(upBtn, () => {
-        const r = levelUp(inst.instanceId);
-        if (r.ok) {
-          trackQuest('levelup');
-          gsap.fromTo(upBtn, { scale: 0.97 }, { scale: 1, duration: 0.15 });
-        } else if (r.reason === 'no-essence') toast('養成精華不足');
-        else if (r.reason === 'no-gold') toast('金幣不足');
-      });
-    }
     cta.appendChild(upBtn);
+    // 升到頂：連續升級到滿級或資源不足為止
+    const maxBtn = el('div', {
+      class: `hs-btn sub pressable${maxed || !affordable ? ' disabled' : ''}`,
+      html: '升到頂<small>直到滿級或資源不足</small>',
+      onClick: () => {
+        if (maxed) return;
+        const id = inst.instanceId;
+        let n = 0;
+        while (n < MAX_LEVEL) {
+          const r = levelUp(id);
+          if (!r.ok) break;
+          trackQuest('levelup');
+          n += 1;
+        }
+        if (n > 0) toast(`一口氣升了 ${n} 級！`, { icon: '⏫' });
+        else toast('資源不足，無法升級');
+      },
+    });
+    cta.appendChild(maxBtn);
     p.appendChild(cta);
   }
 }

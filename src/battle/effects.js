@@ -62,10 +62,12 @@ const HOSTILE_STATUS = new Set(['dot', 'control', 'buff', 'transmute', 'nightmar
 export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}) {
   const res = computeDamage(caster, target, mult, ctx.rng, opts);
   const dealt = target.takeDamage(res.amount);
+  const absorbed = target._absorbed ?? 0; // 護盾吸收量（統計計入攻擊者輸出；amount 仍＝實際扣血）
+  target._absorbed = 0;
   target.gainEnergy(target.classDef.energyOnHitTaken);
   ctx.emit('energy', { unit: target, value: target.energy });
   ctx.emit('damage', {
-    source: caster, target, amount: dealt, skill,
+    source: caster, target, amount: dealt, skill, absorbed,
     isAdvantage: res.isAdvantage, isDisadvantage: res.isDisadvantage, isCrit: res.isCrit,
     trueDmg: !!opts.ignoreDef, execute: !!opts.execute, // 演出用旗標（真傷/處決）
     element: caster?.element ?? null, // 傷害字色＝攻擊者屬性（演出用）
@@ -239,6 +241,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         applyBuffN(u, {
           kind: 'hot', amount: Math.round(resolvePower(effect, caster, u)),
           duration: effect.duration, key: defaultKey('hot'), stackable: effect.stackable,
+          src: caster, // 每跳治療歸屬掛回施放者（與 dot.src 同規則；戰鬥統計用）
         });
         emitBuffs(u);
         break;
