@@ -6,6 +6,7 @@ export const DELAYS = {
   weather: 1.25, terrain: 1.25, drain: 0.12, // 環境宣告是戰略事件：獨占一整拍（開場互蓋逐一亮相）
   miss: 0.22, // 迴避：側移殘影 + MISS 飄字要看得清
   steal: 0.3, // 竊能：奪走→轉移兩端飄字要有拍點
+  trigger: 0.25, // 觸發：金色 ⚡ 標示要讓玩家看清是誰的什麼觸發了
 };
 
 export class AnimationDirector {

@@ -143,6 +143,11 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
   const targets = effect.where ? units.filter((u) => matchesWhere(u, effect.where)) : units;
   // buff 類效果套用後發布狀態摘要（戰鬥 log / 前端小圖示用）。
   const emitBuffs = (u) => ctx.emit('buffchange', { unit: u, buffs: summarizeBuffs(u) });
+  // 套 buff + 發 buffApplied（觸發系統的 buffGained 時機；被動光環不經此路徑不觸發）
+  const applyBuffN = (u, spec) => {
+    applyBuff(u, spec);
+    ctx.emit('buffApplied', { unit: u, negative: isNegative(spec) });
+  };
   // 疊加規則：預設「同技能的同一效果」不可疊加——重施＝刷新覆蓋（值與持續時間重設）。
   // 技能資料可用 key 讓跨技能互斥（如 'guard'），或 stackable:true 明示可疊層。
   const defaultKey = (kindTag) => effect.key ?? `${skillId}:${kindTag}`;
@@ -181,7 +186,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         break;
       }
       case 'hot': // 持續回復：行動前結算（engine 與 DoT 同點）
-        applyBuff(u, {
+        applyBuffN(u, {
           kind: 'hot', amount: Math.round(resolvePower(effect, caster, u)),
           duration: effect.duration, key: defaultKey('hot'), stackable: effect.stackable,
         });
@@ -238,35 +243,35 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         }
         break;
       case 'transmute': // 屬性轉化：把目標轉成「施放者剋制的屬性」（穩吃 1.5 剋制），到期還原
-        applyBuff(u, {
+        applyBuffN(u, {
           kind: 'element', element: COUNTERS[caster.element],
           duration: effect.duration, key: defaultKey('transmute'),
         });
         emitBuffs(u);
         break;
       case 'castDrain': // 靈壓干擾：掛身期間敵方施法 → 其餘敵人能量被抽
-        applyBuff(u, {
+        applyBuffN(u, {
           kind: 'castDrain', amount: effect.amount ?? 20,
           duration: effect.duration, key: defaultKey('castDrain'), stackable: effect.stackable,
         });
         emitBuffs(u);
         break;
       case 'thorns': // 荊棘反傷：受直接攻擊時反彈實際傷害的 pct
-        applyBuff(u, {
+        applyBuffN(u, {
           kind: 'thorns', pct: effect.pct,
           duration: effect.duration, key: defaultKey('thorns'), stackable: effect.stackable,
         });
         emitBuffs(u);
         break;
       case 'counter': // 反擊：受直接攻擊存活時回敬 mult 倍攻擊
-        applyBuff(u, {
+        applyBuffN(u, {
           kind: 'counter', mult: effect.mult,
           duration: effect.duration, key: defaultKey('counter'), stackable: effect.stackable,
         });
         emitBuffs(u);
         break;
       case 'buff':
-        applyBuff(u, {
+        applyBuffN(u, {
           kind: 'stat', stat: effect.stat, op: effect.op, value: effect.value,
           duration: effect.duration, key: defaultKey(`buff:${effect.stat}:${effect.op}`), stackable: effect.stackable,
         });
@@ -277,7 +282,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         const damage = Math.round(resolvePower(effect, caster, u) * elem);
         if (effect.stackable) {
           // 明示可疊層（業火/瘟疫）：同人也疊新層
-          applyBuff(u, { kind: 'dot', damage, element: effect.element, duration: effect.duration, stackable: true });
+          applyBuffN(u, { kind: 'dot', damage, element: effect.element, duration: effect.duration, stackable: true });
         } else {
           // DoT 身分＝施放者＋技能＋屬性：
           //   同人再上 → 原層剩餘回合 +1、每跳傷害更新為新值（不重置、不疊層）
@@ -288,14 +293,14 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
             existing.duration = (existing.duration ?? 0) + 1;
             existing.damage = damage;
           } else {
-            applyBuff(u, { kind: 'dot', damage, element: effect.element, duration: effect.duration, key });
+            applyBuffN(u, { kind: 'dot', damage, element: effect.element, duration: effect.duration, key });
           }
         }
         emitBuffs(u);
         break;
       }
       case 'shield':
-        applyBuff(u, {
+        applyBuffN(u, {
           kind: 'shield', amount: Math.round(resolvePower(effect, caster, u)),
           duration: effect.duration, key: defaultKey('shield'), stackable: effect.stackable,
         });
@@ -306,14 +311,14 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         ctx.emit('energy', { unit: u, value: u.energy });
         break;
       case 'control':
-        applyBuff(u, {
+        applyBuffN(u, {
           kind: 'control', control: effect.control,
           duration: effect.duration, key: defaultKey(`control:${effect.control}`), stackable: effect.stackable,
         });
         emitBuffs(u);
         break;
       case 'nightmare': // 惡夢印記：永久（無 duration、不隨回合消退）、可被淨化；觸發見 dealDamage
-        applyBuff(u, { kind: 'nightmare', pct: effect.pct ?? 0.05, key: defaultKey('nightmare') });
+        applyBuffN(u, { kind: 'nightmare', pct: effect.pct ?? 0.05, key: defaultKey('nightmare') });
         emitBuffs(u);
         break;
       case 'energySteal': {

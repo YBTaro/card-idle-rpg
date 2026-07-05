@@ -925,6 +925,16 @@ export class BattleScene {
         });
         floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
       }),
+      rp.on('trigger', ({ uid, name }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(uid);
+        if (!s) return;
+        const txt = new Text({
+          text: `⚡ ${name ?? '觸發'}`,
+          style: { fontSize: 17, fill: 0xffd54a, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
+        });
+        floatText(this.fxLayer, s.x, this._chestY(s) - 38, txt);
+      }),
       rp.on('steal', ({ fromUid, toUid, amount }) => {
         if (this._instant) return;
         const from = this.sprites.get(fromUid);

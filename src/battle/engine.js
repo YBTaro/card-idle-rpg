@@ -42,6 +42,12 @@
 //   敵方施放技能後 → _act skill 分支尾（castDrain）
 //   行動前 → _act normal 頭（dot/hot）
 //   回合開始 → _stepNormal 回合換算處（環境侵蝕）
+//
+// 【觸發系統】（卡片 triggers 欄位；詞彙見 triggers.js、派發見 _fireTriggers）
+//   時機：death（亡語/隊友/敵人倒下）/ cast / normal / hit（via 普攻|技能）/ hpBelow / buffGained
+//   同步結算：事件 emit 的當下立即派發（隊伍0優先、卡片內順序）；效果沿用 applyEffect
+//   連鎖上限 2 層：觸發引發的死亡可再觸發一次，更深即斷（防迴圈）；亡語允許死者本人觸發
+//   觸發造成的傷害 skill 標記為 trigger:*——不再算「受擊」、不觸發受擊型 trigger
 // ═══════════════════════════════════════════════════════════════════
 import { EventEmitter } from '../core/events.js';
 import { Rng } from '../core/rng.js';
@@ -49,7 +55,8 @@ import { ENERGY_MAX } from './unit.js';
 import { TURN_SEQUENCE } from './positions.js';
 import { normalAttack, castSkill, skillFor } from './skills.js';
 import { tickBuffs, dotEntries, hotEntries, hasControl, summarizeBuffs } from './buffs.js';
-import { dealDot, dealDirect, healAmount } from './effects.js';
+import { dealDot, dealDirect, healAmount, resolveScope, applyEffect } from './effects.js';
+import { triggerMatches } from './triggers.js';
 import { recomputePassives, applyEnvAuras } from './passives.js';
 import { envAurasOf, envRulesOf } from './environments.js';
 
@@ -76,6 +83,69 @@ export class BattleEngine {
     this._lastActedIdx = -1; // 偵測繞回換算回合
     this._skillPasses = 0;
     this._skillCastThisPass = false;
+
+    // ---- 觸發系統：訂閱自身事件 → 派發卡片 triggers（見 triggers.js 詞彙）----
+    this._trigDepth = 0; // 連鎖上限 2：觸發引發的事件最多再觸發一層，防無限迴圈
+    this.on('death', ({ unit }) => this._fireTriggers('death', unit));
+    this.on('attack', ({ attacker }) => this._fireTriggers('normal', attacker));
+    this.on('ultimate', ({ caster }) => this._fireTriggers('cast', caster));
+    this.on('buffApplied', ({ unit, negative }) => this._fireTriggers('buffGained', unit, { negative }));
+    this.on('damage', (p) => {
+      if (!p.target) return;
+      // 受擊觸發：普攻 vs 技能直傷（DoT/荊棘/反擊/惡夢/環境/觸發傷害不算「受擊」）
+      const passive = ['thorns', 'counter', 'dot', 'nightmare', 'env'].includes(p.skill) || String(p.skill).startsWith('trigger:');
+      if (p.skill === 'normal') this._fireTriggers('hit', p.target, { via: 'normal' });
+      else if (!passive && p.source) this._fireTriggers('hit', p.target, { via: 'skill' });
+      // 血線跌破（damage 事件在扣血後發出 → 用 amount 還原扣血前比例）
+      if (p.amount > 0) {
+        const before = Math.min(1, (p.target.hp + p.amount) / p.target.maxHp);
+        const after = p.target.hp / p.target.maxHp;
+        if (after < before) this._fireTriggers('hpBelow', p.target, { before, after });
+      }
+    });
+  }
+
+  // 觸發派發：掃描全單位的 triggers（隊伍0優先、卡片內順序），比對 → once/機率 → 施放效果。
+  // 亡語例外：death 事件允許死者自己的 trigger 觸發（其餘時機只有活人能觸發）。
+  _fireTriggers(on, subject, extra = {}) {
+    if (this._trigDepth >= 2) return;
+    for (const owner of this.units) {
+      if (!owner.triggers || owner.triggers.length === 0) continue;
+      if (!owner.alive && !(on === 'death' && owner === subject)) continue;
+      for (let i = 0; i < owner.triggers.length; i += 1) {
+        const trig = owner.triggers[i];
+        if (!triggerMatches(trig, owner, { on, subject, ...extra })) continue;
+        const once = trig.once ?? (on === 'hpBelow'); // 血線觸發預設每場一次
+        if (once && owner._trigOnce?.has(i)) continue;
+        if (trig.chance != null && this.rng.next() >= trig.chance) continue;
+        if (once) (owner._trigOnce ??= new Set()).add(i);
+        this.emit('trigger', { unit: owner, on, name: trig.name ?? null });
+        this._trigDepth += 1;
+        try {
+          const ctx = this._ctxFor(owner);
+          for (const effect of trig.effects) {
+            const units = resolveScope(effect.scope, owner, [subject], ctx);
+            applyEffect(effect, owner, units, ctx, `trigger:${on}`);
+          }
+          this._checkEnd();
+        } finally {
+          this._trigDepth -= 1;
+        }
+      }
+    }
+  }
+
+  // 效果結算用 ctx（相對某單位的敵我視角）——技能施放與觸發系統共用。
+  _ctxFor(u) {
+    return {
+      allies: this.alliesOf(u),
+      enemies: this.enemiesOf(u),
+      rng: this.rng,
+      rules: this.rules,
+      setWeather: (id) => this.setWeather(id, u),
+      setTerrain: (id) => this.setTerrain(id, u),
+      emit: (event, payload) => this.emit(event, payload),
+    };
   }
 
   on(event, fn) { return this.emitter.on(event, fn); }
@@ -212,15 +282,7 @@ export class BattleEngine {
   }
 
   _act(u, isSkill) {
-    const ctx = {
-      allies: this.alliesOf(u),
-      enemies: this.enemiesOf(u),
-      rng: this.rng,
-      rules: this.rules, // 效果層規則掛鉤（治療減半/禁復活）
-      setWeather: (id) => this.setWeather(id, u),
-      setTerrain: (id) => this.setTerrain(id, u),
-      emit: (event, payload) => this.emit(event, payload),
-    };
+    const ctx = this._ctxFor(u);
     if (isSkill) {
       // 技能不算回合：免費行動，不結算 DoT、不遞減 buff duration
       // 超充：施放瞬間能量若溢出 100（充能技/受擊回能疊出來的），轉為直傷倍率後整條歸零

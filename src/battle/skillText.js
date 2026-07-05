@@ -228,3 +228,42 @@ export function passiveInfoForCard(cardId) {
   if (!card || !card.passives) return [];
   return card.passives.map(describePassive).filter(Boolean);
 }
+
+// ---- 觸發描述（triggers 資料 → 人話）----
+
+const TRIGGER_WHEN = {
+  death: { self: '自身倒下時', ally: '有隊友倒下時', enemy: '有敵人倒下時', any: '有單位倒下時' },
+  cast: { self: '施放絕技後', ally: '隊友施放絕技後', enemy: '敵方施放絕技後', any: '任一方施放絕技後' },
+  normal: { self: '普攻時' },
+  buffGained: { self: '' }, // 由 negative 決定文案
+  hpBelow: { self: '' }, // 由 pct 決定文案
+  hit: { self: '' }, // 由 via 決定文案
+};
+
+// 單條觸發 → 描述字串。
+export function describeTrigger(t) {
+  if (!t || !t.effects?.length) return '';
+  const who = t.who ?? { death: 'ally', cast: 'self', normal: 'self', hit: 'self', hpBelow: 'self', buffGained: 'self' }[t.on];
+  let when;
+  if (t.on === 'hit') {
+    when = t.via === 'normal' ? '受到普攻時' : t.via === 'skill' ? '受到技能傷害時' : '受到直接傷害時';
+  } else if (t.on === 'hpBelow') {
+    when = `生命首次低於 ${pct(t.pct ?? 0.5)} 時`;
+  } else if (t.on === 'buffGained') {
+    when = t.negative == null ? '獲得任何狀態時' : t.negative ? '獲得減益時' : '獲得增益時';
+  } else {
+    when = TRIGGER_WHEN[t.on]?.[who] ?? t.on;
+  }
+  if (t.where) when = when.replace('隊友', `${describeWhere(t.where)}隊友`).replace('敵人', `${describeWhere(t.where)}敵人`);
+  const chance = t.chance != null ? `有 ${pct(t.chance)} 機率` : '';
+  const effs = t.effects.map((e) => describeEffect(e, '觸發對象')).filter(Boolean).join('；');
+  const once = (t.once ?? (t.on === 'hpBelow')) ? '（每場一次）' : '';
+  return `${when}${chance ? `，${chance}` : ''}：${effs}${once}`;
+}
+
+// cardId → 觸發描述陣列（含名稱）。
+export function triggerInfoForCard(cardId) {
+  const card = CARDS[cardId];
+  if (!card || !card.triggers) return [];
+  return card.triggers.map((t) => ({ name: t.name ?? '觸發', desc: describeTrigger(t) })).filter((t) => t.desc);
+}

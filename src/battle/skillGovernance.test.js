@@ -6,6 +6,7 @@
 //      ——一個角色的定位靠單一鮮明狀態，不靠狀態全家桶。
 import { describe, it, expect } from 'vitest';
 import { SKILLS } from './skills.js';
+import { CARDS } from '../data/cards.js';
 
 // 會掛在單位身上、持續存在的效果型別（傷害/治療/能量等瞬發不計）
 const STATUS_TYPES = new Set(['buff', 'dot', 'hot', 'shield', 'control', 'thorns', 'counter', 'castDrain', 'transmute', 'nightmare']);
@@ -30,6 +31,16 @@ describe('技能治理', () => {
     for (const [id, def] of Object.entries(SKILLS)) {
       const n = def.effects.filter((e) => STATUS_TYPES.has(e.type)).length;
       expect({ id, n }).toEqual({ id, n: Math.min(n, 2) });
+    }
+  });
+
+  it('觸發上限：每卡最多 1 條 trigger、每條效果 ≤ 2（觸發是額外能力軸，不能堆）', () => {
+    for (const card of Object.values(CARDS)) {
+      const trigs = card.triggers ?? [];
+      expect({ id: card.id, n: trigs.length }).toEqual({ id: card.id, n: Math.min(trigs.length, 1) });
+      for (const t of trigs) {
+        expect({ id: card.id, fx: t.effects.length }).toEqual({ id: card.id, fx: Math.min(t.effects.length, 2) });
+      }
     }
   });
 });

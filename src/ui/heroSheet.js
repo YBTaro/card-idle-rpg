@@ -12,7 +12,7 @@ import { ELEMENT_LABEL } from '../data/elements.js';
 import { artFor } from '../data/assets.js';
 import { deriveStats, MAX_STARS, STAR_STAT_BONUS, STAR_MILESTONES } from '../core/stats.js';
 import { levelUp, levelUpCost, canLevelUp, MAX_LEVEL } from '../systems/leveling.js';
-import { skillInfoForCard, passiveInfoForCard } from '../battle/skillText.js';
+import { skillInfoForCard, passiveInfoForCard, triggerInfoForCard } from '../battle/skillText.js';
 import { trackQuest } from '../systems/quests.js';
 import { holdRepeat } from './gestures.js';
 import { icon } from './icons.js';
@@ -230,6 +230,17 @@ class HeroSheet {
             el('span', { class: 't', text: '被動' }),
           ]),
           el('div', { class: 'hs-skdesc', html: `<b>被動效果</b>${desc}` }),
+        ])
+      );
+    }
+    for (const t of triggerInfoForCard(inst.cardId)) {
+      p.appendChild(
+        el('div', { class: 'hs-skills' }, [
+          el('div', { class: 'hs-sk' }, [
+            el('div', { class: 'ic psv', text: '⚡' }),
+            el('span', { class: 't', text: '觸發' }),
+          ]),
+          el('div', { class: 'hs-skdesc', html: `<b>${t.name}</b>${t.desc}` }),
         ])
       );
     }

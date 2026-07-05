@@ -28,6 +28,7 @@ export function simulateBattle(teamA, teamB, { rng, env = null } = {}) {
   engine.on('revive', ({ unit, hp }) => log.push({ type: 'revive', uid: uidOf(unit), hp }));
   engine.on('stunned', ({ unit, reason }) => log.push({ type: 'stunned', uid: uidOf(unit), reason: reason ?? 'silence' }));
   engine.on('miss', ({ source, target, skill }) => log.push({ type: 'miss', sourceUid: uidOf(source), targetUid: uidOf(target), skill }));
+  engine.on('trigger', ({ unit, on, name }) => log.push({ type: 'trigger', uid: uidOf(unit), on, name }));
   engine.on('buffchange', ({ unit, buffs }) => log.push({ type: 'buffchange', uid: uidOf(unit), buffs: buffs ?? [] }));
   engine.on('battleEnd', ({ winner }) => log.push({ type: 'battleEnd', winner }));
 

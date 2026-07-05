@@ -30,6 +30,7 @@ export class Unit {
     this.race = stats.race ?? '人';
     this.series = Array.isArray(stats.series) ? [...stats.series] : [];
     this.passives = stats.passives || [];
+    this.triggers = stats.triggers || []; // 觸發（亡語/受擊/血線…；引擎事件派發）
     this.onEnter = stats.onEnter ?? null; // 進場被動（開天氣/場地；引擎開場照行動序結算）
 
     this.energy = 0;
