@@ -1,4 +1,10 @@
-// 被動/光環：每 step 重算。清掉 aura 光環 buff，再依存活單位的 passives 重建。
+// 被動/光環：每 step 重算。清掉 aura 光環 buff，再依 passives 重建。
+//
+// 生效規則（2026-07 定案）：
+//   光環被動（無 when.alliesAtLeast、非星級）＝活體光環：持有者死亡即消失、條件每步重驗
+//   隊伍技（when.alliesAtLeast）與星級里程碑（star:true）＝進場鎖定：
+//     首次重算（開場、全員存活）判定一次，之後整場有效——條件成員或持有者死亡都不影響
+//   （注意：隊伍技不要再疊 selfHpBelow 之類的動態條件——鎖定語義會把它凍結在開場值）
 import { applyBuff, clearAuras } from './buffs.js';
 import { matchesWhere } from './effects.js';
 
@@ -54,13 +60,26 @@ export function applyEnvAuras(teams, auraSpecs) {
   }
 }
 
+// 進場鎖定類：星級里程碑（star:true）或隊伍技（when.alliesAtLeast）。
+const isLocked = (p) => p.star === true || p.when?.alliesAtLeast != null;
+
 export function recomputePassives(teams) {
   const all = [...teams[0], ...teams[1]];
   for (const u of all) clearAuras(u);
   for (const owner of all) {
-    if (!owner.alive || !owner.passives || owner.passives.length === 0) continue;
-    for (const p of owner.passives) {
-      if (!conditionHolds(p.when, owner, teams)) continue;
+    if (!owner.passives || owner.passives.length === 0) continue;
+    for (let i = 0; i < owner.passives.length; i += 1) {
+      const p = owner.passives[i];
+      const locked = isLocked(p);
+      if (!locked && !owner.alive) continue; // 光環：人死光環滅
+      if (locked) {
+        // 進場鎖定：首次重算（全員存活）判定一次並快取，之後整場照舊生效
+        owner._lockedOk ??= [];
+        if (owner._lockedOk[i] == null) owner._lockedOk[i] = conditionHolds(p.when, owner, teams);
+        if (!owner._lockedOk[i]) continue;
+      } else if (!conditionHolds(p.when, owner, teams)) {
+        continue;
+      }
       if (!p.effects || p.effects.length === 0) continue;
       let targets = passiveScope(p.target, owner, teams);
       // targetWhere：光環只作用於符合條件的對象（種族/屬性/系列主題光環）

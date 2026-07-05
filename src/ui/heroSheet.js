@@ -12,7 +12,7 @@ import { ELEMENT_LABEL } from '../data/elements.js';
 import { artFor } from '../data/assets.js';
 import { deriveStats, MAX_STARS, STAR_STAT_BONUS, STAR_MILESTONES } from '../core/stats.js';
 import { levelUp, levelUpCost, canLevelUp, MAX_LEVEL } from '../systems/leveling.js';
-import { skillInfoForCard, passiveInfoForCard, triggerInfoForCard } from '../battle/skillText.js';
+import { skillInfoForCard, passiveInfoForCard, triggerInfoForCard, teamSkillInfoForCard, onEnterInfoForCard } from '../battle/skillText.js';
 import { trackQuest } from '../systems/quests.js';
 import { holdRepeat } from './gestures.js';
 import { icon } from './icons.js';
@@ -222,27 +222,25 @@ class HeroSheet {
         ])
       );
     }
+    // 被動四分類（進場 / 光環被動含觸發 / 隊伍技；星級里程碑在星級區）
+    const skillRow = (glyph, label, html) =>
+      el('div', { class: 'hs-skills' }, [
+        el('div', { class: 'hs-sk' }, [
+          el('div', { class: 'ic psv', text: glyph }),
+          el('span', { class: 't', text: label }),
+        ]),
+        el('div', { class: 'hs-skdesc', html }),
+      ]);
+    const enter = onEnterInfoForCard(inst.cardId);
+    if (enter) p.appendChild(skillRow('🌀', '進場', `<b>進場被動</b>${enter}`));
     for (const desc of passiveInfoForCard(inst.cardId)) {
-      p.appendChild(
-        el('div', { class: 'hs-skills' }, [
-          el('div', { class: 'hs-sk' }, [
-            el('div', { class: 'ic psv', text: '✨' }),
-            el('span', { class: 't', text: '被動' }),
-          ]),
-          el('div', { class: 'hs-skdesc', html: `<b>被動效果</b>${desc}` }),
-        ])
-      );
+      p.appendChild(skillRow('✨', '光環', `<b>光環被動</b>${desc}`));
     }
     for (const t of triggerInfoForCard(inst.cardId)) {
-      p.appendChild(
-        el('div', { class: 'hs-skills' }, [
-          el('div', { class: 'hs-sk' }, [
-            el('div', { class: 'ic psv', text: '⚡' }),
-            el('span', { class: 't', text: '觸發' }),
-          ]),
-          el('div', { class: 'hs-skdesc', html: `<b>${t.name}</b>${t.desc}` }),
-        ])
-      );
+      p.appendChild(skillRow('⚡', '光環', `<b>${t.name}</b>${t.desc}`)); // 觸發歸光環被動分類
+    }
+    for (const desc of teamSkillInfoForCard(inst.cardId)) {
+      p.appendChild(skillRow('👥', '隊伍技', `<b>隊伍技</b>${desc}`));
     }
 
     // 6) 行動列：只留「強化」（上陣/下陣歸隊伍頁管）

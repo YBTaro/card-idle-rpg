@@ -35,7 +35,8 @@ export function deriveStats(cardInst) {
   // 里程碑加成 → 追加為無條件自身被動（recomputePassives 每步重算、常駐）
   const passives = card.passives ? [...card.passives] : [];
   for (const [star, m] of Object.entries(STAR_MILESTONES)) {
-    if (stars >= Number(star)) passives.push({ target: 'self', effects: m.effects });
+    // star:true ＝進場鎖定類（與隊伍技同規則：整場有效、不受死活影響）
+    if (stars >= Number(star)) passives.push({ target: 'self', effects: m.effects, star: true });
   }
   return {
     cardId: card.id,

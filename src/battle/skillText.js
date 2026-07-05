@@ -222,11 +222,45 @@ export function describePassive(p) {
   return cond + effs.join('；');
 }
 
-// cardId → 被動描述陣列（無被動回空陣列）。
+// ══ 被動類技能四分類（2026-07 定案）══
+//   1. 星級里程碑：升星解鎖（deriveStats 追加，星級區顯示）
+//   2. 進場被動：onEnter 開天氣/場地（一次性）
+//   3. 光環被動：無條件/自身條件光環 ＋ 事件觸發（triggers）——同一分類
+//   4. 隊伍技：組隊條件（when.alliesAtLeast——湊滿 X 名系列/種族才生效）
+
+// cardId → 光環被動描述（排除隊伍技；觸發另由 triggerInfoForCard 給、同屬光環被動分類）。
 export function passiveInfoForCard(cardId) {
   const card = CARDS[cardId];
   if (!card || !card.passives) return [];
-  return card.passives.map(describePassive).filter(Boolean);
+  return card.passives.filter((p) => !p.when?.alliesAtLeast).map(describePassive).filter(Boolean);
+}
+
+// cardId → 隊伍技描述陣列（組隊條件被動；進場鎖定、整場有效）。
+export function teamSkillInfoForCard(cardId) {
+  const card = CARDS[cardId];
+  if (!card || !card.passives) return [];
+  return card.passives
+    .filter((p) => p.when?.alliesAtLeast)
+    .map((p) => {
+      const d = describePassive(p);
+      return d ? `${d}（進場判定，整場有效）` : '';
+    })
+    .filter(Boolean);
+}
+
+// cardId → 進場被動描述（開天氣/場地；無則 null）。
+export function onEnterInfoForCard(cardId) {
+  const card = CARDS[cardId];
+  if (!card?.onEnter) return null;
+  const parts = [];
+  if (card.onEnter.weather) {
+    const w = { sunny: '烈日', rain: '暴雨', gale: '颶風' }[card.onEnter.weather] ?? card.onEnter.weather;
+    parts.push(`使天候轉為${w}`);
+  }
+  if (card.onEnter.terrain) {
+    parts.push(`將場地轉為「${TERRAIN_NAME[card.onEnter.terrain] ?? card.onEnter.terrain}」`);
+  }
+  return parts.length ? `進場時${parts.join('、')}（照行動序結算，後開者覆蓋）` : null;
 }
 
 // ---- 觸發描述（triggers 資料 → 人話）----

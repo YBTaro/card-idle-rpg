@@ -43,4 +43,15 @@ describe('技能治理', () => {
       }
     }
   });
+
+  it('被動軸互斥：每卡至多一個被動軸（光環/隊伍技/觸發/進場擇一；普攻＋絕技才是必備）', () => {
+    for (const card of Object.values(CARDS)) {
+      const axes = [];
+      if ((card.passives ?? []).some((p) => !p.when?.alliesAtLeast)) axes.push('aura');
+      if ((card.passives ?? []).some((p) => p.when?.alliesAtLeast)) axes.push('team');
+      if (card.triggers?.length) axes.push('trigger');
+      if (card.onEnter) axes.push('enter');
+      expect({ id: card.id, axes: axes.length <= 1 ? 'ok' : axes.join('+') }).toEqual({ id: card.id, axes: 'ok' });
+    }
+  });
 });

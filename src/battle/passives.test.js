@@ -33,18 +33,19 @@ describe('recomputePassives', () => {
     expect(a.effAtk).toBe(110); // 2 不死 → 1+0.05*2=1.1
   });
 
-  it('條件 alliesAtLeast：符合數達標才生效', () => {
+  it('條件 alliesAtLeast（隊伍技）：進場判定一次、鎖定整場', () => {
     const p = [{ when: { alliesAtLeast: { count: 2, where: { race: '龍' } } }, target: 'self', effects: [{ stat: 'atk', op: 'mul', value: 1.5 }] }];
+    // 只有 1 條龍(owner) → 未達 2 → 無效，且鎖定為否（同單位之後不重驗）
     const owner = makeUnit({ team: 0, pos: 1, atk: 100, race: '龍', passives: p });
-    const dragon2 = makeUnit({ team: 0, pos: 2, race: '龍' });
     const human = makeUnit({ team: 0, pos: 3, race: '人' });
     const foe = makeUnit({ team: 1, pos: 1 });
-    // 只有 1 條龍(owner) → 未達 2 → 無效
     recomputePassives([[owner, human], [foe]]);
     expect(owner.effAtk).toBe(100);
-    // 2 條龍(owner + dragon2) → 達標 → +50%
-    recomputePassives([[owner, dragon2, human], [foe]]);
-    expect(owner.effAtk).toBe(150);
+    // 進場鎖定語義：達標情境要用「新開場」的單位驗證
+    const owner2 = makeUnit({ team: 0, pos: 1, atk: 100, race: '龍', passives: p });
+    const dragon2 = makeUnit({ team: 0, pos: 2, race: '龍' });
+    recomputePassives([[owner2, dragon2, human], [foe]]);
+    expect(owner2.effAtk).toBe(150);
   });
 
   it('targetWhere：光環只作用於符合條件的隊友（種族主題光環）', () => {
