@@ -65,7 +65,7 @@ describe('能量超充', () => {
     const mk = (overcharge) => {
       const caster = makeUnit({ team: 0, pos: 1, atk: 100 });
       const foe = makeUnit({ team: 1, pos: 1, hp: 99999, def: 0 });
-      castSkill(caster, 'karmicFire', ctxFor(caster, [caster], [foe]), { overcharge });
+      castSkill(caster, 'infernoNova', ctxFor(caster, [caster], [foe]), { overcharge }); // 焚天：必定上灼燒
       return foe.buffs.find((b) => b.kind === 'dot')?.damage;
     };
     expect(mk(2)).toBe(mk(1)); // 每跳值相同——超充不外漏到狀態
