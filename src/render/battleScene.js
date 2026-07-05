@@ -56,6 +56,15 @@ const ELEMENT_COLOR = {
 const CLASS_GLYPH = { tank: '🛡', dps: '⚔', support: '✚' };
 
 const GOLD = 0xf5e6b0;
+// 傷害飄字專用屬性色：風用「森林綠」（亮綠留給治療）；無屬性＝白。
+const DMG_ELEMENT_COLOR = {
+  fire: 0xff7d5c,
+  wind: 0x4caf6d, // 森林綠（治療是亮綠 0x8ef2ae，兩者要分得開）
+  water: 0x6cb2ff,
+  light: 0xffe789,
+  dark: 0xbb8cff,
+};
+const HEAL_GREEN = 0x8ef2ae; // 治療亮綠
 const BODY_H = 165; // 立繪基準高（縮放前）
 const BAR_W = 44; // 頭頂血條寬
 const GROUND_Y = STAGE_H * 0.55;
@@ -940,7 +949,7 @@ export class BattleScene {
         playVoice(s._info.cardId, 'ultimate'); // 絕技語音（無音檔＝靜默）
         screenShake(this.root);
       }),
-      rp.on('damage', ({ targetUid, amount, skill, isCrit, isAdvantage, isDisadvantage, trueDmg, execute, detonate, nightmare }) => {
+      rp.on('damage', ({ targetUid, amount, skill, isCrit, isAdvantage, isDisadvantage, trueDmg, execute, detonate, nightmare, element }) => {
         if (this._instant) return;
         const s = this.sprites.get(targetUid);
         if (!s) return;
@@ -972,9 +981,10 @@ export class BattleScene {
           color = 0xff7a3c;
           screenShake(this.root, 5);
         } else if (isCrit) {
+          // 暴擊：同屬性色放大（無屬性＝白）
           text = `暴擊 ${amount}`;
           size = 30;
-          color = 0xffa940;
+          color = DMG_ELEMENT_COLOR[element] ?? 0xffffff;
           screenShake(this.root, 4);
         } else if (nightmare) {
           // 惡夢印記加傷：暗紫小標
@@ -999,8 +1009,10 @@ export class BattleScene {
           size = 24;
           color = 0xfff2c8;
         } else {
-          color = isAdvantage ? 0xffd54a : isDisadvantage ? 0x9aa3b8 : 0xff6b6b;
-          size = isAdvantage ? 26 : 20;
+          // 一般傷害：字色＝攻擊者屬性（風＝森林綠、無屬性＝白）；剋制命中微放大
+          color = DMG_ELEMENT_COLOR[element] ?? 0xffffff;
+          size = isAdvantage ? 24 : 20;
+          if (isDisadvantage) size = 17;
           text = `${amount}`;
         }
         const txt = new Text({
@@ -1009,16 +1021,16 @@ export class BattleScene {
         });
         floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
       }),
-      rp.on('heal', ({ targetUid, amount, kind }) => {
+      rp.on('heal', ({ targetUid, amount, kind, isCrit }) => {
         if (this._instant) return;
         const s = this.sprites.get(targetUid);
         if (!s) return;
         if (this._ultDim) {
           this._spotlightTarget(s);
-          if (kind !== 'hot') targetVfx({ dotTex: this._dotTex }, s, null, 0x8ef2ae, { heal: true });
+          if (kind !== 'hot') targetVfx({ dotTex: this._dotTex }, s, null, HEAL_GREEN, { heal: true });
           this._refreshUltTimer(this._ultTail ?? 0.5);
         }
-        let fill = 0x6bdc8a;
+        let fill = HEAL_GREEN; // 治療＝亮綠（風屬傷害是森林綠，兩者區分）
         let size = 20;
         if (kind === 'lifesteal') {
           // 吸血：血色光點收束入體，浮字帶血色
@@ -1027,11 +1039,12 @@ export class BattleScene {
         } else if (kind === 'hot') {
           // 持續回復跳字：小而輕，不搶普通治療的戲
           size = 15;
-          spark(this.fxLayer, s.x, this._chestY(s), 0x8ef2ae, this._dotTex, 3);
+          spark(this.fxLayer, s.x, this._chestY(s), HEAL_GREEN, this._dotTex, 3);
         }
-        if (kind !== 'hot') spark(this.fxLayer, s.x, this._chestY(s), kind === 'lifesteal' ? 0xe0567a : 0x8ef2ae, this._dotTex, 6);
+        if (isCrit) size = 28; // 治療暴擊：亮綠放大（前綴「暴擊」）
+        if (kind !== 'hot') spark(this.fxLayer, s.x, this._chestY(s), kind === 'lifesteal' ? 0xe0567a : HEAL_GREEN, this._dotTex, isCrit ? 12 : 6);
         const txt = new Text({
-          text: `+${amount}`,
+          text: `${isCrit ? '暴擊 ' : ''}+${amount}`,
           style: { fontSize: size, fill, fontWeight: '800', stroke: { color: 0x000000, width: 3 } },
         });
         floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);

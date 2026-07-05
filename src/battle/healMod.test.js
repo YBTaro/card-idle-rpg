@@ -25,6 +25,19 @@ describe('受治療量（healTaken）', () => {
     expect(u.heal(100)).toBe(50);
   });
 
+  it('直接治療吃施放者暴擊（×暴傷、事件帶 isCrit）；增益不受抗暴影響', () => {
+    const caster = makeUnit({ team: 0, pos: 1, atk: 100 });
+    applyBuff(caster, { kind: 'stat', stat: 'critChance', op: 'add', value: 1, duration: 9 }); // 必暴
+    const ally = makeUnit({ team: 0, pos: 2, hp: 5000 });
+    ally.hp = 100;
+    let crit = null;
+    const ctx = { allies: [caster, ally], enemies: [], rng: new Rng(2), emit: (e, p) => { if (e === 'heal') crit = p.isCrit; } };
+    castSkill(caster, 'heal', { ...ctx });
+    // 治癒對最低血隊友 300% 攻擊 → 必暴 ×1.5 = 450
+    expect(ally.hp).toBe(100 + Math.round(100 * 3.0 * caster.critMult));
+    expect(crit).toBe(true);
+  });
+
   it('重傷是減益（可被淨化）、增幅是增益', () => {
     expect(isNegative({ kind: 'stat', stat: 'healTaken', op: 'mul', value: 0.5 })).toBe(true);
     expect(isNegative({ kind: 'stat', stat: 'healTaken', op: 'mul', value: 1.3 })).toBe(false);

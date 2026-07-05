@@ -62,6 +62,7 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
     source: caster, target, amount: dealt, skill,
     isAdvantage: res.isAdvantage, isDisadvantage: res.isDisadvantage, isCrit: res.isCrit,
     trueDmg: !!opts.ignoreDef, execute: !!opts.execute, // 演出用旗標（真傷/處決）
+    element: caster?.element ?? null, // 傷害字色＝攻擊者屬性（演出用）
   });
   if (!target.alive) ctx.emit('death', { unit: target });
 
@@ -115,7 +116,10 @@ export function healAmount(ctx, amount) {
 
 // DoT：套用預存 damage。吃 dotTaken 易傷（「增加受到的灼燒傷害%」型 debuff）。
 export function dealDot(target, dot, ctx) {
-  return dealDirect(target, dot.damage * resolve(target, 'dotTaken', 1), ctx, { skill: 'dot' });
+  return dealDirect(target, dot.damage * resolve(target, 'dotTaken', 1), ctx, {
+    skill: 'dot',
+    flags: { element: dot.element ?? null }, // 灼燒橘紅/無屬性毒白（演出字色）
+  });
 }
 
 // where 條件過濾：series 成員判斷、其餘等值；多鍵 AND；無 where → true。
@@ -181,8 +185,17 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         break;
       }
       case 'heal': {
-        const healed = u.heal(healAmount(ctx, resolvePower(effect, caster, u)));
-        if (healed > 0) ctx.emit('heal', { source: caster, target: u, amount: healed });
+        // 直接治療吃施放者暴擊（增益技能不受抗暴影響——只擲施放者的暴擊率/暴傷；
+        // HoT 每跳與吸血回填不吃暴擊）
+        let amount = healAmount(ctx, resolvePower(effect, caster, u));
+        let hCrit = false;
+        const roll = ctx.rng ? ctx.rng.next() : Math.random();
+        if (roll < caster.critChance) {
+          amount = Math.round(amount * caster.critMult);
+          hCrit = true;
+        }
+        const healed = u.heal(amount);
+        if (healed > 0) ctx.emit('heal', { source: caster, target: u, amount: healed, isCrit: hCrit });
         break;
       }
       case 'hot': // 持續回復：行動前結算（engine 與 DoT 同點）
