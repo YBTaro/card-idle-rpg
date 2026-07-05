@@ -105,9 +105,15 @@ export const SELECTORS = {
     if (!a.length) return [];
     return [a.reduce((best, u) => (u.effAtk > best.effAtk ? u : best))];
   },
-  // 第一位倒下的隊友（復活用；配 scope 'targetIncludingDead'）
+  // 戰力最高的倒下隊友（復活用；配 scope 'targetIncludingDead'）——救回主力。
+  // 戰力＝有效攻擊力優先，同攻取等級高者（deriveStats 已含職業/種族/星級/裝備）。
   deadAlly: (caster, ctx) => {
-    const d = ctx.allies.find((u) => !u.alive);
-    return d ? [d] : [];
+    const dead = ctx.allies.filter((u) => !u.alive);
+    if (!dead.length) return [];
+    const best = dead.reduce((b, u) => {
+      if (u.effAtk !== b.effAtk) return u.effAtk > b.effAtk ? u : b;
+      return (u.level ?? 0) > (b.level ?? 0) ? u : b;
+    });
+    return [best];
   },
 };

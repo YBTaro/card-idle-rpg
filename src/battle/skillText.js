@@ -17,7 +17,7 @@ const TARGET_LABEL = {
   lowestHpEnemy: '血量最低的敵人',
   highestEnergyEnemy: '能量最高的敵人',
   highestAtkAlly: '攻擊最高的隊友',
-  deadAlly: '倒下的隊友',
+  deadAlly: '戰力最高的倒下隊友',
   self: '自身',
 };
 

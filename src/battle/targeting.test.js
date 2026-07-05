@@ -120,11 +120,17 @@ describe('SELECTORS registry', () => {
     expect(res).toEqual([e2]);
   });
 
-  it('deadAlly：回傳第一位倒下的隊友；全活回空', () => {
-    const a1 = makeUnit({ team: 0, pos: 1 });
-    const a2 = makeUnit({ team: 0, pos: 2 });
-    expect(SELECTORS.deadAlly(a1, ctxWith([], [a1, a2]))).toEqual([]);
+  it('deadAlly：回傳戰力最高的倒下隊友（救主力）；全活回空', () => {
+    const a1 = makeUnit({ team: 0, pos: 1, atk: 80 });
+    const a2 = makeUnit({ team: 0, pos: 2, atk: 200 }); // 主力（攻最高）
+    const a3 = makeUnit({ team: 0, pos: 3, atk: 120 });
+    expect(SELECTORS.deadAlly(a1, ctxWith([], [a1, a2, a3]))).toEqual([]);
+    a1.takeDamage(99999);
+    a3.takeDamage(99999);
+    // a1、a3 都倒下 → 取攻較高的 a3（a2 還活著不算）
+    expect(SELECTORS.deadAlly(a1, ctxWith([], [a1, a2, a3]))).toEqual([a3]);
     a2.takeDamage(99999);
-    expect(SELECTORS.deadAlly(a1, ctxWith([], [a1, a2]))).toEqual([a2]);
+    // 全倒 → 取戰力最高的 a2
+    expect(SELECTORS.deadAlly(a1, ctxWith([], [a1, a2, a3]))).toEqual([a2]);
   });
 });
