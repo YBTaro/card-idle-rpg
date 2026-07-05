@@ -977,7 +977,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .bo-unitpanel .up-head span { font-size: .74rem; color: #cbb691; }
 .up-close {
   margin-left: auto; width: 1.5rem; height: 1.5rem; border-radius: 99px; border: 1px solid rgba(232, 196, 106, .45);
-  background: rgba(232, 196, 106, .12); color: #f0e3c8; font-size: .72rem; cursor: pointer; flex: none;
+  background: rgba(232, 196, 106, .12); color: #f0e3c8; cursor: pointer; flex: none; /* font-size 交給 .up-close 的 font-size:0（✕ 由 CSS ::before/::after 畫） */
 }
 .up-empty { font-size: .76rem; color: #cbb691; padding: .3rem 0; }
 .up-row {
