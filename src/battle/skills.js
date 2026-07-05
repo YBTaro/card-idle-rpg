@@ -27,7 +27,7 @@ export const SKILLS = {
   },
   infernoNova: { name: '焚天', target: 'enemyFrontRow', effects: [
     { type: 'damage', mult: 1.8, scope: 'target' },
-    { type: 'dot', power: 0.3, element: 'fire', duration: 2, scope: 'target' }, // 主傷在直擊，餘燼是配菜（灼燒係數依角色定位差異化）
+    { type: 'dot', power: 0.6, element: 'fire', duration: 2, scope: 'target' }, // 灼燒 ×2：DoT 要有 DoT 的份量
   ]},
   moltenBulwark: { name: '熔壁', target: 'enemyFrontRow', effects: [ // 定位：灼熱裝甲坦——貼近我的人更怕火
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
@@ -72,11 +72,11 @@ export const SKILLS = {
     { type: 'damage', mult: 1.2, scope: 'target' },
     { type: 'damage', mult: 1.2, scope: 'target' },
     { type: 'damage', mult: 0.8, scope: 'target', executeBelow: 0.3, executeBonus: 2.0 },
-    { type: 'dot', power: 0.35, element: 'fire', duration: 2, scope: 'target', chance: 0.7 }, // 70% 燃燒 2 回合（同人再上＝回合數疊加）
+    { type: 'dot', power: 0.7, element: 'fire', duration: 2, scope: 'target', chance: 0.7 }, // 70% 燃燒 2 回合（灼燒 ×2）
   ]},
   karmicFire: { name: '業火', target: 'enemyFrontRow', effects: [
     { type: 'damage', mult: 1.5, scope: 'target' },
-    { type: 'dot', power: 0.45, element: 'fire', duration: 2, scope: 'target', stackable: true }, // 可疊層灼燒——灼燒流本命，單層最痛
+    { type: 'dot', power: 0.9, element: 'fire', duration: 2, scope: 'target', stackable: true }, // 可疊層灼燒——灼燒流本命，單層最痛（灼燒 ×2）
   ]},
   emberWarmth: { name: '餘溫', effects: [ // 定位：延燒輔助（淨化歸潮頌）——治療收窄前排、數值加厚
     { type: 'heal', power: 1.5, scope: 'frontAllies' },
@@ -93,7 +93,7 @@ export const SKILLS = {
   detonate: { name: '爆燃', target: 'allEnemies', effects: [ // 定位：全體引爆燃燒
     { type: 'detonateDot', element: 'fire', mult: 1.0, scope: 'target' }, // 引爆所有燃燒（每跳×剩餘回合一次結算）
     { type: 'damage', mult: 1.0, scope: 'target' }, // 對敵方全體 100% 攻擊力傷害
-    { type: 'dot', power: 0.3, element: 'fire', duration: 2, scope: 'backEnemies', chance: 0.7 }, // 70% 對後排點新火
+    { type: 'dot', power: 0.6, element: 'fire', duration: 2, scope: 'backEnemies', chance: 0.7 }, // 70% 對後排點新火（灼燒 ×2）
   ]},
   warBanner: { name: '軍威', effects: [ // 定位：攻擊號令（群體充能歸晨曲）
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies' },
