@@ -30,17 +30,27 @@ export function resolveScope(scope, caster, primary, ctx) {
       return alive(ctx.enemies);
     case 'alliesExceptTarget':
       return alive(ctx.allies).filter((u) => !primary.includes(u));
-    // 窄範圍輔助（群輔稀缺原則：範圍越窄數值越高）
-    case 'frontAllies':
-      return alive(ctx.allies).filter((u) => u.row === 'front');
-    case 'backAllies':
-      return alive(ctx.allies).filter((u) => u.row === 'back');
-    case 'columnAllies': // 與施放者同直排（含自己）
-      return alive(ctx.allies).filter((u) => u.column === caster.column);
-    case 'frontEnemies': // 敵方前排
-      return alive(ctx.enemies).filter((u) => u.row === 'front');
-    case 'backEnemies': // 敵方後排
-      return alive(ctx.enemies).filter((u) => u.row === 'back');
+    // 窄範圍輔助（群輔稀缺原則：範圍越窄數值越高）——本排/直排全空則轉移到其餘存活隊友，效果不浪費
+    case 'frontAllies': {
+      const front = alive(ctx.allies).filter((u) => u.row === 'front');
+      return front.length ? front : alive(ctx.allies).filter((u) => u.row === 'back');
+    }
+    case 'backAllies': {
+      const back = alive(ctx.allies).filter((u) => u.row === 'back');
+      return back.length ? back : alive(ctx.allies).filter((u) => u.row === 'front');
+    }
+    case 'columnAllies': { // 與施放者同直排（含自己）；該直排無人→全體隊友
+      const col = alive(ctx.allies).filter((u) => u.column === caster.column);
+      return col.length ? col : alive(ctx.allies);
+    }
+    case 'frontEnemies': { // 敵方前排（前排全空→轉後排，效果不浪費）
+      const front = alive(ctx.enemies).filter((u) => u.row === 'front');
+      return front.length ? front : alive(ctx.enemies).filter((u) => u.row === 'back');
+    }
+    case 'backEnemies': { // 敵方後排（後排全空→轉前排）
+      const back = alive(ctx.enemies).filter((u) => u.row === 'back');
+      return back.length ? back : alive(ctx.enemies).filter((u) => u.row === 'front');
+    }
     case 'targetIncludingDead': // 復活用：不過濾存活
       return primary;
     default:

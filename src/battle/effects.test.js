@@ -10,6 +10,30 @@ const ctxFor = (caster, allies, enemies, events = []) => ({
   emit: (event, payload) => events.push({ event, payload }),
 });
 
+describe('站位範圍 fallback（本排/直排空 → 轉移，效果不浪費）', () => {
+  const dead = (u) => { u.hp = 0; return u; };
+  it('backEnemies：後排全死 → 轉前排', () => {
+    const caster = makeUnit({ team: 0, pos: 1 });
+    const front = makeUnit({ team: 1, pos: 1 });
+    const back = dead(makeUnit({ team: 1, pos: 4 }));
+    const r = resolveScope('backEnemies', caster, [], ctxFor(caster, [caster], [front, back]));
+    expect(r).toEqual([front]);
+  });
+  it('frontEnemies：前排全死 → 轉後排', () => {
+    const caster = makeUnit({ team: 0, pos: 1 });
+    const front = dead(makeUnit({ team: 1, pos: 1 }));
+    const back = makeUnit({ team: 1, pos: 4 });
+    const r = resolveScope('frontEnemies', caster, [], ctxFor(caster, [caster], [front, back]));
+    expect(r).toEqual([back]);
+  });
+  it('frontAllies：前排全死 → 轉後排隊友', () => {
+    const caster = makeUnit({ team: 0, pos: 4 });
+    const front = dead(makeUnit({ team: 0, pos: 1 }));
+    const r = resolveScope('frontAllies', caster, [], ctxFor(caster, [caster, front], []));
+    expect(r).toEqual([caster]); // caster 在後排
+  });
+});
+
 describe('effects', () => {
   it('resolvePower：預設 effAtk 制、basis targetMaxHp 用目標 maxHp', () => {
     const caster = makeUnit({ atk: 100 });
