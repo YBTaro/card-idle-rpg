@@ -1258,6 +1258,20 @@ export class BattleScene {
         const txt = new Text({ text: `🛡 ${amount}`, style: { fontSize: 18, fill: 0xa8d8f0, fontWeight: '800', stroke: { color: 0x000000, width: 3 } } });
         floatText(this.fxLayer, s.x, this._chestY(s) - 24, txt);
       }),
+      rp.on('enter', ({ uid }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(uid);
+        if (!s) return;
+        // 進場施法演出：與絕技施放同語言——施法法陣 + 放大脈衝 + 頭上宣告「進場」
+        const color = ELEMENT_COLOR[s._info.element] || 0xffe9b0;
+        castCircle(s, color);
+        ultPulse(s, s._body, color);
+        const txt = new Text({
+          text: '進場',
+          style: { fontSize: 22, fill: color, fontWeight: '900', letterSpacing: 2, stroke: { color: 0x000000, width: 4 } },
+        });
+        floatText(this.fxLayer, s.x, this._chestY(s) - 56, txt);
+      }),
       rp.on('resist', ({ uid }) => {
         if (this._instant) return;
         const s = this.sprites.get(uid);

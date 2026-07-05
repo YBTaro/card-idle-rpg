@@ -275,7 +275,7 @@ export function teamSkillInfoForCard(cardId) {
     .filter(Boolean);
 }
 
-// cardId → 進場被動描述（開天氣/場地；無則 null）。
+// cardId → 進場被動描述（開天氣/場地 + 通用 effects：上 buff/debuff/盾/毒/能量…；無則 null）。
 export function onEnterInfoForCard(cardId) {
   const card = CARDS[cardId];
   if (!card?.onEnter) return null;
@@ -287,7 +287,12 @@ export function onEnterInfoForCard(cardId) {
   if (card.onEnter.terrain) {
     parts.push(`將場地轉為「${TERRAIN_NAME[card.onEnter.terrain] ?? card.onEnter.terrain}」`);
   }
-  return parts.length ? `進場時${parts.join('、')}（照行動序結算，後開者覆蓋）` : null;
+  // 通用進場效果：走跟技能同一套 describeEffect（buff/debuff/盾/毒/能量…）
+  for (const e of card.onEnter.effects ?? []) {
+    const d = describeEffect(e, '目標');
+    if (d) parts.push(d);
+  }
+  return parts.length ? `進場時${parts.join('；')}（開場一次性結算）` : null;
 }
 
 // ---- 觸發描述（triggers 資料 → 人話）----

@@ -4,6 +4,7 @@ export const DELAYS = {
   turn: 0.1, attack: 0.25, ultimate: 1.05, damage: 0.18,
   heal: 0.15, death: 0.25, stunned: 0.25, revive: 0.45, dispel: 0.25,
   weather: 1.25, terrain: 1.25, drain: 0.12, // 環境宣告是戰略事件：獨占一整拍（開場互蓋逐一亮相）
+  enter: 0.7, // 進場施法演出：cast 特效要一拍看清
   miss: 0.22, // 迴避：側移殘影 + MISS 飄字要看得清
   steal: 0.3, // 竊能：奪走→轉移兩端飄字要有拍點
   shield: 0.15, // 上盾：藍金飄字一拍（盾量統計的資料源同這事件）

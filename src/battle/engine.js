@@ -243,8 +243,19 @@ export class BattleEngine {
     for (const [team, pos] of TURN_SEQUENCE) {
       const u = this._unitAt(team, pos);
       if (!u?.onEnter) continue;
+      // 環境類進場（天氣/場地）：走環境系統（戰略級、可被後開者覆蓋）
       if (u.onEnter.weather) this.setWeather(u.onEnter.weather, u);
       if (u.onEnter.terrain) this.setTerrain(u.onEnter.terrain, u);
+      // 通用進場效果：走跟技能同一套 effects——可上 buff/debuff/盾/毒/能量…
+      // scope 相對施放者解析（allAllies/allEnemies/self…），支援 where 過濾（種族/系列/屬性）。
+      if (u.onEnter.effects) {
+        this.emit('enter', { unit: u }); // 進場施法演出（battleScene 播 cast VFX）
+        const ctx = this._ctxFor(u);
+        for (const effect of u.onEnter.effects) {
+          const targets = resolveScope(effect.scope, u, [], ctx);
+          applyEffect(effect, u, targets, ctx, 'onEnter');
+        }
+      }
     }
   }
 

@@ -43,6 +43,21 @@ describe('天氣（烈日/暴雨）', () => {
     expect(e.weatherId).toBe('rain');
   });
 
+  it('通用進場效果：開場對符合條件的隊友上效果（燼火隊友 +50 能量）', () => {
+    const witch = makeUnit({ team: 0, pos: 1, series: ['燼火'], onEnter: { effects: [{ type: 'energy', amount: 50, scope: 'allAllies', where: { series: '燼火' } }] } });
+    const emberAlly = makeUnit({ team: 0, pos: 2, series: ['燼火'] });
+    const other = makeUnit({ team: 0, pos: 3, series: ['疾風'] });
+    const foe = makeUnit({ team: 1, pos: 1, hp: 99999 });
+    const e = new BattleEngine([witch, emberAlly, other], [foe], { rng: new Rng(1) });
+    let entered = false;
+    e.on('enter', ({ unit }) => { if (unit === witch) entered = true; });
+    e.step();
+    expect(entered).toBe(true); // 有發進場演出事件
+    expect(witch.energy).toBeGreaterThanOrEqual(50); // 自己也是燼火（step 內她還普攻了一次再 +能量）
+    expect(emberAlly.energy).toBe(50); // 燼火隊友吃到（尚未行動）
+    expect(other.energy).toBe(0); // 非燼火不吃
+  });
+
   it('技能開天氣覆蓋當前（曦喚祭司「喚日」轉烈日）', () => {
     const caster = makeUnit({ team: 0, pos: 1, cardId: 'sunherald', class: 'support', energy: 100, element: 'fire' });
     const foe = makeUnit({ team: 1, pos: 1, hp: 99999 });
