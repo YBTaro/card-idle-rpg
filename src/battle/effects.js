@@ -81,6 +81,19 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
     if (nm > 0) dealDirect(target, target.maxHp * nm, ctx, { skill: 'nightmare', source: caster, flags: { nightmare: true } });
   }
 
+  // 受擊回癒（healOnHit）：受到直接攻擊時回復自身攻擊力×power 的生命，每次觸發消耗一層。
+  // 與荊棘/反擊同一時機（直接攻擊限定；DoT/引爆/侵蝕不觸發）；層數歸零即移除。
+  if (!opts.noRetaliate && dealt > 0 && target.alive) {
+    const hoh = (target.buffs || []).find((b) => b.kind === 'healOnHit' && (b.charges ?? 0) > 0);
+    if (hoh) {
+      const healed = target.heal(healAmount(ctx, target.effAtk * (hoh.power ?? 1)));
+      if (healed > 0) ctx.emit('heal', { source: target, target, amount: healed, kind: 'healOnHit' });
+      hoh.charges -= 1;
+      if (hoh.charges <= 0) target.buffs = target.buffs.filter((b) => b !== hoh);
+      ctx.emit('buffchange', { unit: target, buffs: summarizeBuffs(target) });
+    }
+  }
+
   // 受擊觸發（直接攻擊才觸發；反傷/反擊本身不再連鎖）
   if (!opts.noRetaliate && dealt > 0 && caster) {
     // 荊棘反傷：受擊者身上 thorns 總和 × 實際傷害，直接回敬攻擊者
@@ -375,6 +388,13 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         break;
       case 'nightmare': // 惡夢印記：永久（無 duration、不隨回合消退）、可被淨化；觸發見 dealDamage
         applyBuffN(u, { kind: 'nightmare', pct: effect.pct ?? 0.05, key: defaultKey('nightmare') });
+        emitBuffs(u);
+        break;
+      case 'healOnHit': // 受擊回癒：受直接攻擊時回復（power×自身攻擊力）生命，每次觸發消耗一層（結算見 dealDamage）
+        applyBuffN(u, {
+          kind: 'healOnHit', power: effect.power ?? 1.0, charges: effect.charges ?? 2,
+          duration: effect.duration, key: defaultKey('healOnHit'), stackable: effect.stackable,
+        });
         emitBuffs(u);
         break;
       case 'debuffBlock': // 格擋護符：接下來 N 個負面狀態被彈掉（每彈一層；可被驅散）

@@ -831,6 +831,7 @@ export class BattleScene {
     if (b.kind === 'element') return '🔮';
     if (b.kind === 'nightmare') return '😱';
     if (b.kind === 'debuffBlock') return '🧿';
+    if (b.kind === 'healOnHit') return '💞';
     if (b.kind === 'mark') return '🎯';
     if (b.kind === 'cheatDeath') return '🕊';
     if (b.kind === 'control') {
@@ -858,8 +859,8 @@ export class BattleScene {
       t.anchor.set(0.5);
       t.x = x;
       icons.addChild(t);
-      // 剩餘回合小數字（右下角標；無期限狀態不顯示）；格擋護符改顯示剩餘層數
-      const badgeN = b.kind === 'debuffBlock' ? b.charges : b.turns;
+      // 剩餘回合小數字（右下角標；無期限狀態不顯示）；層數型狀態（格擋護符/受擊回癒）改顯示剩餘層數
+      const badgeN = b.kind === 'debuffBlock' || b.kind === 'healOnHit' ? b.charges : b.turns;
       if (badgeN != null && badgeN > 0) {
         const badge = new Graphics();
         badge.circle(x + SIZE / 2 - 1, SIZE / 2 - 1, 5).fill({ color: 0x0b0d16, alpha: 0.95 });

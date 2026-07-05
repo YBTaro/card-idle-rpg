@@ -38,7 +38,7 @@
 //   受治療倍率（healTaken：神＝增幅/不死＝重傷）於 Unit.heal 唯一入口生效；復活不經治療路徑
 //
 // 【觸發器掛點】（新增觸發型 buff 先看這裡有沒有現成掛點）
-//   受直接攻擊時 → dealDamage 內（thorns/counter/nightmare 惡夢印記）
+//   受直接攻擊時 → dealDamage 內（thorns/counter/nightmare 惡夢印記/healOnHit 受擊回癒）
 //   敵方施放技能後 → _act skill 分支尾（castDrain）
 //   行動前 → _act normal 頭（dot/hot）
 //   回合開始 → _stepNormal 回合換算處（環境侵蝕）

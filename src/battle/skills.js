@@ -188,9 +188,9 @@ export const SKILLS = {
     { type: 'energy', amount: 25, scope: 'allAllies' },
     { type: 'energy', amount: 15, scope: 'allAllies', where: { series: '聖歌隊' } },
   ]},
-  luminousWall: { name: '聖壁', effects: [ // 定位：自癒坦——扛著扛著自己就回滿了（厚盾歸冰甲）
+  luminousWall: { name: '聖壁', effects: [ // 定位：受擊回癒坦——打我一下、我亮一次（厚盾歸冰甲、HoT 歸霧癒）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'hot', power: 0.8, duration: 2, scope: 'self' },
+    { type: 'healOnHit', power: 1.0, charges: 2, duration: 2, scope: 'self' }, // 受擊回癒 2 層：每次被打回 100% 攻擊力的血
   ]},
   starfall: { name: '星隕', target: 'enemyBackRow', effects: [
     { type: 'damage', mult: 1.8, scope: 'target' },

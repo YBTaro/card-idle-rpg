@@ -134,7 +134,7 @@ export class BattleOverlay {
         el('span', { class: 'lb', text: buffLabel(b) }),
         el('span', {
           class: 'tn',
-          text: b.kind === 'debuffBlock' && b.charges != null ? `${b.charges} 層`
+          text: (b.kind === 'debuffBlock' || b.kind === 'healOnHit') && b.charges != null ? `${b.charges} 層`
             : b.turns != null ? `${b.turns} 回合` : '常駐',
         }),
       ]));

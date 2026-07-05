@@ -146,6 +146,9 @@ function describeEffect(effect, targetLabel) {
     case 'nightmare':
       text = `對${who}烙上惡夢印記（受到普攻或技能直接傷害時，額外損失 ${pct(effect.pct ?? 0.05)} 最大生命；永久，可被淨化）`;
       break;
+    case 'healOnHit':
+      text = `為${who}附加受擊回癒 ${effect.charges ?? 2} 層（受到攻擊時回復 ${pct(effect.power ?? 1)} 攻擊力的生命，每次觸發消耗一層${dur(effect.duration)}）`;
+      break;
     case 'castDrain':
       text = `展開靈壓領域（敵方施放技能時，其餘敵人能量 -${effect.amount ?? 20}${dur(effect.duration)}）`;
       break;
@@ -350,6 +353,7 @@ export function buffLabel(b) {
     case 'castDrain': return '靈壓領域（敵方施法時其餘敵人扣能量）';
     case 'nightmare': return '惡夢印記（受直接傷害時額外損失生命）';
     case 'debuffBlock': return `格擋護符（可再彈開 ${b.charges ?? 1} 個負面狀態）`;
+    case 'healOnHit': return `受擊回癒（被打時回血，剩 ${b.charges ?? 1} 層）`;
     case 'mark': return '獵印（被攻擊時可能觸發敵方連動）';
     case 'cheatDeath': return '不滅意志（致死傷害改留 1 點生命）';
     case 'stat': {

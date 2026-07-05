@@ -2,6 +2,7 @@
 // 每個新啟用的機制軸至少一條「內容真的接上引擎」的驗證（引擎邏輯本身見 newMechanics.test.js）。
 import { describe, it, expect } from 'vitest';
 import { makeUnit } from './testHelpers.js';
+import { dealDamage } from './effects.js';
 import { castSkill, CARD_SKILLS, SKILLS } from './skills.js';
 import { CARDS } from '../data/cards.js';
 import { recomputePassives } from './passives.js';
@@ -69,6 +70,25 @@ describe('機制拼圖批次：內容接線', () => {
     const foe = makeUnit({ team: 1, pos: 1 });
     recomputePassives([[marshal, ...others], [foe]]);
     expect(marshal.effAtk).toBe(100);
+  });
+
+  it('聖壁（受擊回癒）：受攻擊回 100% 攻擊力生命、每次消耗一層、兩層用完即失效', () => {
+    const golem = makeUnit({ team: 0, pos: 1, cardId: 'radiantgolem', atk: 100, hp: 5000, def: 0 });
+    const foe = makeUnit({ team: 1, pos: 1, atk: 50, def: 0 });
+    castSkill(golem, 'luminousWall', ctxFor(golem, [golem], [foe]));
+    expect(golem.buffs.find((b) => b.kind === 'healOnHit')?.charges).toBe(2);
+    golem.hp = 3000;
+    // 直接量測回癒事件：打三下，只回兩次、每次 100（=自身攻擊力×1.0）
+    const heals = [];
+    const ctx = {
+      allies: [foe], enemies: [golem], rng: new Rng(7),
+      emit: (t, p) => { if (t === 'heal' && p.kind === 'healOnHit') heals.push(p.amount); },
+    };
+    dealDamage(foe, golem, 1.0, ctx, 'normal');
+    dealDamage(foe, golem, 1.0, ctx, 'normal');
+    dealDamage(foe, golem, 1.0, ctx, 'normal');
+    expect(heals).toEqual([100, 100]);
+    expect(golem.buffs.some((b) => b.kind === 'healOnHit')).toBe(false);
   });
 
   it('龍血沸騰：能量灌給攻擊最高隊友（可溢出成超充素材）', () => {
