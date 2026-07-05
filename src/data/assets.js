@@ -88,6 +88,25 @@ export const CARD_ART = {
   gearmedic: { art: 'assets/cards/gearmedic.svg', portrait: P },
   drakebastion: { art: 'assets/cards/drakebastion.svg', portrait: P },
   dragonoracle: { art: 'assets/cards/dragonoracle.svg', portrait: P },
+  // ---- 機制拼圖批次 18 隻 ----
+  bulwarkengine: { art: 'assets/cards/bulwarkengine.svg', portrait: P },
+  insulatower: { art: 'assets/cards/insulatower.svg', portrait: P },
+  mirrorfox: { art: 'assets/cards/mirrorfox.svg', portrait: P },
+  hexweaver: { art: 'assets/cards/hexweaver.svg', portrait: P },
+  deathlessking: { art: 'assets/cards/deathlessking.svg', portrait: P },
+  vengefulshade: { art: 'assets/cards/vengefulshade.svg', portrait: P },
+  huntmarshal: { art: 'assets/cards/huntmarshal.svg', portrait: P },
+  mistwarden: { art: 'assets/cards/mistwarden.svg', portrait: P },
+  hornchief: { art: 'assets/cards/hornchief.svg', portrait: P },
+  moonhowler: { art: 'assets/cards/moonhowler.svg', portrait: P },
+  flamewyrm: { art: 'assets/cards/flamewyrm.svg', portrait: P },
+  wyrmmatriarch: { art: 'assets/cards/wyrmmatriarch.svg', portrait: P },
+  miraclenun: { art: 'assets/cards/miraclenun.svg', portrait: P },
+  sanctumjudge: { art: 'assets/cards/sanctumjudge.svg', portrait: P },
+  godblade: { art: 'assets/cards/godblade.svg', portrait: P },
+  siegemarshal: { art: 'assets/cards/siegemarshal.svg', portrait: P },
+  warchoir: { art: 'assets/cards/warchoir.svg', portrait: P },
+  bladeoath: { art: 'assets/cards/bladeoath.svg', portrait: P },
 };
 
 // portrait 焦點 x/y 為 0..1，zoom 為倍率。
