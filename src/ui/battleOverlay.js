@@ -171,11 +171,11 @@ export class BattleOverlay {
     panel._onClose = onClose;
     panel.appendChild(el('button', { class: 'up-close pressable', text: '✕', onClick: () => this.hideStatsPanel() }));
     panel.appendChild(el('div', { class: 'st-title', text: '戰鬥統計' }));
-    const cols = el('div', { class: 'st-cols' });
-    const mkCol = (title, key, color) => {
+    // 我方/敵方分區各自排行（混在一起看不出誰是誰的）
+    const mkCol = (side, title, key, color) => {
       const box = el('div', { class: 'st-col' });
       box.appendChild(el('div', { class: 'st-h', style: `color:${color}`, text: title }));
-      const sorted = [...rows].sort((a, b) => b[key] - a[key]).filter((r) => r[key] > 0).slice(0, 5);
+      const sorted = [...side].sort((a, b) => b[key] - a[key]).filter((r) => r[key] > 0).slice(0, 5);
       if (!sorted.length) box.appendChild(el('div', { class: 'up-empty', text: '—' }));
       for (const r of sorted) {
         box.appendChild(el('div', { class: 'st-row' }, [
@@ -186,11 +186,17 @@ export class BattleOverlay {
       }
       return box;
     };
-    cols.appendChild(mkCol('輸出', 'dealt', '#ff9a5c'));
-    cols.appendChild(mkCol('承傷', 'taken', '#e8b46a'));
-    cols.appendChild(mkCol('治療', 'healed', '#8ef2ae'));
-    cols.appendChild(mkCol('護盾', 'shielded', '#8ecfe8'));
-    panel.appendChild(cols);
+    const mkSection = (label, side, cls) => {
+      panel.appendChild(el('div', { class: `st-side ${cls}`, text: label }));
+      const cols = el('div', { class: 'st-cols' });
+      cols.appendChild(mkCol(side, '輸出', 'dealt', '#ff9a5c'));
+      cols.appendChild(mkCol(side, '承傷', 'taken', '#e8b46a'));
+      cols.appendChild(mkCol(side, '治療', 'healed', '#8ef2ae'));
+      cols.appendChild(mkCol(side, '護盾', 'shielded', '#8ecfe8'));
+      panel.appendChild(cols);
+    };
+    mkSection('⚔ 我方', rows.filter((r) => r.team === 0), 'ally');
+    mkSection('👹 敵方', rows.filter((r) => r.team === 1), 'foe');
     this.root.appendChild(panel);
     this._statsPanel = panel;
     gsap.fromTo(panel, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.2, ease: 'power2.out' });

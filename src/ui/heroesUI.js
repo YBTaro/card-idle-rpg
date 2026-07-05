@@ -203,13 +203,19 @@ export class HeroesUI {
     return list;
   }
 
+  // 詳情頁的左右切換清單＝「目前篩選後可見」的卡（點卡當下計算，跟著篩選狀態走）。
+  _visibleIds() {
+    return this._sortedOwned()
+      .filter((inst) => this._matches(CARDS[inst.cardId]))
+      .map((c) => c.instanceId);
+  }
+
   _rosterGrid() {
     const list = this._sortedOwned();
     const grid = el('div', { class: 'deck' });
     this._empty = el('div', { class: 'hx-empty', text: '沒有符合條件的英雄——調整左側篩選看看' });
     grid.appendChild(this._empty);
     if (!list.length) return grid;
-    const orderIds = list.map((c) => c.instanceId);
     const frag = document.createDocumentFragment();
     for (const inst of list) {
       const card = CARDS[inst.cardId];
@@ -219,9 +225,8 @@ export class HeroesUI {
       frame.classList.add(`bd-${card.element}`);
       item.appendChild(frame);
       if (isInFormation(inst.instanceId)) item.appendChild(el('span', { class: 'flag', text: '出戰中' }));
-      longPress(item, () => openHeroSheet(inst.instanceId, { list: orderIds }), {
-        onTap: () => openHeroSheet(inst.instanceId, { list: orderIds }),
-      });
+      const open = () => openHeroSheet(inst.instanceId, { list: this._visibleIds() });
+      longPress(item, open, { onTap: open });
       frag.appendChild(item);
     }
     grid.appendChild(frag);

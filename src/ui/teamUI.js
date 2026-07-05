@@ -333,12 +333,16 @@ export class TeamUI {
     return target?.dataset.pos ? Number(target.dataset.pos) : null;
   }
 
+  // 隊上卡開詳情：左右切換只在「出戰 6 人」內循環（依站位順序）。
   _openSheet(instanceId) {
-    // 詳情頁左右切換順序＝出戰位置順序 + 其餘持有英雄
     const s = store.state;
     const formationIds = [...s.formation].sort((a, b) => a.pos - b.pos).map((e) => e.instanceId);
-    const others = s.cards.map((c) => c.instanceId).filter((id) => !formationIds.includes(id));
-    openHeroSheet(instanceId, { list: [...formationIds, ...others] });
+    openHeroSheet(instanceId, { list: formationIds });
+  }
+
+  // 抽屜卡開詳情：左右切換只在「目前篩選後的待命列」內循環。
+  _openBenchSheet(instanceId, benchIds) {
+    openHeroSheet(instanceId, { list: benchIds });
   }
 
   // 英雄選擇抽屜（編輯模式常駐；store 變更由 render 重建）。
@@ -388,10 +392,11 @@ export class TeamUI {
       list.appendChild(el('div', { class: 'sd-none', text: '沒有符合篩選的英雄' }));
     }
     const sorted = [...filtered].sort((a, b) => b.level - a.level);
+    const benchIds = sorted.map((c) => c.instanceId); // 詳情左右切換只在篩選後的待命列內
     for (const inst of sorted) {
       const card = CARDS[inst.cardId];
       const item = el('div', { class: 'swap-item pressable' }, [cardFrame(card, { level: inst.level, size: 'full', stars: inst.stars })]);
-      longPress(item, () => this._openSheet(inst.instanceId), {
+      longPress(item, () => this._openBenchSheet(inst.instanceId, benchIds), {
         onTap: () => {
           // 點一下：有指定格（從空格開的）→ 入該格並收抽屜；否則放第一個空位
           if (this._drawerTarget != null) {

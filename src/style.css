@@ -982,6 +982,13 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .bo-stats .up-close { position: absolute; right: .6rem; top: .6rem; }
 .bo-stats .st-title { text-align: center; font-size: 1rem; font-weight: 900; color: #ffe9b0; letter-spacing: .3em; margin-bottom: .6rem; }
 .bo-stats .st-cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; }
+.bo-stats .st-side {
+  font-size: .8rem; font-weight: 900; letter-spacing: .12em; margin: .5rem 0 .25rem;
+  padding-bottom: .15rem; border-bottom: 1px solid rgba(232, 196, 106, .3);
+}
+.bo-stats .st-side.ally { color: #9fe0a8; }
+.bo-stats .st-side.foe { color: #f0a08c; }
+.bo-stats .st-side:first-of-type { margin-top: .1rem; }
 .bo-stats .st-h { font-size: .78rem; font-weight: 900; text-align: center; margin-bottom: .3rem; letter-spacing: .15em; }
 .bo-stats .st-row {
   display: flex; align-items: center; gap: .3rem; font-size: .72rem; color: #f0e3c8; padding: .16rem 0;
