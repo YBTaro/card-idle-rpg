@@ -44,8 +44,8 @@ export const TERRAINS = {
   },
   erosion: {
     id: 'erosion', name: '侵蝕之地', color: '#c97b8e',
-    desc: '每回合「非暗屬性」流失 10% 最大生命；暗屬性暴擊率 +15%',
-    auras: [{ where: { element: 'dark' }, effects: [{ stat: 'critChance', op: 'add', value: 0.15 }] }],
+    desc: '每回合「非暗屬性」流失 10% 最大生命；暗屬性暴擊率 +20%',
+    auras: [{ where: { element: 'dark' }, effects: [{ stat: 'critChance', op: 'add', value: 0.2 }] }],
     rules: { roundDecay: { pct: 0.1, exemptElement: 'dark' } },
   },
   swamp: {
