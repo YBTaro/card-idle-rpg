@@ -27,7 +27,7 @@ export const SKILLS = {
   },
   infernoNova: { name: '焚天', target: 'allEnemies', effects: [ // 定位：全體火油鋪場（放大灼燒流）
     { type: 'damage', mult: 1.0, scope: 'target' }, // 對敵方全體 100% 攻擊力傷害
-    { type: 'buff', stat: 'dotTaken', op: 'mul', value: 1.5, duration: 3, scope: 'target' }, // 火油：受到的持續傷害 +50%（3 回合）
+    { type: 'buff', stat: 'dotTaken', op: 'mul', value: 1.25, duration: 3, scope: 'target' }, // 火油：受到的持續傷害 +25%（3 回合）
   ]},
   moltenBulwark: { name: '熔壁', target: 'enemyFrontRow', effects: [ // 定位：灼熱裝甲坦——貼近我的人更怕火
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
