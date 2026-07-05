@@ -837,7 +837,7 @@ export class BattleScene {
     if (b.kind === 'control') {
       return b.control === 'silence' ? '🤫' : b.control === 'freeze' ? '❄' : '🎯';
     }
-    const map = { atk: '⚔', def: '🛡', dmgTaken: '🛡', dotTaken: '🔥', critChance: '✨', critMult: '✨', dmgDealt: '💥', energyGain: '⚡', dodge: '💨', accuracy: '🎯', healTaken: '💊' };
+    const map = { atk: '⚔', def: '🛡', dmgTaken: '🛡', dotTaken: '🛢', critChance: '✨', critMult: '✨', dmgDealt: '💥', energyGain: '⚡', dodge: '💨', accuracy: '🎯', healTaken: '💊' }; // dotTaken(火油/易燃)＝🛢，與灼燒🔥 區分
     return map[b.stat] || '◆';
   }
 
