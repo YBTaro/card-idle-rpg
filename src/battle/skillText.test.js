@@ -1,5 +1,25 @@
 import { describe, it, expect } from 'vitest';
-import { describeSkill, skillInfoForCard, describePassive } from './skillText.js';
+import { describeSkill, skillInfoForCard, describePassive, buffLabel } from './skillText.js';
+import { summarizeBuffs } from './buffs.js';
+
+// 用 summarizeBuffs 產出的摘要（含 up 方向）測 buffLabel 的升/降文字
+const lbl = (buff) => buffLabel(summarizeBuffs({ buffs: [buff] })[0]);
+
+describe('buffLabel 升降方向（按屬性實際升降，不按好壞）', () => {
+  it('火油 dotTaken ×1.25＝提升（雖是壞事）', () => {
+    expect(lbl({ kind: 'stat', stat: 'dotTaken', op: 'mul', value: 1.25 })).toBe('受到的持續傷害提升');
+  });
+  it('減傷 dmgTaken ×0.7＝降低（增益）', () => {
+    expect(lbl({ kind: 'stat', stat: 'dmgTaken', op: 'mul', value: 0.7 })).toBe('承受傷害降低');
+  });
+  it('攻擊 ×1.2＝提升、×0.7＝降低', () => {
+    expect(lbl({ kind: 'stat', stat: 'atk', op: 'mul', value: 1.2 })).toBe('攻擊提升');
+    expect(lbl({ kind: 'stat', stat: 'atk', op: 'mul', value: 0.7 })).toBe('攻擊降低');
+  });
+  it('迴避 +0.3＝提升', () => {
+    expect(lbl({ kind: 'stat', stat: 'dodge', op: 'add', value: 0.3 })).toBe('迴避率提升');
+  });
+});
 
 describe('describeSkill（描述自動生成）', () => {
   it('焚天：全體傷害 + 火油（受到的持續傷害 +50%）', () => {
