@@ -34,6 +34,7 @@ const SCOPE_LABEL = {
 };
 
 const STAT_LABEL = {
+  maxHp: '最大生命',
   atk: '攻擊',
   def: '防禦',
   critChance: '暴擊率',

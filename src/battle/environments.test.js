@@ -70,7 +70,7 @@ describe('場地', () => {
     const fire = makeUnit({ team: 1, pos: 1, element: 'fire', hp: 1000, def: 100000 });
     const e = new BattleEngine([dark], [fire], { rng: new Rng(1), env: { weather: null, terrain: 'erosion' } });
     e.step();
-    expect(dark.critChance).toBeCloseTo(0.05 + 0.1); // 基礎 5% + 場地 10%
+    expect(dark.critChance).toBeCloseTo(0.05 + 0.15); // 基礎 5% + 場地 15%
     expect(fire.critChance).toBeCloseTo(0.05);
     const envDmg = [];
     e.on('damage', (p) => { if (p.skill === 'env') envDmg.push([p.target.element, p.amount]); });

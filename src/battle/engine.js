@@ -124,6 +124,11 @@ export class BattleEngine {
         }
       }
     });
+
+    // 開場先結算一次進場鎖定被動並校準最大生命——讓「血量 +N%」隊伍技在開打前就補滿，
+    // 也讓 battleLog 快照的 maxHp（血條分母）反映鎖定 buff（否則前端血條會超過 100%）。
+    recomputePassives(this.teams);
+    for (const u of this.units) u.reconcileMaxHp();
   }
 
   // 觸發派發：掃描全單位的 triggers（隊伍0優先、卡片內順序），比對 → once/機率 → 施放效果。
@@ -271,6 +276,7 @@ export class BattleEngine {
     if (!this._started) this._start();
     recomputePassives(this.teams);
     applyEnvAuras(this.teams, envAurasOf(this.weatherId, this.terrainId)); // 環境光環：動態、每步重算
+    for (const u of this.units) u.reconcileMaxHp(); // 最大生命 buff 變動 → 校準當前血量
     return this.phase === 'normal' ? this._stepNormal() : this._stepSkill();
   }
 

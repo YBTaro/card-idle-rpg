@@ -163,7 +163,7 @@ export class BattleOverlay {
     const mkCol = (side, title, key, color) => {
       const box = el('div', { class: 'st-col' });
       box.appendChild(el('div', { class: 'st-h', style: `color:${color}`, text: title }));
-      const sorted = [...side].sort((a, b) => b[key] - a[key]).filter((r) => r[key] > 0).slice(0, 5);
+      const sorted = [...side].sort((a, b) => b[key] - a[key]).filter((r) => r[key] > 0).slice(0, 6);
       if (!sorted.length) box.appendChild(el('div', { class: 'up-empty', text: '—' }));
       for (const r of sorted) {
         box.appendChild(el('div', { class: 'st-row' }, [

@@ -23,7 +23,7 @@ export class Unit {
     this.pos = pos;
     this.row = rowOf(pos);
 
-    this.maxHp = stats.hp;
+    this._baseMaxHp = stats.hp; // 最大生命基準值；maxHp getter 疊上 buff（隊伍技/技能可 +最大生命%）
     this.hp = stats.hp;
     this.atk = stats.atk;
     this.def = stats.def;
@@ -69,6 +69,21 @@ export class Unit {
 
   get hpRatio() {
     return Math.max(0, this.hp / this.maxHp);
+  }
+
+  // 最大生命：基準 × buff（stat:'maxHp'）——與 atk/def 同走 resolve，讓「血量 +N%」隊伍技生效。
+  get maxHp() { return Math.round(resolve(this, 'maxHp', this._baseMaxHp)); }
+
+  // 最大生命倍率變動時等比縮放當前生命（進場鎖定的 +最大生命% → 開場即補到對應血量；
+  // 暫時性 buff 消退則同比夾回）。以 _appliedMaxHp 追蹤，同值不重複縮放、無累積誤差。
+  reconcileMaxHp() {
+    const now = this.maxHp;
+    const prev = this._appliedMaxHp ?? this._baseMaxHp;
+    if (now !== prev && this.alive && this.hp > 0) {
+      this.hp = Math.max(1, Math.round(this.hp * now / prev));
+    }
+    this._appliedMaxHp = now;
+    if (this.hp > now) this.hp = now;
   }
 
   get effAtk() { return Math.round(resolve(this, 'atk', this.atk)); }
