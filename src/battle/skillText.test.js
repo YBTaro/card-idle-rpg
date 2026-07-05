@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { describeSkill, skillInfoForCard, describePassive } from './skillText.js';
 
 describe('describeSkill（描述自動生成）', () => {
-  it('焚天：前排傷害 + 灼燒', () => {
+  it('焚天：全體傷害 + 火油（受到的持續傷害 +50%）', () => {
     const d = describeSkill('infernoNova');
-    expect(d).toContain('敵方前排');
-    expect(d).toContain('180%');
-    expect(d).toContain('灼燒');
+    expect(d).toContain('敵方全體');
+    expect(d).toContain('100%');
+    expect(d).toContain('受到的持續傷害');
     expect(d).toContain('持續 3 次行動');
   });
 
