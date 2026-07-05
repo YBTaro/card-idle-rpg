@@ -249,7 +249,7 @@ export class BattleOverlay {
     const c = (this._cache ??= {});
     if (round !== c.round) {
       c.round = round;
-      this.roundEl.textContent = `R${round}`;
+      this.roundEl.textContent = `R${round + 1}`; // 引擎回合 0 起算，顯示 +1＝第一輪為 R1
     }
     const w0 = Math.max(0, Math.round(hpRatio0 * 1000) / 10);
     if (w0 !== c.w0) {

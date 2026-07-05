@@ -74,6 +74,7 @@ const dur = (d) => (d ? `，持續 ${d} 次行動` : '');
 
 function describeEffect(effect, targetLabel) {
   let who = SCOPE_LABEL[effect.scope] ?? targetLabel ?? '目標';
+  if (effect.scope === 'lowestHpAllies') who = `血量最低的 ${effect.count ?? 1} 名隊友`;
   // where 條件：作用對象限定（種族/屬性/系列主題技能）
   if (effect.where) who = `${who}中的${describeWhere(effect.where)}單位`;
   const chance = effect.chance != null ? `${pct(effect.chance)} 機率` : '';

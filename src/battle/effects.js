@@ -17,7 +17,7 @@ export function resolvePower(effect, caster, target) {
   return caster.effAtk * effect.power;
 }
 
-export function resolveScope(scope, caster, primary, ctx) {
+export function resolveScope(scope, caster, primary, ctx, effect = null) {
   const alive = (arr) => arr.filter((u) => u.alive);
   switch (scope) {
     case 'self':
@@ -28,6 +28,8 @@ export function resolveScope(scope, caster, primary, ctx) {
       return alive(ctx.allies);
     case 'allEnemies':
       return alive(ctx.enemies);
+    case 'lowestHpAllies': // 血量比例最低的 N 名存活隊友（護盾/治療用；N＝effect.count，預設 1）
+      return [...alive(ctx.allies)].sort((a, b) => a.hpRatio - b.hpRatio).slice(0, effect?.count ?? 1);
     case 'alliesExceptTarget':
       return alive(ctx.allies).filter((u) => !primary.includes(u));
     // 窄範圍輔助（群輔稀缺原則：範圍越窄數值越高）——本排/直排全空則轉移到其餘存活隊友，效果不浪費

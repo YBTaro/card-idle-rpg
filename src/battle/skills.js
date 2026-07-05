@@ -99,9 +99,9 @@ export const SKILLS = {
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies' },
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.88, duration: 2, scope: 'allAllies', where: { series: '鐵壁' } }, // 鐵壁軍團減傷
   ]},
-  lionRoar: { name: '獅吼', effects: [ // 定位：反擊坦（攻擊弱化歸墓約）
-    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'counter', mult: 0.8, duration: 2, scope: 'self' }, // 反擊姿態
+  lionRoar: { name: '獅吼', effects: [ // 定位：前排護盾守護（不搶仇恨）——減傷罩 + 給殘血隊友厚盾
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.8, duration: 2, scope: 'frontAllies' }, // 我方前排承傷 -20%
+    { type: 'shield', power: 2.5, duration: 2, scope: 'lowestHpAllies', count: 3 }, // 血量最低 3 名隊友獲 250% 攻擊力護盾
   ]},
 
   // ---- 風 ----
@@ -531,7 +531,7 @@ export function castSkill(caster, skillId, ctx, { overcharge = 1 } = {}) {
   const castCtx = overcharge > 1 ? { ...ctx, overcharge } : ctx;
   for (const effect of def.effects) {
     const eff = scaleEffect(effect, lv);
-    const units = resolveScope(eff.scope, caster, primary, ctx);
+    const units = resolveScope(eff.scope, caster, primary, ctx, eff);
     applyEffect(eff, caster, units, castCtx, skillId);
   }
 }

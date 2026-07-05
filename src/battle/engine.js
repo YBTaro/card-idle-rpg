@@ -252,7 +252,7 @@ export class BattleEngine {
         this.emit('enter', { unit: u, name: u.onEnter.name ?? null }); // 進場施法演出（battleScene 播 cast VFX）
         const ctx = this._ctxFor(u);
         for (const effect of u.onEnter.effects) {
-          const targets = resolveScope(effect.scope, u, [], ctx);
+          const targets = resolveScope(effect.scope, u, [], ctx, effect);
           applyEffect(effect, u, targets, ctx, 'onEnter');
         }
       }
