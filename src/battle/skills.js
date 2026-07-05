@@ -74,9 +74,9 @@ export const SKILLS = {
     { type: 'damage', mult: 0.8, scope: 'target', executeBelow: 0.3, executeBonus: 2.0 },
     { type: 'dot', power: 0.5, element: 'fire', duration: 3, scope: 'target', chance: 0.7 }, // 70% 燃燒（每跳 50%、持續 3 回合）
   ]},
-  karmicFire: { name: '業火', target: 'enemyFrontRow', effects: [
-    { type: 'damage', mult: 1.5, scope: 'target' },
-    { type: 'dot', power: 0.68, element: 'fire', duration: 3, scope: 'target', stackable: true }, // 可疊層灼燒——灼燒流本命（每跳 68%、持續 3 回合）
+  karmicFire: { name: '業火', target: 'allEnemies', effects: [ // 定位：全體灼燒散布
+    { type: 'damage', mult: 1.0, scope: 'target' }, // 對敵方全體 100% 攻擊力傷害
+    { type: 'dot', power: 0.68, element: 'fire', duration: 3, scope: 'target', chance: 0.7, stackable: true }, // 70% 全體附灼燒（可疊層，每跳 68%、持續 3 回合）
   ]},
   emberWarmth: { name: '餘溫', effects: [ // 定位：延燒輔助（淨化歸潮頌）——治療收窄前排、數值加厚
     { type: 'heal', power: 1.5, scope: 'frontAllies' },

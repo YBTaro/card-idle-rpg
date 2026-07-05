@@ -4,6 +4,9 @@ import { computeDamage } from './damage.js';
 import { elementMultiplier, COUNTERS } from '../data/elements.js';
 import { applyBuff, summarizeBuffs, dispelBuffs, isNegative, resolve } from './buffs.js';
 
+// 狀態變更通知：任何在傷害路徑上被消耗/移除的 buff（盾/免死…）都要發，前端圖示才即時清。
+const notifyBuffs = (ctx, u) => ctx.emit('buffchange', { unit: u, buffs: summarizeBuffs(u) });
+
 // power 的基準：預設 caster.effAtk（含 buff 加成）；basis:'targetMaxHp' 用目標 maxHp。
 // Boss 保護：bossTag 單位不吃 %最大生命（否則巨型血條被毒隊融化）——改按施放者攻擊 ×3 結算。
 export function resolvePower(effect, caster, target) {
@@ -69,7 +72,7 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
   const absorbed = target._absorbed ?? 0; // 護盾吸收量（統計計入攻擊者輸出；amount 仍＝實際扣血）
   target._absorbed = 0;
   // 護盾被吸收/打破 → 補發 buffchange 讓前端刷新狀態圖示（否則盾破了圖示還殘留）
-  if (absorbed > 0) ctx.emit('buffchange', { unit: target, buffs: summarizeBuffs(target) });
+  if (absorbed > 0) notifyBuffs(ctx, target);
   target.gainEnergy(target.classDef.energyOnHitTaken);
   ctx.emit('energy', { unit: target, value: target.energy });
   ctx.emit('damage', {
@@ -78,7 +81,7 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
     trueDmg: !!opts.ignoreDef, execute: !!opts.execute, // 演出用旗標（真傷/處決）
     element: caster?.element ?? null, // 傷害字色＝攻擊者屬性（演出用）
   });
-  if (target._cheated) { target._cheated = false; ctx.emit('cheated', { unit: target }); } // 免死演出
+  if (target._cheated) { target._cheated = false; ctx.emit('cheated', { unit: target }); notifyBuffs(ctx, target); } // 免死消耗→刷圖示
   if (!target.alive) ctx.emit('death', { unit: target });
 
   // 惡夢印記：受普攻/技能直接傷害後額外損失 pct 最大生命（DoT/引爆/侵蝕不觸發）
@@ -107,6 +110,8 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
     if (thornsPct > 0 && caster.alive) {
       const reflect = Math.max(1, Math.round(dealt * thornsPct));
       const rDealt = caster.takeDamage(reflect);
+      if ((caster._absorbed ?? 0) > 0) notifyBuffs(ctx, caster); // 荊棘打破攻擊者的盾 → 刷圖示
+      caster._absorbed = 0;
       ctx.emit('damage', {
         source: target, target: caster, amount: rDealt, skill: 'thorns',
         isAdvantage: false, isDisadvantage: false, isCrit: false,
@@ -118,7 +123,7 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
       const counter = (target.buffs || []).find((b) => b.kind === 'counter');
       if (counter) dealDamage(target, caster, counter.mult, ctx, 'counter', { noRetaliate: true });
     }
-    if (caster._cheated) { caster._cheated = false; ctx.emit('cheated', { unit: caster }); } // 荊棘反殺被免死
+    if (caster._cheated) { caster._cheated = false; ctx.emit('cheated', { unit: caster }); notifyBuffs(ctx, caster); } // 荊棘反殺被免死→刷圖示
   }
   return dealt;
 }
@@ -136,6 +141,7 @@ export function dealDirect(target, amount, ctx, { skill = 'dot', source = null, 
       target.buffs = target.buffs.filter((b) => b !== cd);
       dealt = target.hp - 1;
       ctx.emit('cheated', { unit: target });
+      notifyBuffs(ctx, target); // 免死消耗→刷圖示
     }
   }
   target.hp -= dealt;
