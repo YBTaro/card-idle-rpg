@@ -68,7 +68,9 @@ function describeEffect(effect, targetLabel) {
       if (effect.ignoreDef) mods.push('無視防禦');
       text = `對${who}造成 ${pct(effect.mult)} 攻擊力的傷害${mods.length ? `（${mods.join('、')}）` : ''}`;
       if (effect.executeBelow != null) {
-        text += `；目標生命低於 ${pct(effect.executeBelow)} 時傷害 ×${effect.executeBonus ?? 1.5}`;
+        // 處決＝出手前判定血線、一擊以放大後倍率直接結算（非事後補乘）——描述直接寫出最終倍率
+        const execMult = effect.mult * (effect.executeBonus ?? 1.5);
+        text += `；若目標生命低於 ${pct(effect.executeBelow)}，此擊改以 ${pct(execMult)} 攻擊力結算（處決）`;
       }
       if (effect.lifesteal) text += `，並回復造成傷害 ${pct(effect.lifesteal)} 的生命`;
       break;
