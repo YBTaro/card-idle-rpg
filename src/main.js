@@ -37,15 +37,23 @@ async function main() {
     window.__battle = battle; // 開發鉤子：console/截圖腳本直接操作戰鬥（prod 不暴露）
     const { gsap } = await import('gsap');
     window.__gsap = gsap; // 診斷用（判斷 sprite 是否有進行中補間）
-    // 匯出當前戰鬥事件 log（可貼給我定位「哪一步」出問題）
-    window.__dumpBattle = () => {
-      const rp = battle.replayer;
-      if (!rp) return console.log('（目前沒有進行中的戰鬥）');
-      const lines = rp.log.map((e, i) => `${String(i).padStart(3)} ${e.type}`
-        + (e.attackerUid != null ? ` atk#${e.attackerUid}→#${e.targetUid}` : '')
-        + (e.uid != null ? ` #${e.uid}` : '')
-        + (e.round != null ? ` R${e.round}` : ''));
-      console.log('=== 戰鬥事件 log（共 ' + rp.log.length + ' 筆）===\n' + lines.join('\n'));
+    // 匯出戰鬥事件 log（可貼給我定位「哪一步」出問題）。
+    // __dumpBattle() 當前戰鬥；__dumpBattle('last') 上一場（已結束的也留著，方便回報）。
+    window.__dumpBattle = (which = 'current') => {
+      const rp = which === 'last' ? battle._lastReplayer : battle.replayer;
+      if (!rp) return console.log(which === 'last' ? '（還沒有上一場）' : '（目前沒有進行中的戰鬥）');
+      const uname = new Map(rp.setup.map((u) => [u.uid, `${u.name}(t${u.team}p${u.pos})`]));
+      const nm = (uid) => uname.get(uid) ?? `#${uid}`;
+      let round = 0;
+      const lines = rp.log.map((e, i) => {
+        if (e.type === 'round') round = e.round;
+        return `[R${round + 1}] ${String(i).padStart(3)} ${e.type}`
+          + (e.attackerUid != null ? ` ${nm(e.attackerUid)}→${nm(e.targetUid)}` : '')
+          + (e.casterUid != null ? ` ${nm(e.casterUid)}` : '')
+          + (e.uid != null ? ` ${nm(e.uid)}` : '')
+          + (e.amount != null ? ` ${e.amount}` : '');
+      });
+      console.log('=== 戰鬥 log（' + rp.log.length + ' 筆）===\n' + lines.join('\n'));
       return { setup: rp.setup, log: rp.log };
     };
     // 測試用：發卡進存檔。__grant('emberwitch') 抓單張、__grant('all') 抓全部（已擁有的略過）。

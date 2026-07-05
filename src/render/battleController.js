@@ -92,6 +92,7 @@ export class BattleController {
 
   _mount(sim, env = null) {
     this._teardownScene();
+    if (this.replayer) this._lastReplayer = this.replayer; // 保留上一場供 __dumpBattle('last') 事後回報
     this._setup = sim.setup;
     this.replayer = new Replayer(sim.setup, sim.log);
     this.scene = new BattleScene(this.app, sim.setup, this.replayer, { env });
