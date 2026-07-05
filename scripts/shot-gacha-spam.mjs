@@ -36,8 +36,16 @@ await page.evaluate(() => {
   const btn = [...document.querySelectorAll('.gxb')].find((b) => b.textContent.includes('10'));
   for (let i = 0; i < 6; i += 1) btn.click();
 });
-await sleep(800);
+// 殘留 click 再對演出畫面狂點（沒有開場保護窗時，這幾下會把整場演出瞬間跳完）
+await sleep(150);
+await page.evaluate(() => {
+  const cv = document.querySelector('.summon-canvas');
+  for (let i = 0; i < 4; i += 1) cv?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+});
+await sleep(1200);
 const overlays = await page.evaluate(() => document.querySelectorAll('.summon-ov').length);
+const stillPlaying = await page.evaluate(() => !document.querySelector('.summon-actions'));
+console.log(`狂點後演出仍在播放（未被殘留 click 瞬間跳完）: ${stillPlaying}（應為 true）`);
 await page.evaluate(() => { for (let i = 0; i < 5; i += 1) document.querySelector('.summon-skip')?.click(); }); // 跳過演出
 await page.waitForSelector('.summon-actions', { timeout: 15000 }).catch(() => {});
 // 狂點「再抽」5 次

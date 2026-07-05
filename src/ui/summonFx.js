@@ -114,7 +114,13 @@ class SummonStage {
     this.skipBtn.addEventListener('click', () => this.skip());
     ov.appendChild(this.skipBtn);
     ov.addEventListener('click', (e) => {
-      if (this.tl && this.tl.progress() < 1 && !e.target.closest('.summon-actions')) this.skip();
+      if (!this.tl || this.tl.progress() >= 1) return;
+      if (e.target.closest('.summon-actions')) return;
+      // 連點殘留保護：演出開場 0.7 秒內不吃「點畫面跳過」——
+      // 連點召喚/再抽的殘留 click 會落在畫面上把整場演出瞬間跳完
+      //（魔法陣/卡陣旋轉「像消失了一樣」）。要跳過請用右上跳過鈕或稍後點畫面。
+      if (performance.now() - (this._playStartedAt ?? 0) < 700) return;
+      this.skip();
     });
   }
 
@@ -670,6 +676,7 @@ class SummonStage {
 
     const tl = gsap.timeline({ onComplete: () => this._showActions() });
     this.tl = tl;
+    this._playStartedAt = performance.now(); // 點擊跳過的開場保護窗基準
 
     /* ---- Act0 開場：星空亮起、鏡頭高空俯視、魔法陣三層依序畫出 ---- */
     tl.set(this.camera.position, { x: this._camTop.x, y: this._camTop.y, z: this._camTop.z }, 0);
