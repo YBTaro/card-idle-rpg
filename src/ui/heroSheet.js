@@ -211,7 +211,7 @@ class HeroSheet {
     // 5) 技能區——固定呈現順序：普攻 → 絕技 → 進場 → 光環（含觸發）→ 隊伍技
     //   （星級里程碑屬第七類，顯示在上方星級區不重複列）
     p.appendChild(el('div', { class: 'hs-ribbon', text: '技能' }));
-    // 普攻：每張卡固定顯示（標準卡寫「對位單體 100%」、變體卡寫各自描述）
+    // 普攻：每張卡固定顯示（標準卡寫「敵方單體 100%」、變體卡寫各自描述）
     const basic = basicInfoForCard(inst.cardId);
     const basicLabel = card.basicAttack ? '特殊普攻' : '普攻';
     p.appendChild(

@@ -18,9 +18,9 @@ describe('describeSkill（描述自動生成）', () => {
     expect(d).toContain('護盾');
   });
 
-  it('影誅：對位純傷害（無附帶狀態）', () => {
+  it('影誅：單體純傷害（無附帶狀態）', () => {
     const d = describeSkill('shadowExecute');
-    expect(d).toContain('對位敵人');
+    expect(d).toContain('敵方單體');
     expect(d).toContain('300%');
     expect(d).not.toContain('暈眩');
   });

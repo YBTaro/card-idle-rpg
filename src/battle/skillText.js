@@ -6,7 +6,7 @@ import { CARDS } from '../data/cards.js';
 import { ELEMENT_LABEL } from '../data/elements.js';
 
 const TARGET_LABEL = {
-  singleEnemyByColumn: '對位敵人',
+  singleEnemyByColumn: '敵方單體',
   enemyFrontRow: '敵方前排',
   enemyBackRow: '敵方後排',
   enemyColumn: '敵方直排',
@@ -331,12 +331,13 @@ export function triggerInfoForCard(cardId) {
 export function basicInfoForCard(cardId) {
   const ba = CARDS[cardId]?.basicAttack;
   // 每張卡都固定顯示普攻資訊——玩家不用先知道「沒寫＝標準」的潛規則
-  if (!ba) return '對直行對位的敵人造成 100% 攻擊力的傷害';
-  if (ba.hits) return `連擊普攻：每次普攻打出 ${ba.hits} 段（每段 ${pct(ba.mult ?? 1 / ba.hits)} 攻擊力，各自判定命中與暴擊）`;
-  if (ba.splash) return `濺射普攻：同排相鄰的敵人一併受到 ${pct(ba.splash)} 攻擊力的傷害`;
-  if (ba.heal) return `治療普攻：攻擊後治療血量最低的隊友 ${pct(ba.heal)} 攻擊力的生命`;
-  if (ba.everyN) return `蓄力普攻：每第 ${ba.everyN} 次普攻改為 ${pct(ba.mult ?? 2)} 攻擊力的強化一擊`;
-  return '對直行對位的敵人造成 100% 攻擊力的傷害';
+  const STANDARD = '對敵方單體造成 100% 攻擊力的傷害';
+  if (!ba) return STANDARD;
+  if (ba.hits) return `連擊：每次普攻打出 ${ba.hits} 段（每段 ${pct(ba.mult ?? 1 / ba.hits)} 攻擊力）`;
+  if (ba.splash) return `濺射：對敵方單體與相鄰的敵人造成 ${pct(ba.splash)} 攻擊力的傷害`;
+  if (ba.heal) return `奶擊：攻擊後治療血量最低的隊友 ${pct(ba.heal)} 攻擊力的生命`;
+  if (ba.everyN) return `蓄力：每第 ${ba.everyN} 次普攻改為 ${pct(ba.mult ?? 2)} 攻擊力的強化一擊`;
+  return STANDARD;
 }
 
 // ---- 戰鬥中狀態小圖示的人話標籤（點擊單位的狀態面板用）----
