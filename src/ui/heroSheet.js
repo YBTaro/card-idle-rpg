@@ -208,8 +208,19 @@ class HeroSheet {
     }
     p.appendChild(starLine);
 
-    // 5) 技能：絕技 + 被動
+    // 5) 技能區——固定呈現順序：普攻 → 絕技 → 進場 → 光環（含觸發）→ 隊伍技
+    //   （星級里程碑屬第七類，顯示在上方星級區不重複列）
     p.appendChild(el('div', { class: 'hs-ribbon', text: '技能' }));
+    // 普攻：每張卡固定顯示（標準卡寫「對位單體 100%」、變體卡寫各自描述）
+    const basic = basicInfoForCard(inst.cardId);
+    const basicLabel = card.basicAttack ? '特殊普攻' : '普攻';
+    p.appendChild(
+      el('div', { class: 'hs-skills' }, [
+        el('div', { class: 'hs-sk' }, [el('div', { class: 'ic psv', text: '🗡' }), el('span', { class: 't', text: '普攻' })]),
+        el('div', { class: 'hs-skdesc', html: `<b>${basicLabel}</b>${basic}` }),
+      ])
+    );
+    // 絕技（帶技能等級 chip）
     const skill = skillInfoForCard(inst.cardId, card.class);
     if (skill) {
       const skIc = el('div', { class: 'ic' });
@@ -222,16 +233,7 @@ class HeroSheet {
         ])
       );
     }
-    // 普攻：每張卡固定顯示（標準卡寫「對位單體 100%」、變體卡寫各自描述）
-    const basic = basicInfoForCard(inst.cardId);
-    const basicLabel = card.basicAttack ? '特殊普攻' : '普攻';
-    p.appendChild(
-      el('div', { class: 'hs-skills' }, [
-        el('div', { class: 'hs-sk' }, [el('div', { class: 'ic psv', text: '🗡' }), el('span', { class: 't', text: '普攻' })]),
-        el('div', { class: 'hs-skdesc', html: `<b>${basicLabel}</b>${basic}` }),
-      ])
-    );
-    // 被動四分類（進場 / 光環被動含觸發 / 隊伍技；星級里程碑在星級區）
+    // 被動類（進場 / 光環被動含觸發 / 隊伍技）
     const skillRow = (glyph, label, html) =>
       el('div', { class: 'hs-skills' }, [
         el('div', { class: 'hs-sk' }, [
