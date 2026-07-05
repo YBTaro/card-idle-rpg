@@ -30,7 +30,7 @@ describe('種族號令（種族限定 buff）', () => {
     const elf = makeUnit({ team: 0, pos: 2, race: '精靈' });
     const beast = makeUnit({ team: 0, pos: 3, race: '獸' });
     castSkill(caster, 'sylvanHymn', ctxFor(caster, [caster, elf, beast], []));
-    expect(elf.dodge).toBeCloseTo(0.15);
+    expect(elf.dodge).toBeCloseTo(0.25);
     expect(elf.energyGainMult).toBeCloseTo(1.2);
     expect(beast.dodge).toBe(0);
   });

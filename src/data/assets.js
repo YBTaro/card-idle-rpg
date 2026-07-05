@@ -83,6 +83,11 @@ export const CARD_ART = {
   rageclaw: { art: 'assets/cards/rageclaw.svg', portrait: P },
   dawnmother: { art: 'assets/cards/dawnmother.svg', portrait: P },
   knellwitch: { art: 'assets/cards/knellwitch.svg', portrait: P },
+  // ---- 機械隊／龍隊補位 4 隻 ----
+  ironcannon: { art: 'assets/cards/ironcannon.svg', portrait: P },
+  gearmedic: { art: 'assets/cards/gearmedic.svg', portrait: P },
+  drakebastion: { art: 'assets/cards/drakebastion.svg', portrait: P },
+  dragonoracle: { art: 'assets/cards/dragonoracle.svg', portrait: P },
 };
 
 // portrait 焦點 x/y 為 0..1，zoom 為倍率。

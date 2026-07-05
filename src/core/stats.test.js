@@ -33,8 +33,8 @@ describe('deriveStats 帶出被動', () => {
 
 describe('升星', () => {
   it('每星三圍 +8%，里程碑追加自身被動，舊存檔缺欄位視為 0 星', () => {
-    // zephyr lv10：raw atk = 92 + 11×9 = 191，dps 修正 ×1.8
-    const rawAtk = (92 + 11 * 9) * 1.8;
+    // zephyr lv10：raw atk = 95 + 11×9 = 194（職業標準值），dps 修正 ×1.8、人族 ×1.0
+    const rawAtk = (95 + 11 * 9) * 1.8;
     const s0 = deriveStats({ cardId: 'zephyr', level: 10, stars: 0 });
     const s3 = deriveStats({ cardId: 'zephyr', level: 10, stars: 3 });
     const s5 = deriveStats({ cardId: 'zephyr', level: 10, stars: 5 });

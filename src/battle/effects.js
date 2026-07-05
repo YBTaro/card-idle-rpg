@@ -23,6 +23,13 @@ export function resolveScope(scope, caster, primary, ctx) {
       return alive(ctx.enemies);
     case 'alliesExceptTarget':
       return alive(ctx.allies).filter((u) => !primary.includes(u));
+    // 窄範圍輔助（群輔稀缺原則：範圍越窄數值越高）
+    case 'frontAllies':
+      return alive(ctx.allies).filter((u) => u.row === 'front');
+    case 'backAllies':
+      return alive(ctx.allies).filter((u) => u.row === 'back');
+    case 'columnAllies': // 與施放者同直排（含自己）
+      return alive(ctx.allies).filter((u) => u.column === caster.column);
     case 'targetIncludingDead': // 復活用：不過濾存活
       return primary;
     default:

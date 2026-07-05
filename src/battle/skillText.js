@@ -16,6 +16,7 @@ const TARGET_LABEL = {
   randomEnemy: '隨機敵人',
   lowestHpEnemy: '血量最低的敵人',
   highestEnergyEnemy: '能量最高的敵人',
+  highestAtkAlly: '攻擊最高的隊友',
   deadAlly: '倒下的隊友',
   self: '自身',
 };
@@ -26,6 +27,9 @@ const SCOPE_LABEL = {
   allAllies: '我方全體',
   allEnemies: '敵方全體',
   alliesExceptTarget: '其他隊友',
+  frontAllies: '我方前排',
+  backAllies: '我方後排',
+  columnAllies: '同直排的隊友',
 };
 
 const STAT_LABEL = {

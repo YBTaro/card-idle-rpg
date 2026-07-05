@@ -2,6 +2,7 @@
 // 純函式：base + growth*(level-1)，套職業修正，再套星級加成。供 UI 與戰鬥單位共用。
 import { CARDS } from '../data/cards.js';
 import { CLASSES } from '../data/classes.js';
+import { RACES } from '../data/races.js';
 
 // ---- 升星（重複卡 +1 星，0 → 5）----
 export const MAX_STARS = 5;
@@ -26,6 +27,8 @@ export function deriveStats(cardInst) {
   const card = CARDS[cardInst.cardId];
   if (!card) throw new Error(`未知卡片：${cardInst.cardId}`);
   const cls = CLASSES[card.class];
+  // 三圍層級：職業（影響最大）× 種族（±8~12%；例：龍族輸出的血也不會低）× 個體微調（base）
+  const race = RACES[card.race]?.statMods ?? { hp: 1, atk: 1, def: 1 };
   const raw = rawStatsAtLevel(card, cardInst.level);
   const stars = cardInst.stars ?? 0;
   const starMul = 1 + STAR_STAT_BONUS * stars;
@@ -43,9 +46,9 @@ export function deriveStats(cardInst) {
     series: card.series ? [...card.series] : [],
     level: cardInst.level,
     stars,
-    hp: Math.round(raw.hp * cls.statMods.hp * starMul),
-    atk: Math.round(raw.atk * cls.statMods.atk * starMul),
-    def: Math.round(raw.def * cls.statMods.def * starMul),
+    hp: Math.round(raw.hp * cls.statMods.hp * race.hp * starMul),
+    atk: Math.round(raw.atk * cls.statMods.atk * race.atk * starMul),
+    def: Math.round(raw.def * cls.statMods.def * race.def * starMul),
     passives,
     onEnter: card.onEnter ?? null, // 進場被動（開天氣/場地）
   };

@@ -45,7 +45,7 @@ export const SKILLS = {
     { type: 'control', control: 'freeze', duration: 1, scope: 'target' }, // 困於潮牢：凍結（沉默是光屬專屬，水用凍結）
   ]},
   dragonGuard: { name: '龍護', effects: [
-    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.6, duration: 2, key: 'guard', scope: 'allAllies' },
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.7, duration: 2, key: 'guard', scope: 'allAllies' },
     { type: 'shield', power: 2.0, duration: 3, scope: 'self' },
   ]},
   radiantGrace: { name: '聖恩', target: 'lowestHpAlly', effects: [
@@ -78,13 +78,13 @@ export const SKILLS = {
     { type: 'damage', mult: 1.5, scope: 'target' },
     { type: 'dot', power: 0.35, element: 'fire', duration: 2, scope: 'target', stackable: true }, // 可疊層灼燒
   ]},
-  emberWarmth: { name: '餘溫', effects: [ // 定位：延燒輔助（淨化歸潮頌）
-    { type: 'heal', power: 1.2, scope: 'allAllies' },
+  emberWarmth: { name: '餘溫', effects: [ // 定位：延燒輔助（淨化歸潮頌）——治療收窄前排、數值加厚
+    { type: 'heal', power: 1.5, scope: 'frontAllies' },
     { type: 'extend', what: 'dot', element: 'fire', turns: 1, scope: 'allEnemies' }, // 餘燼不熄：敵方灼燒 +1 回合
   ]},
   shellAegis: { name: '殼護', effects: [ // 定位：荊棘反傷坦（厚盾歸冰甲）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'thorns', pct: 0.35, duration: 2, scope: 'self' },
+    { type: 'thorns', pct: 0.5, duration: 2, scope: 'self' }, // 獸＝蠻力反撲值最高
   ]},
   flameShift: { name: '引火', target: 'enemyColumn', effects: [ // 屬性轉化：敵直排變風屬 → 火隊穩吃剋制
     { type: 'damage', mult: 1.4, scope: 'target' },
@@ -117,9 +117,8 @@ export const SKILLS = {
     { type: 'damage', mult: 1.9, scope: 'target' },
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 0.7, duration: 2, scope: 'target' }, // 緩速：壓制集氣
   ]},
-  gentleBreeze: { name: '和風', effects: [ // 定位：精靈群奶（集氣加速歸風歌）
-    { type: 'heal', power: 1.2, scope: 'allAllies' },
-    { type: 'heal', power: 0.7, scope: 'allAllies', where: { race: '精靈' } }, // 精靈同族加護
+  gentleBreeze: { name: '和風', effects: [ // 定位：精靈專屬群奶（無條件全隊治療歸湧泉；條件範圍＝數值更高）
+    { type: 'heal', power: 1.8, scope: 'allAllies', where: { race: '精靈' } },
   ]},
   thunderMark: { name: '雷紋', effects: [ // 定位：風屬專屬狀態載體——全體易傷
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 1.2, duration: 2, scope: 'allEnemies' },
@@ -128,9 +127,9 @@ export const SKILLS = {
     { type: 'damage', mult: 2.0, scope: 'target' },
     { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies', where: { element: 'wind' } }, // 條件型＞全隊型
   ]},
-  forestWard: { name: '林護', effects: [ // 定位：再生坦——嘲諷 + 全隊持續回復
+  forestWard: { name: '林護', effects: [ // 定位：再生坦——前排持續回復（全隊 HoT 歸湧泉；窄範圍＝值更高）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'hot', power: 0.3, duration: 2, scope: 'allAllies' },
+    { type: 'hot', power: 0.45, duration: 2, scope: 'frontAllies' },
   ]},
   galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [ // 亂舞三連腿＋回氣
     { type: 'damage', mult: 0.9, scope: 'target' },
@@ -153,7 +152,7 @@ export const SKILLS = {
     { type: 'shield', power: 2.8, duration: 3, scope: 'self' },
   ]},
   abyssBite: { name: '淵噬', target: 'singleEnemyByColumn', effects: [ // 定位：吸血獠牙
-    { type: 'damage', mult: 2.2, scope: 'target', lifesteal: 0.35 },
+    { type: 'damage', mult: 2.2, scope: 'target', lifesteal: 0.5 }, // 妖＝汲取值最高
   ]},
   mistShift: { name: '霧化', target: 'enemyColumn', effects: [ // 屬性轉化：敵直排變火屬 → 水隊穩吃剋制（暴雨下再 -20%）
     { type: 'damage', mult: 1.3, scope: 'target' },
@@ -169,13 +168,13 @@ export const SKILLS = {
   ]},
   pearlBulwark: { name: '貝盾', effects: [ // 定位：群體護盾（機械同構強化）
     { type: 'shield', power: 1.0, duration: 3, scope: 'allAllies' },
-    { type: 'shield', power: 1.2, duration: 3, scope: 'allAllies', where: { race: '機械' } },
+    { type: 'shield', power: 1.5, duration: 3, scope: 'allAllies', where: { race: '機械' } }, // 機械＝護盾值最高
   ]},
 
   // ---- 光 ----
-  sacredShield: { name: '聖盾', effects: [
+  sacredShield: { name: '聖盾', effects: [ // 定位：前線聖騎——窄範圍減傷比龍護的全隊版更深
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.75, duration: 2, key: 'guard', scope: 'allAllies' }, // 與守護/龍護互斥
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.65, duration: 2, key: 'guard', scope: 'frontAllies' }, // 與守護/龍護互斥
   ]},
   crystalGleam: { name: '晶輝', effects: [ // 定位：唯一的暴擊增幅器
     { type: 'buff', stat: 'critChance', op: 'add', value: 0.15, duration: 2, scope: 'allAllies' },
@@ -220,7 +219,7 @@ export const SKILLS = {
     { type: 'extend', what: 'negative', turns: 1, scope: 'allEnemies' },
   ]},
   dreamEater: { name: '噬夢', target: 'randomEnemy', effects: [ // 定位：隨機汲取者——吸血又吸氣（緩速歸獵翎）
-    { type: 'damage', mult: 2.1, scope: 'target', lifesteal: 0.3 },
+    { type: 'damage', mult: 2.1, scope: 'target', lifesteal: 0.4 }, // 妖＝汲取值最高
     { type: 'energy', amount: 15, scope: 'self' },
   ]},
   voidBurst: { name: '虛爆', target: 'enemyColumn', effects: [
@@ -231,8 +230,9 @@ export const SKILLS = {
     { type: 'damage', mult: 1.8, scope: 'target' },
     { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 2, scope: 'target', chance: 0.7 }, // 70% 蛛毒 2 回合（每跳 15% 最大生命）
   ]},
-  duskVeil: { name: '暮幕', effects: [ // 定位：奪光坦——入夜，奪走敵人的增益
+  duskVeil: { name: '暮幕', effects: [ // 定位：遁影奪光坦——入夜奪增益、自身沒入暮色（精靈＝迴避值最高）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'buff', stat: 'dodge', op: 'add', value: 0.3, duration: 2, scope: 'self' },
     { type: 'dispel', what: 'buff', count: 1, scope: 'allEnemies' },
   ]},
   requiem: { name: '安魂', target: 'deadAlly', effects: [ // 定位：唯一的復活者
@@ -290,7 +290,7 @@ export const SKILLS = {
     { type: 'energy', amount: 10, scope: 'allAllies', where: { race: '不死' } },
   ]},
   sylvanHymn: { name: '森靈頌', effects: [ // 定位：精靈隊長——靈巧（迴避＋集氣＝精靈的種族語言）
-    { type: 'buff', stat: 'dodge', op: 'add', value: 0.15, duration: 2, scope: 'allAllies', where: { race: '精靈' } },
+    { type: 'buff', stat: 'dodge', op: 'add', value: 0.25, duration: 2, scope: 'allAllies', where: { race: '精靈' } }, // 精靈＝迴避值最高
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies', where: { race: '精靈' } },
   ]},
   bloodFeast: { name: '血宴', target: 'enemyFrontRow', effects: [ // 定位：妖坦——吸血開席（妖＝汲取）
@@ -298,7 +298,7 @@ export const SKILLS = {
     { type: 'damage', mult: 1.3, scope: 'target', lifesteal: 0.6 },
   ]},
   rageRend: { name: '狂怒撕裂', target: 'singleEnemyByColumn', effects: [ // 定位：獸輸出——疊怒（獸＝狂暴）
-    { type: 'damage', mult: 1.6, scope: 'target' },
+    { type: 'damage', mult: 1.8, scope: 'target' },
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.15, duration: 3, scope: 'self', stackable: true }, // 狂怒層：每次施放疊一層
   ]},
   mercyRain: { name: '甘霖', effects: [ // 定位：治療增幅——神族專屬（受治療量↑）
@@ -307,6 +307,24 @@ export const SKILLS = {
   ]},
   deathKnell: { name: '喪鐘', effects: [ // 定位：重傷——不死專屬（戰略級獨立承載：專剋治療隊）
     { type: 'buff', stat: 'healTaken', op: 'mul', value: 0.5, duration: 2, scope: 'allEnemies' },
+  ]},
+
+  /* ================= 機械隊／龍隊補位（種族三圍改版同批）================= */
+  cannonBarrage: { name: '主砲齊射', target: 'enemyColumn', effects: [ // 定位：機械輸出——砲擊時展開裝甲
+    { type: 'damage', mult: 2.0, scope: 'target' },
+    { type: 'shield', power: 1.0, duration: 2, scope: 'self' },
+  ]},
+  repairProtocol: { name: '維修協議', effects: [ // 定位：機械輔助——機械同構強化維修（機械＝護盾值最高）
+    { type: 'heal', power: 1.2, scope: 'allAllies' },
+    { type: 'shield', power: 1.0, duration: 2, scope: 'allAllies', where: { race: '機械' } },
+  ]},
+  wyrmBulwark: { name: '龍鱗壁', effects: [ // 定位：龍坦——自身要塞（跟全隊減傷型的守護/龍護區隔）
+    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.7, duration: 2, scope: 'self' },
+  ]},
+  drakeInfusion: { name: '龍魂灌注', target: 'highestAtkAlly', effects: [ // 定位：龍輔——單體超級增益灌主C（單體值＞全隊值）
+    { type: 'buff', stat: 'atk', op: 'mul', value: 1.25, duration: 2, scope: 'target' },
+    { type: 'energy', amount: 10, scope: 'target' },
   ]},
 };
 
@@ -375,13 +393,17 @@ export const CARD_SKILLS = {
   hawkoracle: 'hawkSight',
   terrorweaver: 'nightTerror',
   fluxreaver: 'energyLeech',
-  // ---- 種族號令與補位（6）----
+  // ---- 種族號令與補位（10）----
   bonemarshal: 'deathLegion',
   sylvanqueen: 'sylvanHymn',
   abysstyrant: 'bloodFeast',
   rageclaw: 'rageRend',
   dawnmother: 'mercyRain',
   knellwitch: 'deathKnell',
+  ironcannon: 'cannonBarrage',
+  gearmedic: 'repairProtocol',
+  drakebastion: 'wyrmBulwark',
+  dragonoracle: 'drakeInfusion',
 };
 
 export function skillFor(unit) {

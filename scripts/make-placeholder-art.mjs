@@ -218,11 +218,10 @@ function svgFor(card) {
 }
 
 const { CARDS } = await import('../src/data/cards.js');
-const { CARD_ART } = await import('../src/data/assets.js');
 
 let made = 0;
 for (const card of Object.values(CARDS)) {
-  if (CARD_ART[card.id]) continue; // 已有素材（前 10 隻）不覆蓋
+  if (fs.existsSync(path.join(DIR, card.id + '.svg'))) continue; // 已有檔案不覆蓋（含前 10 隻手做素材）
   fs.writeFileSync(path.join(DIR, `${card.id}.svg`), svgFor(card));
   made += 1;
 }

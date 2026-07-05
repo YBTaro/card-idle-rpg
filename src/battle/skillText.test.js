@@ -10,9 +10,9 @@ describe('describeSkill（描述自動生成）', () => {
     expect(d).toContain('持續 2 次行動');
   });
 
-  it('龍護：全隊承傷 -40% + 自身護盾', () => {
+  it('龍護：全隊承傷 -30% + 自身護盾', () => {
     const d = describeSkill('dragonGuard');
-    expect(d).toContain('我方全體承受傷害 -40%');
+    expect(d).toContain('我方全體承受傷害 -30%');
     expect(d).toContain('自身');
     expect(d).toContain('200%');
     expect(d).toContain('護盾');

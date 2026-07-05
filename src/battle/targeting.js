@@ -99,6 +99,12 @@ export const SELECTORS = {
     if (!a.length) return [];
     return [a.reduce((best, u) => (u.energy > best.energy ? u : best))];
   },
+  // 攻擊最高的存活隊友（單體超級增益：灌給主 C）
+  highestAtkAlly: (caster, ctx) => {
+    const a = aliveIn(ctx.allies);
+    if (!a.length) return [];
+    return [a.reduce((best, u) => (u.effAtk > best.effAtk ? u : best))];
+  },
   // 第一位倒下的隊友（復活用；配 scope 'targetIncludingDead'）
   deadAlly: (caster, ctx) => {
     const d = ctx.allies.find((u) => !u.alive);
