@@ -28,7 +28,7 @@ export const CLASSES = {
   },
   support: {
     id: 'support', label: '輔助',
-    statMods: { hp: 1.0, atk: 0.9, def: 1.15 }, // 防禦 1.0→1.15：後排輔助也要撐得住被切
+    statMods: { hp: 1.0, atk: 1.05, def: 1.15 }, // 攻 0.9→1.05：輔助傷害高於坦克（坦攻 0.95）；防禦 1.0→1.15 後排也撐得住
     energyOnAction: 15,
     energyOnHitTaken: 0,
     energyOnAllyAction: 3,
