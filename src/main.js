@@ -48,6 +48,25 @@ async function main() {
       console.log('=== 戰鬥事件 log（共 ' + rp.log.length + ' 筆）===\n' + lines.join('\n'));
       return { setup: rp.setup, log: rp.log };
     };
+    // 測試用：發卡進存檔。__grant('emberwitch') 抓單張、__grant('all') 抓全部（已擁有的略過）。
+    const { addCardInstance } = await import('./core/state.js');
+    const { CARDS, CARD_LIST } = await import('./data/cards.js');
+    const { saveGame } = await import('./core/save.js');
+    window.__grant = (cardId = 'all', level = 30) => {
+      const ids = cardId === 'all' ? CARD_LIST.map((c) => c.id) : [cardId];
+      let n = 0;
+      for (const id of ids) {
+        if (!CARDS[id]) { console.warn('未知卡片', id); continue; }
+        if (store.state.cards.some((c) => c.cardId === id)) continue; // 已有就略過
+        const inst = addCardInstance(store.state, id);
+        inst.level = level;
+        n += 1;
+      }
+      saveGame();
+      store.notify();
+      console.log(`已發 ${n} 張卡（Lv${level}）到存檔；到「英雄」頁或「隊伍」上陣即可用`);
+      return n;
+    };
   }
 
   // 各功能畫面
