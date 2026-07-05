@@ -592,6 +592,9 @@ class SummonStage {
   }
 
   async play(batch) {
+    // 併發保護：連點「再抽」可能在貼圖烘焙(await)期間又開一輪 play——
+    // 兩條時間線互踩會卡死在半路。以序號為準，舊的一輪在 await 後自行退出。
+    const token = (this._playSeq = (this._playSeq ?? 0) + 1);
     this.tl?.kill();
     this._clearCards();
     this._removeActions();
@@ -626,7 +629,7 @@ class SummonStage {
         return { artTex, nameTex: this._bakeName(card), wash: this._bakeWash(ELEMENT_HEX[card.element] || '#f8cb5c') };
       })
     );
-    if (this.destroyed) return;
+    if (this.destroyed || token !== this._playSeq) return;
     const backTex = this._bakeBack();
     // 貼圖預上傳 GPU：白閃/登場第一次用到大貼圖時不再現場上傳（那正是「爆白瞬間卡頓」的來源）
     for (const tex of [...fronts, backTex]) this.renderer.initTexture(tex);
@@ -936,11 +939,17 @@ class SummonStage {
         class: 'btn-gold',
         text: n > 0 ? `再抽 ${n} 次（🎟️${n}）` : '召喚券不足',
         onClick: () => {
+          // 連點保護：按鈕被移除後排隊中的第二個 click 仍會派發到舊節點——
+          // 沒有這個 guard 會多抽一批並開出並行演出（卡死主因）
+          if (againBtn.disabled) return;
+          againBtn.disabled = true;
           const next = onAgain(times);
           if (next && next.length) {
             this._removeActions();
             this.skipBtn.style.display = '';
             this.play(next);
+          } else {
+            againBtn.disabled = false;
           }
         },
       });

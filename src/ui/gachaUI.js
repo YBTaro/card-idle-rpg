@@ -124,6 +124,8 @@ export class GachaUI {
   }
 
   _doSummon(times) {
+    // 重入保護：儀式已開著就不再開第二場——連點會疊出多個 WebGL 全屏演出（超卡）還多扣券
+    if (document.querySelector('.summon-ov')) return;
     const results = this._pullBatch(times);
     if (!results.length) {
       toast('召喚券不足');
