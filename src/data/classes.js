@@ -8,7 +8,8 @@ export const CLASSES = {
   // 坦克受擊額外 +5、輔助隊友行動額外 +3。約每 4 回合一輪絕技。
   tank: {
     id: 'tank', label: '坦克',
-    statMods: { hp: 1.3, atk: 0.8, def: 1.4 },
+    statMods: { hp: 1.3, atk: 0.8, def: 1.2 }, // 防禦 1.4→1.2：坦仍最硬但差距收窄，靠血量+嘲諷/保護撐場
+
     energyOnAction: 15,
     energyOnHitTaken: 5,
     energyOnAllyAction: 0,
@@ -17,7 +18,8 @@ export const CLASSES = {
   },
   dps: {
     id: 'dps', label: '輸出',
-    statMods: { hp: 0.9, atk: 1.8, def: 0.85 },
+    statMods: { hp: 0.9, atk: 1.8, def: 1.0 }, // 防禦 0.85→1.0：不再被防禦懲罰，非坦不會秒死（血量仍最低＝仍是脆皮高輸出）
+
     energyOnAction: 25,
     energyOnHitTaken: 0,
     energyOnAllyAction: 0,
@@ -26,7 +28,7 @@ export const CLASSES = {
   },
   support: {
     id: 'support', label: '輔助',
-    statMods: { hp: 1.0, atk: 0.9, def: 1.0 },
+    statMods: { hp: 1.0, atk: 0.9, def: 1.15 }, // 防禦 1.0→1.15：後排輔助也要撐得住被切
     energyOnAction: 15,
     energyOnHitTaken: 0,
     energyOnAllyAction: 3,
