@@ -176,7 +176,8 @@ export class BattleScene {
     floatText(this.fxLayer, STAGE_W / 2, STAGE_H * 0.3, txt);
   }
 
-  // 天氣氛圍層：頂部灑下天氣色柔光 + 緩慢飄落/上升的光屑（低調，不搶戰鬥戲）。
+  // 天氣氛圍層：全螢幕色調 + 天氣專屬動畫——一眼看出現在什麼天氣。
+  // 暴雨＝整幕斜落雨絲；烈日＝旋轉光束扇 + 上升熱屑；颶風＝橫掃風痕。
   // 可重複呼叫（技能換天氣時拆舊建新）。
   _drawWeather(weatherId) {
     if (this._weatherLayer) {
@@ -191,18 +192,79 @@ export class BattleScene {
     this._weatherLayer = layer;
     this.root.addChild(layer);
     const color = Number(`0x${weather.color.slice(1)}`);
+
+    // 全螢幕天氣色調（低透明，但足以讓整幕變色）
+    const tint = new Graphics();
+    tint.rect(0, 0, STAGE_W, STAGE_H).fill({ color, alpha: 0.07 });
+    tint.blendMode = 'add';
+    layer.addChild(tint);
+    gsap.fromTo(tint, { alpha: 0.6 }, { alpha: 1, duration: 2.2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+
     // 頂部柔光
     const glow = new Graphics();
     for (let i = 8; i >= 1; i -= 1) {
       const t = i / 8;
-      glow.ellipse(STAGE_W / 2, -40, STAGE_W * 0.55 * t, 150 * t).fill({ color, alpha: 0.03 });
+      glow.ellipse(STAGE_W / 2, -40, STAGE_W * 0.55 * t, 150 * t).fill({ color, alpha: 0.035 });
     }
     glow.blendMode = 'add';
     layer.addChild(glow);
-    // 環境光屑：暴雨下落、烈日上升、颶風橫飄
+
+    if (weather.id === 'rain') {
+      // 暴雨：整幕斜落雨絲（快速循環）——最直觀的「正在下雨」
+      for (let i = 0; i < 34; i += 1) {
+        const drop = new Graphics();
+        const len = 22 + Math.random() * 16;
+        drop.moveTo(0, 0).lineTo(-5, len).stroke({ width: 2, color: 0xbfe0ff, alpha: 0.5 });
+        drop.blendMode = 'add';
+        const x0 = Math.random() * (STAGE_W + 120);
+        const y0 = -40 - Math.random() * STAGE_H;
+        drop.position.set(x0, y0);
+        layer.addChild(drop);
+        const dur = 0.7 + Math.random() * 0.5;
+        gsap.to(drop, {
+          y: STAGE_H + 60, x: x0 - 90,
+          duration: dur, delay: Math.random() * dur, repeat: -1, ease: 'none',
+        });
+      }
+      return;
+    }
+    if (weather.id === 'sunny') {
+      // 烈日：右上角旋轉光束扇（緩慢擺動）＋上升熱屑
+      const rays = new Container();
+      rays.position.set(STAGE_W * 0.78, -30);
+      for (let i = 0; i < 4; i += 1) {
+        const ray = new Graphics();
+        ray.moveTo(0, 0).lineTo(-90 - i * 34, STAGE_H * 1.1).lineTo(-160 - i * 34, STAGE_H * 1.1).closePath()
+          .fill({ color: 0xffd98a, alpha: 0.05 + i * 0.012 });
+        ray.blendMode = 'add';
+        ray.rotation = -0.28 + i * 0.17;
+        rays.addChild(ray);
+      }
+      layer.addChild(rays);
+      gsap.to(rays, { rotation: 0.09, duration: 5.5, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      gsap.fromTo(rays, { alpha: 0.65 }, { alpha: 1, duration: 2.4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    }
+    if (weather.id === 'gale') {
+      // 颶風：橫掃風痕（細長弧線快速掠過）
+      for (let i = 0; i < 14; i += 1) {
+        const streak = new Graphics();
+        const len = 90 + Math.random() * 120;
+        streak.moveTo(0, 0).quadraticCurveTo(len * 0.5, -7, len, 0).stroke({ width: 2, color: 0xc8ffd8, alpha: 0.4 });
+        streak.blendMode = 'add';
+        const y0 = 40 + Math.random() * (STAGE_H - 120);
+        streak.position.set(-len - Math.random() * STAGE_W, y0);
+        layer.addChild(streak);
+        const dur = 0.9 + Math.random() * 0.7;
+        gsap.to(streak, {
+          x: STAGE_W + len, duration: dur, delay: Math.random() * dur * 1.6,
+          repeat: -1, ease: 'none',
+        });
+      }
+    }
+    // 烈日/颶風共用：漂浮光屑（熱屑上升/葉屑橫飄的補充層次）
     if (!this._dotTex) return;
-    const drift = weather.id === 'rain' ? 'down' : weather.id === 'gale' ? 'side' : 'up';
-    for (let i = 0; i < 10; i += 1) {
+    const drift = weather.id === 'gale' ? 'side' : 'up';
+    for (let i = 0; i < 12; i += 1) {
       const p = new Sprite(this._dotTex);
       p.anchor.set(0.5);
       p.blendMode = 'add';
@@ -210,14 +272,14 @@ export class BattleScene {
       p.alpha = 0;
       const x0 = Math.random() * STAGE_W;
       const y0 = 60 + Math.random() * (STAGE_H - 160);
-      p.scale.set(0.22 + Math.random() * 0.25);
+      p.scale.set(0.3 + Math.random() * 0.3);
       p.position.set(x0, y0);
       layer.addChild(p);
-      const dur = 5 + Math.random() * 4;
+      const dur = 4 + Math.random() * 3;
       const move = drift === 'side'
-        ? { x: x0 + 220, y: y0 + (Math.random() * 60 - 30) }
-        : { x: x0 + (Math.random() * 50 - 25), y: y0 + (drift === 'down' ? 180 : -180) };
-      gsap.fromTo(p, { alpha: 0 }, { alpha: 0.5, duration: dur * 0.3, delay: i * 0.4, repeat: -1, repeatDelay: dur * 0.7, yoyo: false, ease: 'sine.out' });
+        ? { x: x0 + 260, y: y0 + (Math.random() * 60 - 30) }
+        : { x: x0 + (Math.random() * 50 - 25), y: y0 - 190 };
+      gsap.fromTo(p, { alpha: 0 }, { alpha: 0.7, duration: dur * 0.3, delay: i * 0.35, repeat: -1, repeatDelay: dur * 0.7, yoyo: false, ease: 'sine.out' });
       gsap.fromTo(p, { x: x0, y: y0 }, { ...move, duration: dur, delay: i * 0.4, repeat: -1, ease: 'none' });
     }
   }
@@ -241,8 +303,8 @@ export class BattleScene {
 
     // 共通：地面色帶（讓「整個地板」一眼看出場地屬性）
     const band = new Graphics();
-    band.ellipse(STAGE_W / 2, GROUND_Y + 150, STAGE_W * 0.62, 190).fill({ color, alpha: 0.12 });
-    band.ellipse(STAGE_W / 2, GROUND_Y + 150, STAGE_W * 0.45, 130).fill({ color, alpha: 0.1 });
+    band.ellipse(STAGE_W / 2, GROUND_Y + 150, STAGE_W * 0.62, 190).fill({ color, alpha: 0.2 });
+    band.ellipse(STAGE_W / 2, GROUND_Y + 150, STAGE_W * 0.45, 130).fill({ color, alpha: 0.16 });
     band.blendMode = 'add';
     layer.addChild(band);
     gsap.fromTo(band, { alpha: 0.7 }, { alpha: 1, duration: 1.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
@@ -285,7 +347,7 @@ export class BattleScene {
       for (let i = 0; i < 5; i += 1) {
         const fog = new Graphics();
         const w = 160 + Math.random() * 180;
-        fog.ellipse(0, 0, w, 34).fill({ color, alpha: 0.1 });
+        fog.ellipse(0, 0, w, 34).fill({ color, alpha: 0.18 });
         fog.blendMode = 'add';
         fog.position.set(STAGE_W * (0.12 + Math.random() * 0.76), GROUND_Y + 90 + Math.random() * 150);
         layer.addChild(fog);
@@ -312,7 +374,7 @@ export class BattleScene {
       for (let i = 0; i < 6; i += 1) {
         const mist = new Graphics();
         const w = 220 + Math.random() * 200;
-        mist.ellipse(0, 0, w, 26 + Math.random() * 14).fill({ color, alpha: 0.12 });
+        mist.ellipse(0, 0, w, 26 + Math.random() * 14).fill({ color, alpha: 0.2 });
         mist.blendMode = 'add';
         const y0 = GROUND_Y + 70 + Math.random() * 180;
         mist.position.set(STAGE_W * Math.random(), y0);
@@ -590,13 +652,21 @@ export class BattleScene {
     // 立繪（async 載入後替換佔位）
     this._loadArt(c, info);
 
-    // 頭頂資訊條：元素小點 + 血條/能量條
+    // 頭頂資訊條：元素小點 + 職業符號（坦🛡/打⚔/輔✚）+ 血條/能量條
     const infoBar = new Container();
     infoBar.y = -BODY_H - 16;
     const chip = new Graphics();
     chip.circle(-BAR_W / 2 - 10, 5, 5.5).fill(color);
     chip.circle(-BAR_W / 2 - 10, 5, 5.5).stroke({ color: 0x14101f, width: 1.5 });
     infoBar.addChild(chip);
+    const clsMark = new Text({
+      text: CLASS_GLYPH[info.class] || '',
+      style: { fontSize: 10, stroke: { color: 0x14101f, width: 2 } },
+    });
+    clsMark.anchor.set(0.5);
+    clsMark.x = -BAR_W / 2 - 10;
+    clsMark.y = -7; // 元素點正上方（垂直堆疊，不佔血條寬度）
+    infoBar.addChild(clsMark);
     const bars = new Graphics();
     infoBar.addChild(bars);
     c._bars = bars;
