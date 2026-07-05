@@ -24,9 +24,10 @@ import { longPress } from './gestures.js';
 import { cardFrame } from './cardFrame.js';
 
 const CLASS_GLYPH = { tank: '🛡', dps: '⚔', support: '✚' };
-// 版面順序：左群後衛（4,5,6）、右群前衛（1,2,3）——同參考原型
-const BACK_POSITIONS = [4, 5, 6];
-const FRONT_POSITIONS = [1, 2, 3];
+// 版面順序：左群後衛、右群前衛；組內由右到左＝站位 1→6（與戰鬥出手序一致，
+// 最右＝前排 1 號位最先出手）。左→右渲染順序因此是 [6,5,4] | [3,2,1]。
+const BACK_POSITIONS = [6, 5, 4];
+const FRONT_POSITIONS = [3, 2, 1];
 const DRAG_START_PX = 12; // 隊上卡片：位移超過即進入拖曳
 const BENCH_DRAG_UP_PX = 14; // 抽屜卡片：明確「往上拖」才進入拖曳（避免和橫向捲動打架）
 
