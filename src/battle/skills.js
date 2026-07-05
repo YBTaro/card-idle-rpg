@@ -127,9 +127,9 @@ export const SKILLS = {
     { type: 'damage', mult: 2.0, scope: 'target' },
     { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies', where: { element: 'wind' } }, // 條件型＞全隊型
   ]},
-  forestWard: { name: '林護', effects: [ // 定位：再生坦——前排持續回復（全隊 HoT 歸湧泉；窄範圍＝值更高）
-    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'hot', power: 0.45, duration: 2, scope: 'frontAllies' },
+  forestWard: { name: '林護', effects: [ // 定位：再生守護（不搶仇恨）——前排持續回復＋淨化（全隊 HoT 歸湧泉；窄範圍值更高）
+    { type: 'hot', power: 0.55, duration: 2, scope: 'frontAllies' },
+    { type: 'dispel', what: 'debuff', count: 1, scope: 'frontAllies' }, // 森林淨化：拔掉前排一個負面
   ]},
   galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [ // 亂舞三連腿＋回氣
     { type: 'damage', mult: 0.9, scope: 'target' },
@@ -172,9 +172,9 @@ export const SKILLS = {
   ]},
 
   // ---- 光 ----
-  sacredShield: { name: '聖盾', effects: [ // 定位：前線聖騎——窄範圍減傷比龍護的全隊版更深
-    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.65, duration: 2, key: 'guard', scope: 'frontAllies' }, // 與守護/龍護互斥
+  sacredShield: { name: '聖盾', effects: [ // 定位：前線守護（不搶仇恨）——前排減傷比龍護全隊版更深＋補盾
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.6, duration: 2, key: 'guard', scope: 'frontAllies' }, // 與守護/龍護互斥
+    { type: 'shield', power: 1.2, duration: 2, scope: 'frontAllies' },
   ]},
   crystalGleam: { name: '晶輝', effects: [ // 定位：唯一的暴擊增幅器
     { type: 'buff', stat: 'critChance', op: 'add', value: 0.15, duration: 2, scope: 'allAllies' },
@@ -214,9 +214,9 @@ export const SKILLS = {
   mindGnaw: { name: '蝕心', effects: [ // 定位：靈壓領域——戰略級效果獨立承載（同環境技原則）
     { type: 'castDrain', amount: 20, duration: 2, scope: 'self', stackable: true }, // 敵方施法→其餘敵人 -20 能量
   ]},
-  boneRampart: { name: '骨牆', effects: [ // 定位：凝咒坦——把敵人身上所有壞事都拖長
-    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+  boneRampart: { name: '骨牆', effects: [ // 定位：凝咒守望（不搶仇恨）——延長敵方負面＋自身厚盾撐著慢慢磨
     { type: 'extend', what: 'negative', turns: 1, scope: 'allEnemies' },
+    { type: 'shield', power: 2.0, duration: 3, scope: 'self' },
   ]},
   dreamEater: { name: '噬夢', target: 'randomEnemy', effects: [ // 定位：隨機汲取者——吸血又吸氣（緩速歸獵翎）
     { type: 'damage', mult: 2.1, scope: 'target', lifesteal: 0.4 }, // 妖＝汲取值最高
@@ -293,9 +293,9 @@ export const SKILLS = {
     { type: 'buff', stat: 'dodge', op: 'add', value: 0.25, duration: 2, scope: 'allAllies', where: { race: '精靈' } }, // 精靈＝迴避值最高
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies', where: { race: '精靈' } },
   ]},
-  bloodFeast: { name: '血宴', target: 'enemyFrontRow', effects: [ // 定位：妖坦——吸血開席（妖＝汲取）
-    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+  bloodFeast: { name: '血宴', target: 'enemyFrontRow', effects: [ // 定位：吸血鬥士（不搶仇恨）——靠吸血與韌性打持久（妖＝汲取）
     { type: 'damage', mult: 1.3, scope: 'target', lifesteal: 0.6 },
+    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.8, duration: 2, scope: 'self' }, // 血肉之軀：越戰越韌
   ]},
   rageRend: { name: '狂怒撕裂', target: 'singleEnemyByColumn', effects: [ // 定位：獸輸出——疊怒（獸＝狂暴）
     { type: 'damage', mult: 1.8, scope: 'target' },
@@ -386,8 +386,8 @@ export const SKILLS = {
     { type: 'cheatDeath', scope: 'target' },
     { type: 'heal', power: 2.2, scope: 'target' },
   ]},
-  sanctumWall: { name: '聖域壁壘', effects: [ // 定位：聖域坦（全隊抗暗光環見卡片被動）
-    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
+  sanctumWall: { name: '聖域壁壘', effects: [ // 定位：聖域守護（不搶仇恨）——為前排張開格擋護符（免一次負面）＋自身盾
+    { type: 'debuffBlock', charges: 1, duration: 3, scope: 'frontAllies' }, // 聖域帷幕：前排各彈開一個負面狀態
     { type: 'shield', power: 1.6, duration: 2, scope: 'self' },
   ]},
   smite: { name: '天罰之鋒', target: 'enemyColumn', effects: [ // 定位：神輸出——裁決直排、以聖光自癒

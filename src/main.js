@@ -33,7 +33,22 @@ async function main() {
 
   const overlay = new BattleOverlay(document.getElementById('battle-overlay'));
   const battle = new BattleController(app, overlay);
-  if (import.meta.env.DEV) window.__battle = battle; // 開發鉤子：console/截圖腳本直接操作戰鬥（prod 不暴露）
+  if (import.meta.env.DEV) {
+    window.__battle = battle; // 開發鉤子：console/截圖腳本直接操作戰鬥（prod 不暴露）
+    const { gsap } = await import('gsap');
+    window.__gsap = gsap; // 診斷用（判斷 sprite 是否有進行中補間）
+    // 匯出當前戰鬥事件 log（可貼給我定位「哪一步」出問題）
+    window.__dumpBattle = () => {
+      const rp = battle.replayer;
+      if (!rp) return console.log('（目前沒有進行中的戰鬥）');
+      const lines = rp.log.map((e, i) => `${String(i).padStart(3)} ${e.type}`
+        + (e.attackerUid != null ? ` atk#${e.attackerUid}→#${e.targetUid}` : '')
+        + (e.uid != null ? ` #${e.uid}` : '')
+        + (e.round != null ? ` R${e.round}` : ''));
+      console.log('=== 戰鬥事件 log（共 ' + rp.log.length + ' 筆）===\n' + lines.join('\n'));
+      return { setup: rp.setup, log: rp.log };
+    };
+  }
 
   // 各功能畫面
   const home = new HomeUI(document.getElementById('screen-home'));

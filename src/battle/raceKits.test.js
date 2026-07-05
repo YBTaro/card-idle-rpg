@@ -37,14 +37,15 @@ describe('種族號令（種族限定 buff）', () => {
 });
 
 describe('妖坦與獸輸出（種族補位）', () => {
-  it('血宴：自身嘲諷 + 前排吸血', () => {
+  it('血宴：前排吸血 + 自身韌性（不再嘲諷）', () => {
     const caster = makeUnit({ team: 0, pos: 1, race: '妖', atk: 100, hp: 1000 });
     caster.hp = 400;
     const foe = makeUnit({ team: 1, pos: 1, hp: 99999, def: 0 });
     castSkill(caster, 'bloodFeast', ctxFor(caster, [caster], [foe]));
-    expect(caster.buffs.some((b) => b.control === 'taunt')).toBe(true);
+    expect(caster.buffs.some((b) => b.control === 'taunt')).toBe(false); // 已改非嘲諷
     expect(foe.hp).toBeLessThan(99999);
     expect(caster.hp).toBeGreaterThan(400); // 吸血回填
+    expect(caster.buffs.some((b) => b.kind === 'stat' && b.stat === 'dmgTaken')).toBe(true); // 韌性減傷
   });
 
   it('狂怒撕裂：自身攻buff 可疊層（兩次施放＝兩層相乘）', () => {

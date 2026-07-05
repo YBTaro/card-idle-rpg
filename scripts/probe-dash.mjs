@@ -61,6 +61,24 @@ await page.evaluate(() => {
   };
   window.__probeTimer = setInterval(install, 150);
   document.querySelector('.hub-adv')?.click(); // 大冒險鈕 → 戰役
+
+  // 持續監測：每 120ms 掃所有玩家單位，抓「存活/沒突進/沒補間/卻離家>25px」——
+  // 用 window.__gsap 判斷補間；連續 3 次都卡才報（濾掉正常回位途中的瞬間）。
+  window.__stuck = {};
+  window.__monTimer = setInterval(() => {
+    const sc = window.__battle?.scene, rp = window.__battle?.replayer;
+    if (!sc || !rp) return;
+    for (const [uid, s] of sc.sprites) {
+      if (s._info.team !== 0 || s._destroyed) continue;
+      const home = (s._homeX != null) && (Math.abs(s.x - s._homeX) + Math.abs(s.y - s._homeY) <= 25);
+      const tweening = window.__gsap ? window.__gsap.getTweensOf(s).length > 0 : false;
+      const bad = rp.aliveOf(uid) && !s._dashing && !tweening && !home && s._homeX != null;
+      window.__stuck[uid] = bad ? (window.__stuck[uid] || 0) + 1 : 0;
+      if (window.__stuck[uid] === 3) {
+        console.log(`[PROBE] ⚠持續卡位 pos${s._info.pos}(${s._info.name}) x=${Math.round(s.x)} home=${Math.round(s._homeX)} y=${Math.round(s.y)} homeY=${Math.round(s._homeY)}`);
+      }
+    }
+  }, 120);
 });
 console.log('[PROBE] installed, watching 90s (多場)...');
 await sleep(90000);
