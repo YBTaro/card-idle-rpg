@@ -37,7 +37,7 @@ describe('describeSkill（描述自動生成）', () => {
   });
 
   it('DoT 操作技能描述：延長/易傷/引爆/轉化', () => {
-    expect(describeSkill('emberWarmth')).toContain('灼燒持續時間 +1');
+    expect(describeSkill('emberWarmth')).toContain('灼燒持續時間 +2');
     expect(describeSkill('moltenBulwark')).toContain('受到的持續傷害 +30%');
     expect(describeSkill('detonate')).toContain('引爆');
     expect(describeSkill('flameShift')).toContain('轉化為自身剋制的屬性');

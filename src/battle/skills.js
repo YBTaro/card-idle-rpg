@@ -80,7 +80,7 @@ export const SKILLS = {
   ]},
   emberWarmth: { name: '餘溫', effects: [ // 定位：延燒輔助（淨化歸潮頌）——治療收窄前排、數值加厚
     { type: 'heal', power: 1.5, scope: 'frontAllies' },
-    { type: 'extend', what: 'dot', element: 'fire', turns: 1, scope: 'allEnemies' }, // 餘燼不熄：敵方灼燒 +1 回合
+    { type: 'extend', what: 'dot', element: 'fire', turns: 2, scope: 'allEnemies' }, // 餘燼不熄：敵方灼燒 +2 次行動
   ]},
   shellAegis: { name: '殼護', effects: [ // 定位：荊棘反傷坦（厚盾歸冰甲）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
@@ -90,10 +90,10 @@ export const SKILLS = {
     { type: 'damage', mult: 1.4, scope: 'target' },
     { type: 'transmute', duration: 2, scope: 'target' },
   ]},
-  detonate: { name: '爆燃', target: 'enemyColumn', effects: [
-    { type: 'detonateDot', element: 'fire', mult: 1.0, scope: 'target' }, // 先引爆舊灼燒（每跳×剩餘回合一次結算）
-    { type: 'damage', mult: 1.7, scope: 'target', ignoreDef: true }, // 無視防禦
-    { type: 'dot', power: 0.4, element: 'fire', duration: 2, scope: 'target' }, // 再點新火
+  detonate: { name: '爆燃', target: 'allEnemies', effects: [ // 定位：全體引爆燃燒
+    { type: 'detonateDot', element: 'fire', mult: 1.0, scope: 'target' }, // 引爆所有燃燒（每跳×剩餘回合一次結算）
+    { type: 'damage', mult: 1.0, scope: 'target' }, // 對敵方全體 100% 攻擊力傷害
+    { type: 'dot', power: 0.3, element: 'fire', duration: 2, scope: 'backEnemies', chance: 0.7 }, // 70% 對後排點新火
   ]},
   warBanner: { name: '軍威', effects: [ // 定位：攻擊號令（群體充能歸晨曲）
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'allAllies' },

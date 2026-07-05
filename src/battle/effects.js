@@ -34,6 +34,10 @@ export function resolveScope(scope, caster, primary, ctx) {
       return alive(ctx.allies).filter((u) => u.row === 'back');
     case 'columnAllies': // 與施放者同直排（含自己）
       return alive(ctx.allies).filter((u) => u.column === caster.column);
+    case 'frontEnemies': // 敵方前排
+      return alive(ctx.enemies).filter((u) => u.row === 'front');
+    case 'backEnemies': // 敵方後排
+      return alive(ctx.enemies).filter((u) => u.row === 'back');
     case 'targetIncludingDead': // 復活用：不過濾存活
       return primary;
     default:
