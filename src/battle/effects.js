@@ -68,6 +68,8 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
   const dealt = target.takeDamage(res.amount);
   const absorbed = target._absorbed ?? 0; // 護盾吸收量（統計計入攻擊者輸出；amount 仍＝實際扣血）
   target._absorbed = 0;
+  // 護盾被吸收/打破 → 補發 buffchange 讓前端刷新狀態圖示（否則盾破了圖示還殘留）
+  if (absorbed > 0) ctx.emit('buffchange', { unit: target, buffs: summarizeBuffs(target) });
   target.gainEnergy(target.classDef.energyOnHitTaken);
   ctx.emit('energy', { unit: target, value: target.energy });
   ctx.emit('damage', {
