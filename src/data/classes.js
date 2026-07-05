@@ -8,7 +8,7 @@ export const CLASSES = {
   // 坦克受擊額外 +5、輔助隊友行動額外 +3。約每 4 回合一輪絕技。
   tank: {
     id: 'tank', label: '坦克',
-    statMods: { hp: 1.3, atk: 0.8, def: 1.2 }, // 防禦 1.4→1.2：坦仍最硬但差距收窄，靠血量+嘲諷/保護撐場
+    statMods: { hp: 1.3, atk: 0.95, def: 1.2 }, // 攻 0.8→0.95：坦克普攻不再軟綿綿（仍最低攻＝輸出靠 DPS）；防禦 1.4→1.2 收窄差距
 
     energyOnAction: 15,
     energyOnHitTaken: 5,
