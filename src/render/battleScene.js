@@ -645,6 +645,10 @@ export class BattleScene {
   _makeSprite(info) {
     const c = new Container();
     c._info = info;
+    // 點棋子 → 資訊層彈出該單位目前狀態清單（controller 掛 onUnitTap）
+    c.eventMode = 'static';
+    c.cursor = 'pointer';
+    c.on('pointertap', () => this.onUnitTap?.(info.uid));
     const color = ELEMENT_COLOR[info.element] || 0xffffff;
 
     // 腳底橢圓影

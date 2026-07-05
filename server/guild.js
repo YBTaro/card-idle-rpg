@@ -219,6 +219,7 @@ export function ensureBoss(g, now = Date.now()) {
   if (!g.boss || g.boss.week !== week) {
     const lv = 10 + levelOf(g) * 8;
     const snap = botSnapshot(lv, 1.15, week * 31 + g.id.length);
+    snap[0].boss = true; // 首位（坦）掛 Boss 機制包：階段/破盾/狂暴 + %生命保護
     const maxHp = 200000 + levelOf(g) * 150000;
     g.boss = { week, name: BOSS_NAMES[week % BOSS_NAMES.length], level: lv, snapshot: snap, maxHp, hp: maxHp, dmg: {}, tries: {} };
     saveDb();

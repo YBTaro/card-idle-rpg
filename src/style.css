@@ -489,6 +489,23 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   border-radius: 99px; padding: .3rem 1rem; white-space: nowrap;
 }
 
+/* 羈絆提示（D3）：系列/種族計數 chips + 觸發的隊伍技 */
+.tp-syn {
+  position: absolute; left: 50%; top: 3rem; transform: translateX(-50%); z-index: 12;
+  display: flex; flex-direction: column; align-items: center; gap: .2rem; max-width: 82%;
+}
+.tp-syn .ts-chips { display: flex; gap: .3rem; flex-wrap: wrap; justify-content: center; }
+.tp-syn .chip {
+  font-size: .68rem; font-weight: 800; color: #e8ecff;
+  background: rgba(14, 18, 32, .7); border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: 99px; padding: .08rem .55rem;
+}
+.tp-syn .ts-skill {
+  font-size: .7rem; color: #ffe9b0; text-shadow: 0 1px 2px #000;
+  background: rgba(20, 16, 6, .62); border: 1px solid rgba(248, 203, 92, .4);
+  border-radius: 99px; padding: .12rem .7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+
 /* 英雄替換抽屜 */
 .swap-drawer {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 30;
@@ -585,6 +602,17 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   border: 1px solid #e5b542; box-shadow: 0 1px 3px rgba(0, 0, 0, .4);
 }
 .cardframe.mini .cardframe-lvl { font-size: .55rem; padding: 0 .3rem; top: .15rem; right: .15rem; }
+
+/* 稀有度框（E1）：R 無視覺；SR 銀藍外光、SSR 金橙外光 + 角標。 */
+.cardframe.rar-sr { box-shadow: 0 0 0 1.5px rgba(150, 190, 255, .75), 0 0 12px rgba(120, 170, 255, .35); }
+.cardframe.rar-ssr { box-shadow: 0 0 0 1.5px rgba(255, 200, 90, .9), 0 0 14px rgba(255, 180, 60, .45); }
+.cardframe-rar {
+  position: absolute; left: .3rem; bottom: 2rem; z-index: 3;
+  font-size: .6rem; font-weight: 900; letter-spacing: .06em; border-radius: .3rem; padding: 0 .35rem;
+  color: #101322; text-shadow: none;
+}
+.cardframe-rar.sr { background: linear-gradient(180deg, #dceaff, #8fb4e8); }
+.cardframe-rar.ssr { background: linear-gradient(180deg, #ffe9a8, #e8a83c); }
 .cardframe.pop { animation: cardPop .4s cubic-bezier(.2, .9, .3, 1.3) both; }
 .cardframe.shine::after {
   content: ''; position: absolute; top: 0; left: 0; width: 60%; height: 100%;
@@ -682,6 +710,12 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .hs-sk .t { font-size: .65rem; font-weight: 800; color: var(--dim); }
 .hs-skdesc { flex: 1; font-size: .78rem; color: var(--dim); line-height: 1.65; min-width: 0; }
 .hs-skdesc b { color: var(--gold); display: block; font-size: .85rem; }
+/* 絕技等級 chip（C4 技能等級；升級入口之後開） */
+.hs-skdesc .sklv {
+  display: inline-block; font-style: normal; font-size: .62rem; font-weight: 800; color: #ffe9b0;
+  border: 1px solid rgba(248, 203, 92, .55); border-radius: 99px; padding: 0 .4rem; margin-left: .4rem;
+  vertical-align: 1px;
+}
 .hs-cta { margin-top: auto; display: flex; gap: .6rem; align-items: stretch; padding-top: .4rem; }
 .hs-btn {
   position: relative; flex: 1; text-align: center; font-size: 1rem; font-weight: 900;
@@ -875,6 +909,68 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .bo-result.lose .vr { color: var(--dim); }
 .bo-result .vnext { font-size: .78rem; color: var(--dim); }
 .bo-result .btn { margin-top: .4rem; border-radius: 99px; }
+
+/* 敵情條（D4）：右上敵方頭列下方的 5 顆 chips——屬性色點 + 職業符 + 等級 */
+.bo-foes {
+  position: absolute; right: 1.2rem; top: 4.4rem;
+  display: none; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; max-width: 16rem;
+}
+.bo-foes.on { display: flex; }
+.bo-foe {
+  display: flex; align-items: center; gap: .28rem;
+  padding: .12rem .5rem; border-radius: 99px;
+  background: rgba(14, 18, 32, .72); border: 1px solid rgba(255, 255, 255, .22);
+  font-size: .68rem; color: #e8ecff; text-shadow: 0 1px 2px #000;
+}
+.bo-foe i { width: .55rem; height: .55rem; border-radius: 99px; border: 1px solid rgba(0, 0, 0, .5); }
+.bo-foe b { font-weight: 800; color: #ffe9b0; font-variant-numeric: tabular-nums; }
+
+/* 單位狀態面板（D1）：點戰場棋子彈出的目前狀態清單 */
+.bo-unitpanel {
+  position: absolute; left: 50%; bottom: 3.6rem; transform: translateX(-50%);
+  min-width: 15rem; max-width: 22rem; max-height: 46%; overflow-y: auto;
+  padding: .55rem .7rem; border-radius: .8rem; z-index: 15;
+  background: linear-gradient(180deg, rgba(24, 28, 46, .95), rgba(14, 17, 30, .95));
+  border: 1.5px solid var(--gold); box-shadow: 0 6px 22px rgba(0, 0, 0, .55);
+}
+.bo-unitpanel .up-head { display: flex; align-items: center; gap: .4rem; margin-bottom: .35rem; }
+.bo-unitpanel .up-head i { width: .7rem; height: .7rem; border-radius: 99px; border: 1px solid rgba(0, 0, 0, .5); flex: none; }
+.bo-unitpanel .up-head b { font-size: .9rem; color: #ffe9b0; }
+.bo-unitpanel .up-head span { font-size: .74rem; color: var(--dim); }
+.up-close {
+  margin-left: auto; width: 1.5rem; height: 1.5rem; border-radius: 99px; border: 1px solid rgba(255, 255, 255, .3);
+  background: rgba(255, 255, 255, .08); color: #e8ecff; font-size: .72rem; cursor: pointer; flex: none;
+}
+.up-empty { font-size: .76rem; color: var(--dim); padding: .3rem 0; }
+.up-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: .8rem;
+  font-size: .76rem; color: #cfe3cf; padding: .18rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .07);
+}
+.up-row:last-child { border-bottom: 0; }
+.up-row.neg { color: #f0b9b9; }
+.up-row .tn { flex: none; font-size: .7rem; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+/* 戰鬥統計面板（D2）：結算「詳情」——輸出/承傷/治療三排行 */
+.bo-stats {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(88%, 34rem); max-height: 78%; overflow-y: auto;
+  padding: .8rem .9rem; border-radius: 1rem; z-index: 30;
+  background: linear-gradient(180deg, rgba(24, 28, 46, .97), rgba(14, 17, 30, .97));
+  border: 1.5px solid var(--gold); box-shadow: 0 10px 34px rgba(0, 0, 0, .65);
+}
+.bo-stats .up-close { position: absolute; right: .6rem; top: .6rem; }
+.bo-stats .st-title { text-align: center; font-size: 1rem; font-weight: 900; color: #ffe9b0; letter-spacing: .3em; margin-bottom: .6rem; }
+.bo-stats .st-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; }
+.bo-stats .st-h { font-size: .78rem; font-weight: 900; text-align: center; margin-bottom: .3rem; letter-spacing: .15em; }
+.bo-stats .st-row {
+  display: flex; align-items: center; gap: .3rem; font-size: .72rem; color: #e8ecff; padding: .16rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .07);
+}
+.bo-stats .st-row:last-child { border-bottom: 0; }
+.bo-stats .st-row i { width: .5rem; height: .5rem; border-radius: 99px; flex: none; border: 1px solid rgba(0, 0, 0, .5); }
+.bo-stats .st-row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bo-stats .st-row b { font-variant-numeric: tabular-nums; color: #ffe9b0; }
 
 /* 貨幣飛入動畫用的小圖示（z 低於召喚演出層 120，背景戰鬥的金幣不會飛過儀式畫面） */
 .coin-fly { position: fixed; z-index: 110; font-size: 1.2rem; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }

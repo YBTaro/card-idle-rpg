@@ -140,6 +140,12 @@ export const CARDS = {
 
 export const CARD_LIST = Object.values(CARDS);
 
+// ---- 稀有度（E1 架構）----
+// card.rarity ∈ 'R' | 'SR' | 'SSR'，未標＝'R'（目前全卡未標 → 零影響）。
+// 之後分級只要在個別卡加 rarity: 'SSR'：卡面框色與抽卡權重（gachaTable.RARITY_WEIGHT）自動跟上。
+export const RARITIES = ['R', 'SR', 'SSR'];
+export const rarityOf = (card) => card?.rarity ?? 'R';
+
 // 稀有卡池（抽卡可能抽到的角色）。MVP 全部角色都可抽。
 export const GACHA_CARD_POOL = CARD_LIST.map((c) => c.id);
 

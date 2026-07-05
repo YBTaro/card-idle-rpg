@@ -20,6 +20,7 @@ import {
   isInFormation,
 } from '../systems/formation.js';
 import { openHeroSheet } from './heroSheet.js';
+import { describePassive } from '../battle/skillText.js';
 import { longPress } from './gestures.js';
 import { cardFrame } from './cardFrame.js';
 
@@ -62,6 +63,10 @@ export class TeamUI {
       this.root.appendChild(el('div', { class: 'tp-mode-tip', text: '點隊上英雄移出；把下方英雄拖到格位上陣' }));
     }
 
+    // 羈絆提示：系列/種族計數 + 這套陣容會觸發的隊伍技（隊伍技進場鎖定，上陣時算正好）
+    const syn = this._synergyBar();
+    if (syn) this.root.appendChild(syn);
+
     // 卡列
     const row = el('div', { class: 'tp-row' });
     row.appendChild(this._group('後　衛', BACK_POSITIONS));
@@ -87,6 +92,51 @@ export class TeamUI {
     );
 
     if (this.drawerOpen) this._mountDrawer();
+  }
+
+  // 目前陣容的羈絆摘要：≥2 名的系列/種族 chips + 已觸發的隊伍技清單。空陣容回 null。
+  _synergyBar() {
+    const s = store.state;
+    const lineup = s.formation
+      .map((e) => CARDS[store.getCard(e.instanceId)?.cardId])
+      .filter(Boolean);
+    if (lineup.length === 0) return null;
+
+    // 系列/種族計數（只列 ≥2：湊不成對子的不佔版面）
+    const counts = new Map();
+    for (const c of lineup) {
+      counts.set(`race:${c.race}`, (counts.get(`race:${c.race}`) ?? 0) + 1);
+      for (const sr of c.series ?? []) counts.set(`series:${sr}`, (counts.get(`series:${sr}`) ?? 0) + 1);
+    }
+    const chips = [...counts.entries()]
+      .filter(([, n]) => n >= 2)
+      .sort((a, b) => b[1] - a[1])
+      .map(([key, n]) => el('span', { class: 'chip', text: `${key.split(':')[1]} ×${n}` }));
+
+    // 已觸發的隊伍技（與戰鬥開場判定同一套 where 條件）
+    const match = (c, where) => {
+      if (!where) return true;
+      if (where.race) return c.race === where.race;
+      if (where.series) return (c.series ?? []).includes(where.series);
+      if (where.element) return c.element === where.element;
+      if (where.class) return c.class === where.class;
+      return false;
+    };
+    const active = [];
+    for (const c of lineup) {
+      for (const p of c.passives ?? []) {
+        const cond = p.when?.alliesAtLeast;
+        if (!cond) continue;
+        const n = lineup.filter((x) => match(x, cond.where)).length;
+        if (n >= cond.count) active.push(`${c.name}：${describePassive(p)}`);
+      }
+    }
+
+    if (chips.length === 0 && active.length === 0) return null;
+    const bar = el('div', { class: 'tp-syn' });
+    if (chips.length) bar.appendChild(el('div', { class: 'ts-chips' }, chips));
+    for (const t of active) bar.appendChild(el('div', { class: 'ts-skill', text: `✦ ${t}` }));
+    return bar;
   }
 
   _group(label, positions) {

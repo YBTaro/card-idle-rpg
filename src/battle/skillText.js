@@ -325,3 +325,39 @@ export function triggerInfoForCard(cardId) {
   if (!card || !card.triggers) return [];
   return card.triggers.map((t) => ({ name: t.name ?? '觸發', desc: describeTrigger(t) })).filter((t) => t.desc);
 }
+
+// cardId → 普攻變體描述（無變體回 null）。
+export function basicInfoForCard(cardId) {
+  const ba = CARDS[cardId]?.basicAttack;
+  if (!ba) return null;
+  if (ba.hits) return `連擊普攻：每次普攻打出 ${ba.hits} 段（每段 ${pct(ba.mult ?? 1 / ba.hits)} 攻擊力，各自判定命中與暴擊）`;
+  if (ba.splash) return `濺射普攻：同排相鄰的敵人一併受到 ${pct(ba.splash)} 攻擊力的傷害`;
+  if (ba.heal) return `治療普攻：攻擊後治療血量最低的隊友 ${pct(ba.heal)} 攻擊力的生命`;
+  if (ba.everyN) return `蓄力普攻：每第 ${ba.everyN} 次普攻改為 ${pct(ba.mult ?? 2)} 攻擊力的強化一擊`;
+  return null;
+}
+
+// ---- 戰鬥中狀態小圖示的人話標籤（點擊單位的狀態面板用）----
+// 吃 summarizeBuffs 的摘要物件（kind/stat/control/element/neg/turns/charges）。
+export function buffLabel(b) {
+  switch (b.kind) {
+    case 'dot': return b.element === 'fire' ? '灼燒（每次行動前受傷）' : '中毒（每次行動前受傷）';
+    case 'hot': return '持續回復（每次行動前回血）';
+    case 'shield': return '護盾（優先吸收傷害）';
+    case 'thorns': return '荊棘（反彈受到的傷害）';
+    case 'counter': return '反擊姿態（受擊時回敬一擊）';
+    case 'control':
+      return { taunt: '嘲諷（吸引敵方攻擊）', silence: '沉默（無法行動）', freeze: '凍結（無法回能）' }[b.control] ?? b.control;
+    case 'element': return `屬性轉化（暫時變為${ELEMENT_LABEL[b.element] ?? b.element}屬性）`;
+    case 'castDrain': return '靈壓領域（敵方施法時其餘敵人扣能量）';
+    case 'nightmare': return '惡夢印記（受直接傷害時額外損失生命）';
+    case 'debuffBlock': return `格擋護符（可再彈開 ${b.charges ?? 1} 個負面狀態）`;
+    case 'mark': return '獵印（被攻擊時可能觸發敵方連動）';
+    case 'cheatDeath': return '不滅意志（致死傷害改留 1 點生命）';
+    case 'stat': {
+      const base = STAT_LABEL[b.stat] ?? b.stat;
+      return `${base}${b.neg ? '降低' : '提升'}`;
+    }
+    default: return b.kind;
+  }
+}

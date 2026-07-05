@@ -12,7 +12,7 @@ import { ELEMENT_LABEL } from '../data/elements.js';
 import { artFor } from '../data/assets.js';
 import { deriveStats, MAX_STARS, STAR_STAT_BONUS, STAR_MILESTONES } from '../core/stats.js';
 import { levelUp, levelUpCost, canLevelUp, MAX_LEVEL } from '../systems/leveling.js';
-import { skillInfoForCard, passiveInfoForCard, triggerInfoForCard, teamSkillInfoForCard, onEnterInfoForCard } from '../battle/skillText.js';
+import { skillInfoForCard, passiveInfoForCard, triggerInfoForCard, teamSkillInfoForCard, onEnterInfoForCard, basicInfoForCard } from '../battle/skillText.js';
 import { trackQuest } from '../systems/quests.js';
 import { holdRepeat } from './gestures.js';
 import { icon } from './icons.js';
@@ -215,10 +215,21 @@ class HeroSheet {
     if (skill) {
       const skIc = el('div', { class: 'ic' });
       skIc.appendChild(icon(`cls_${card.class}`, 20));
+      const skLv = inst.skillLv ?? 1; // 技能等級（升級入口與材料之後開）
       p.appendChild(
         el('div', { class: 'hs-skills' }, [
           el('div', { class: 'hs-sk' }, [skIc, el('span', { class: 't', text: '絕技' })]),
-          el('div', { class: 'hs-skdesc', html: `<b>${skill.name}</b>${skill.desc}` }),
+          el('div', { class: 'hs-skdesc', html: `<b>${skill.name}<i class="sklv">Lv.${skLv}</i></b>${skill.desc}` }),
+        ])
+      );
+    }
+    // 普攻變體（有特殊普攻的卡才顯示；一般普攻不佔版面）
+    const basic = basicInfoForCard(inst.cardId);
+    if (basic) {
+      p.appendChild(
+        el('div', { class: 'hs-skills' }, [
+          el('div', { class: 'hs-sk' }, [el('div', { class: 'ic psv', text: '🗡' }), el('span', { class: 't', text: '普攻' })]),
+          el('div', { class: 'hs-skdesc', html: `<b>特殊普攻</b>${basic}` }),
         ])
       );
     }

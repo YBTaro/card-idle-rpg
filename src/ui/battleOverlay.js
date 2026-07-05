@@ -9,6 +9,11 @@ import { nav } from './router.js';
 import { stageLabel } from '../systems/profile.js';
 import { avatarEl } from './metaSheets.js';
 import { weatherOf, terrainOf, envLabelOf, envDescOf } from '../battle/environments.js';
+import { buffLabel } from '../battle/skillText.js';
+import { ELEMENT_LABEL } from '../data/elements.js';
+
+const ELEMENT_HEX = { fire: '#ff7d5c', wind: '#7fe497', water: '#6cb2ff', light: '#ffe789', dark: '#bb8cff' };
+const CLASS_GLYPH = { tank: '🛡', dps: '⚔', support: '✚' };
 
 const COIN_FLY_S = 0.6;
 const SPEEDS = [1, 2, 3];
@@ -57,6 +62,10 @@ export class BattleOverlay {
     this.envChip = el('div', { class: 'bo-env' });
     this.root.appendChild(this.envChip);
 
+    // 右上下方：敵情條（敵方 5 人屬性/職業/等級一眼掌握——屬性剋制策略的情報來源）
+    this.foesStrip = el('div', { class: 'bo-foes' });
+    this.root.appendChild(this.foesStrip);
+
     // 左下：回合圓章
     this.roundEl = el('div', { class: 'bo-round', text: 'R1' });
     this.root.appendChild(this.roundEl);
@@ -85,7 +94,8 @@ export class BattleOverlay {
   }
 
   // 每場開打時同步靜態資訊。title 有值＝自訂回放（競技場/切磋/公會 Boss）。
-  setBattle({ stage, title = null, env = null }) {
+  // enemies＝敵方單位摘要 [{name, element, class, level}]（敵情條）。
+  setBattle({ stage, title = null, env = null, enemies = [] }) {
     const label = stageLabel(stage);
     this.waveText.textContent = title ?? label;
     this.nmLeft.textContent = '我方';
@@ -94,6 +104,92 @@ export class BattleOverlay {
     this.avaLeft.appendChild(avatarEl());
     this.setEnv(env);
     this.hideResult();
+    this.hideUnitStatus();
+    this.hideStatsPanel();
+    // 敵情條
+    clear(this.foesStrip);
+    for (const f of enemies) {
+      this.foesStrip.appendChild(el('div', { class: 'bo-foe', title: `${f.name}（${ELEMENT_LABEL[f.element] ?? ''}）` }, [
+        el('i', { style: `background:${ELEMENT_HEX[f.element] ?? '#999'}` }),
+        el('span', { text: CLASS_GLYPH[f.class] ?? '' }),
+        el('b', { text: `Lv${f.level}` }),
+      ]));
+    }
+    this.foesStrip.classList.toggle('on', enemies.length > 0);
+  }
+
+  // ---- 單位狀態面板（點戰鬥中的棋子 → 目前狀態清單） ----
+  showUnitStatus({ name, element, cls, level, buffs }) {
+    this.hideUnitStatus();
+    const panel = el('div', { class: 'bo-unitpanel' });
+    panel.appendChild(el('div', { class: 'up-head' }, [
+      el('i', { style: `background:${ELEMENT_HEX[element] ?? '#999'}` }),
+      el('b', { text: `${name}` }),
+      el('span', { text: ` ${CLASS_GLYPH[cls] ?? ''} Lv${level}` }),
+      el('button', { class: 'up-close pressable', text: '✕', onClick: () => this.hideUnitStatus() }),
+    ]));
+    if (!buffs.length) {
+      panel.appendChild(el('div', { class: 'up-empty', text: '目前沒有任何狀態' }));
+    }
+    for (const b of buffs) {
+      panel.appendChild(el('div', { class: `up-row${b.neg ? ' neg' : ''}` }, [
+        el('span', { class: 'lb', text: buffLabel(b) }),
+        el('span', {
+          class: 'tn',
+          text: b.kind === 'debuffBlock' && b.charges != null ? `${b.charges} 層`
+            : b.turns != null ? `${b.turns} 回合` : '常駐',
+        }),
+      ]));
+    }
+    this.root.appendChild(panel);
+    this._unitPanel = panel;
+    gsap.fromTo(panel, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.16, ease: 'power2.out' });
+  }
+
+  hideUnitStatus() {
+    this._unitPanel?.remove();
+    this._unitPanel = null;
+  }
+
+  // ---- 戰鬥統計面板（結算的「詳情」）：輸出/承傷/治療 三排行 ----
+  // onClose：面板收起時回呼（controller 靠它恢復自動開下一場）。
+  showStatsPanel(rows, onClose = null) {
+    this.hideUnitStatus();
+    this.hideStatsPanel();
+    const panel = el('div', { class: 'bo-stats' });
+    panel._onClose = onClose;
+    panel.appendChild(el('button', { class: 'up-close pressable', text: '✕', onClick: () => this.hideStatsPanel() }));
+    panel.appendChild(el('div', { class: 'st-title', text: '戰鬥統計' }));
+    const cols = el('div', { class: 'st-cols' });
+    const mkCol = (title, key, color) => {
+      const box = el('div', { class: 'st-col' });
+      box.appendChild(el('div', { class: 'st-h', style: `color:${color}`, text: title }));
+      const sorted = [...rows].sort((a, b) => b[key] - a[key]).filter((r) => r[key] > 0).slice(0, 5);
+      if (!sorted.length) box.appendChild(el('div', { class: 'up-empty', text: '—' }));
+      for (const r of sorted) {
+        box.appendChild(el('div', { class: 'st-row' }, [
+          el('i', { style: `background:${ELEMENT_HEX[r.element] ?? '#999'}` }),
+          el('span', { class: 'nm', text: r.name }),
+          el('b', { text: r[key].toLocaleString() }),
+        ]));
+      }
+      return box;
+    };
+    cols.appendChild(mkCol('輸出', 'dealt', '#ff9a5c'));
+    cols.appendChild(mkCol('承傷', 'taken', '#8ecfe8'));
+    cols.appendChild(mkCol('治療', 'healed', '#8ef2ae'));
+    panel.appendChild(cols);
+    this.root.appendChild(panel);
+    this._statsPanel = panel;
+    gsap.fromTo(panel, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.2, ease: 'power2.out' });
+  }
+
+  hideStatsPanel() {
+    const p = this._statsPanel;
+    if (!p) return;
+    this._statsPanel = null;
+    p.remove();
+    p._onClose?.();
   }
 
   // 環境徽章：天氣/場地色點 + 名稱；戰鬥中被技能覆蓋時即時更新（controller 轉發事件）。
@@ -162,6 +258,10 @@ export class BattleOverlay {
       node.appendChild(
         el('button', { class: 'btn-gold', text: '🃏 調整陣容 →', onClick: () => nav.go('team') })
       );
+    }
+    // 戰鬥統計入口（controller 傳 onStats 才顯示）
+    if (result.onStats) {
+      node.appendChild(el('button', { class: 'btn pressable', text: '📊 戰鬥詳情', onClick: result.onStats }));
     }
     this.root.appendChild(node);
     this._result = node;

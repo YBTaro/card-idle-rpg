@@ -2,9 +2,9 @@
 import { store, addCardInstance } from '../core/state.js';
 import { saveGame } from '../core/save.js';
 import { rng } from '../core/rng.js';
-import { GACHA_TABLE, GACHA_COST_TICKETS, DUPLICATE_TO_MATERIAL } from '../data/gachaTable.js';
+import { GACHA_TABLE, GACHA_COST_TICKETS, DUPLICATE_TO_MATERIAL, RARITY_WEIGHT } from '../data/gachaTable.js';
 import { MAX_STARS } from '../core/stats.js';
-import { GACHA_CARD_POOL, CARDS } from '../data/cards.js';
+import { GACHA_CARD_POOL, CARDS, rarityOf } from '../data/cards.js';
 import { MATERIALS } from '../data/materials.js';
 
 export function canPull(state = store.state) {
@@ -38,8 +38,9 @@ export function pull(state = store.state, _rng = rng) {
       label: `${MATERIALS[entry.materialId].label} ×${amount}`,
     };
   } else {
-    // 稀有卡：從卡池隨機一張
-    const cardId = _rng.pick(GACHA_CARD_POOL);
+    // 稀有卡：依稀有度權重從卡池抽一張（目前全 R 等權＝均勻隨機）
+    const pool = GACHA_CARD_POOL.map((id) => ({ id, weight: RARITY_WEIGHT[rarityOf(CARDS[id])] ?? 1 }));
+    const cardId = _rng.weightedPick(pool).id;
     const ownedInst = state.cards.find((c) => c.cardId === cardId);
     if (ownedInst) {
       if ((ownedInst.stars ?? 0) < MAX_STARS) {

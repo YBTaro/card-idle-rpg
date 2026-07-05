@@ -4,6 +4,7 @@
 // 只負責「卡面」本身，不含按鈕/數值——那是外層（roster / gacha）的事。
 import { el } from './dom.js';
 import { ELEMENT_LABEL } from '../data/elements.js';
+import { rarityOf } from '../data/cards.js';
 import { artFor, portraitFor, elementGradient } from '../data/assets.js';
 import { icon } from './icons.js';
 
@@ -17,8 +18,10 @@ const CLASS_GLYPH = { tank: '🛡', dps: '⚔', support: '✚' };
 //   stars：升星數（>0 才顯示名牌上方的星帶）
 export function cardFrame(card, { level, size = 'full', stars } = {}) {
   const element = card.element;
+  // 稀有度框（E1）：rar-r 無視覺、rar-sr/rar-ssr 由 CSS 疊外光框；R 卡外觀與分級前一致。
+  const rarity = rarityOf(card).toLowerCase();
   const frame = el('div', {
-    class: `cardframe ${size}${' cardframe-' + element}`,
+    class: `cardframe ${size}${' cardframe-' + element} rar-${rarity}`,
     // 元素色邊框用 CSS 變數（沿用既有 --fire/--wind/... 五色）。
     style: `border-color: var(--${element}, var(--border))`,
   });
@@ -52,6 +55,10 @@ export function cardFrame(card, { level, size = 'full', stars } = {}) {
     const clsBadge = el('div', { class: 'cardframe-clsbadge' });
     clsBadge.appendChild(icon(`cls_${card.class}`, 20));
     frame.appendChild(clsBadge);
+    // 稀有度角標（SR/SSR 才顯示；R 卡保持乾淨）
+    if (rarity !== 'r') {
+      frame.appendChild(el('div', { class: `cardframe-rar ${rarity}`, text: rarityOf(card) }));
+    }
   }
 
   return frame;

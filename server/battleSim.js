@@ -26,7 +26,24 @@ export function unitsFromSnapshot(snapshot, team) {
     seenPos.add(pos);
     const level = Math.max(1, Math.min(LEVEL_MAX, Math.round(Number(e.level) || 1)));
     const stars = Math.max(0, Math.min(5, Math.round(Number(e.stars) || 0)));
-    units.push(new Unit(deriveStats({ cardId: card.id, level, stars }), { team, pos }));
+    const stats = deriveStats({ cardId: card.id, level, stars });
+    // Boss 旗標（伺服器內部快照專用；玩家上傳的快照不會吃到——e.boss 只由 server 端生成）：
+    // bossTag＝%生命保護；bossKit＝標準 Boss 機制包（過半血階段強化+淨化 / 破盾 6 下 / 8 回合狂暴）
+    if (e.boss && team === 1) {
+      stats.bossTag = true;
+      stats.bossKit = e.bossKit ?? {
+        phases: [{
+          hpBelow: 0.5,
+          effects: [
+            { type: 'dispel', what: 'debuff', scope: 'self' },
+            { type: 'buff', stat: 'atk', op: 'mul', value: 1.4, duration: 99, scope: 'self' },
+          ],
+        }],
+        breakBar: { hits: 6, stunTurns: 1 },
+        enrage: { round: 8, effects: [{ type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.6, duration: 99, scope: 'allAllies' }] },
+      };
+    }
+    units.push(new Unit(stats, { team, pos }));
   }
   return units;
 }

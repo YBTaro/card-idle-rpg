@@ -14,6 +14,19 @@ export const STAR_MILESTONES = {
   5: { desc: '造成傷害 +10%、承受傷害 -5%', effects: [{ stat: 'dmgDealt', op: 'mul', value: 1.1 }, { stat: 'dmgTaken', op: 'mul', value: 0.95 }] },
 };
 
+// ---- 裝備插座（E2）：inst.gear = [{ hp?, atk?, def? } 乘數] ----
+// 裝備系統之後開；現在所有卡 gear 為空陣列 → 乘區恆為 ×1（零影響）。
+// 之後裝備只要往 gear 塞 { atk: 1.1 } 之類的乘數物件即可即插即用。
+export function gearMods(gear) {
+  const out = { hp: 1, atk: 1, def: 1 };
+  for (const g of gear ?? []) {
+    for (const key of ['hp', 'atk', 'def']) {
+      if (g?.[key] != null) out[key] *= g[key];
+    }
+  }
+  return out;
+}
+
 export function rawStatsAtLevel(card, level) {
   const out = {};
   for (const key of ['hp', 'atk', 'def']) {
@@ -32,6 +45,7 @@ export function deriveStats(cardInst) {
   const raw = rawStatsAtLevel(card, cardInst.level);
   const stars = cardInst.stars ?? 0;
   const starMul = 1 + STAR_STAT_BONUS * stars;
+  const gear = gearMods(cardInst.gear); // 裝備乘區（沒裝備＝×1）
   // 里程碑加成 → 追加為無條件自身被動（recomputePassives 每步重算、常駐）
   const passives = card.passives ? [...card.passives] : [];
   for (const [star, m] of Object.entries(STAR_MILESTONES)) {
@@ -47,9 +61,9 @@ export function deriveStats(cardInst) {
     series: card.series ? [...card.series] : [],
     level: cardInst.level,
     stars,
-    hp: Math.round(raw.hp * cls.statMods.hp * race.hp * starMul),
-    atk: Math.round(raw.atk * cls.statMods.atk * race.atk * starMul),
-    def: Math.round(raw.def * cls.statMods.def * race.def * starMul),
+    hp: Math.round(raw.hp * cls.statMods.hp * race.hp * starMul * gear.hp),
+    atk: Math.round(raw.atk * cls.statMods.atk * race.atk * starMul * gear.atk),
+    def: Math.round(raw.def * cls.statMods.def * race.def * starMul * gear.def),
     passives,
     triggers: card.triggers ? [...card.triggers] : [], // 觸發（亡語/受擊/血線…見 triggers.js）
     basicAttack: card.basicAttack ?? null, // 普攻變體（連擊/濺射/奶攻/蓄力；null＝1.0 單體）

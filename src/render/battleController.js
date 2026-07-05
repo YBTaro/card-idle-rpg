@@ -57,6 +57,7 @@ export class BattleController {
     this.director = null;
     this._setup = null;
     this._cooldown = 0;
+    this._holdRestart = false;
   }
 
   start() {
@@ -75,7 +76,7 @@ export class BattleController {
     const env = campaignEnv(stage); // 章節環境（第 1 章中立）
     const sim = simulateBattle(player, enemy, { rng: new Rng(), env });
     this._mount(sim, env);
-    this.overlay?.setBattle({ stage, env });
+    this.overlay?.setBattle({ stage, env, enemies: this._foesOf(sim.setup) });
   }
 
   // 播放外部戰報（競技場/切磋/公會 Boss/試煉塔：{setup, log}）。
@@ -83,7 +84,15 @@ export class BattleController {
   playCustom(sim, { title = '競技場', env = null, onDone } = {}) {
     this._custom = { onDone, title };
     this._mount(sim, env);
-    this.overlay?.setBattle({ stage: store.state.progress.stage || 1, title, env });
+    this.overlay?.setBattle({ stage: store.state.progress.stage || 1, title, env, enemies: this._foesOf(sim.setup) });
+  }
+
+  // 敵情條摘要（依站位排序，與出手序一致）
+  _foesOf(setup) {
+    return setup
+      .filter((u) => u.team === 1)
+      .sort((a, b) => a.pos - b.pos)
+      .map((u) => ({ name: u.name, element: u.element, class: u.class, level: u.level }));
   }
 
   _mount(sim, env = null) {
@@ -91,6 +100,17 @@ export class BattleController {
     this._setup = sim.setup;
     this.replayer = new Replayer(sim.setup, sim.log);
     this.scene = new BattleScene(this.app, sim.setup, this.replayer, { env });
+    // 點戰場上的棋子 → 資訊層彈出該單位目前狀態清單
+    this.scene.onUnitTap = (uid) => this._showUnitStatus(uid);
+    // 戰鬥統計：per-uid 累計輸出/承傷/治療（結算「詳情」面板的資料源）
+    this._stats = new Map(sim.setup.map((u) => [u.uid, { dealt: 0, taken: 0, healed: 0 }]));
+    this.replayer.on('damage', (e) => {
+      if (e.sourceUid != null && this._stats.has(e.sourceUid)) this._stats.get(e.sourceUid).dealt += e.amount;
+      if (this._stats.has(e.targetUid)) this._stats.get(e.targetUid).taken += e.amount;
+    });
+    this.replayer.on('heal', (e) => {
+      if (e.sourceUid != null && this._stats.has(e.sourceUid)) this._stats.get(e.sourceUid).healed += e.amount;
+    });
     // 戰鬥中換天氣/場地 → 資訊層徽章即時跟進
     this._envIds = { weather: env?.weather ?? null, terrain: env?.terrain ?? null };
     this.replayer.on('weather', ({ id }) => {
@@ -111,6 +131,26 @@ export class BattleController {
     this.director.gate = (entry) => this.scene?.gateEvent?.(entry) ?? false;
     this.replayer.on('battleEnd', ({ winner }) => this._onEnd(winner));
     this._cooldown = 0;
+    this._holdRestart = false;
+  }
+
+  // 點擊單位 → 狀態面板（名字/屬性/職業/等級 + 目前狀態清單）
+  _showUnitStatus(uid) {
+    const info = this._setup?.find((u) => u.uid === uid);
+    if (!info || !this.overlay?.showUnitStatus) return;
+    this.overlay.showUnitStatus({
+      name: info.name,
+      element: info.element,
+      cls: info.class,
+      level: info.level,
+      buffs: this.replayer?.buffsOf(uid) ?? [],
+    });
+  }
+
+  // 結算統計列（我方在前，各欄由面板自行排序）
+  _statRows() {
+    if (!this._stats || !this._setup) return [];
+    return this._setup.map((u) => ({ name: u.name, element: u.element, team: u.team, ...this._stats.get(u.uid) }));
   }
 
   // 陣容/等級變更後呼叫，重啟當前戰鬥。
@@ -133,10 +173,15 @@ export class BattleController {
   }
 
   _onEnd(winner) {
+    // 開統計面板時暫停自動開下一場（關掉面板才續跑）
+    const onStats = () => {
+      this._holdRestart = true;
+      this.overlay?.showStatsPanel?.(this._statRows(), () => { this._holdRestart = false; });
+    };
     // 自訂回放：不動關卡進度與獎勵，短暫展示勝敗後交還 onDone。
     if (this._custom) {
       this._customWinner = winner;
-      this.overlay?.showResult({ win: winner === 0, draw: winner === -1, custom: true, title: this._custom.title });
+      this.overlay?.showResult({ win: winner === 0, draw: winner === -1, custom: true, title: this._custom.title, onStats });
       this._cooldown = 1.6;
       return;
     }
@@ -146,14 +191,14 @@ export class BattleController {
       s.progress.stage = (s.progress.stage || 1) + 1;
       s.currencies.gold += WIN_GOLD;
       trackQuest('win');
-      this.overlay?.showResult({ win: true, gold: WIN_GOLD, nextStage: s.progress.stage });
+      this.overlay?.showResult({ win: true, gold: WIN_GOLD, nextStage: s.progress.stage, onStats });
       this._cooldown = RESTART_DELAY_WIN;
     } else if (winner === 1) {
       s.progress.losses = (s.progress.losses || 0) + 1;
-      this.overlay?.showResult({ win: false });
+      this.overlay?.showResult({ win: false, onStats });
       this._cooldown = RESTART_DELAY_LOSE;
     } else {
-      this.overlay?.showResult({ win: false, draw: true });
+      this.overlay?.showResult({ win: false, draw: true, onStats });
       this._cooldown = RESTART_DELAY_DRAW;
     }
     saveGame();
@@ -166,6 +211,7 @@ export class BattleController {
 
     if (this.replayer.done) {
       this.scene?.renderTick();
+      if (this._holdRestart) return; // 統計面板開著：停在結算畫面
       this._cooldown -= dt;
       if (this._cooldown <= 0) {
         if (this._custom) {
