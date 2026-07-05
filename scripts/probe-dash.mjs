@@ -62,25 +62,34 @@ await page.evaluate(() => {
   window.__probeTimer = setInterval(install, 150);
   document.querySelector('.hub-adv')?.click(); // 大冒險鈕 → 戰役
 
-  // 持續監測：每 120ms 掃所有玩家單位，抓「存活/沒突進/沒補間/卻離家>25px」——
-  // 用 window.__gsap 判斷補間；連續 3 次都卡才報（濾掉正常回位途中的瞬間）。
+  // 持續監測：每 120ms 掃「所有」單位（含敵方），抓「存活/沒突進/沒補間/卻停在
+  // 離某個隊友格子比自己格子更近的地方」＝跑到隊友格。連續 3 次才報。
   window.__stuck = {};
   window.__monTimer = setInterval(() => {
     const sc = window.__battle?.scene, rp = window.__battle?.replayer;
     if (!sc || !rp) return;
+    const all = [...sc.sprites.values()];
     for (const [uid, s] of sc.sprites) {
-      if (s._info.team !== 0 || s._destroyed) continue;
-      const home = (s._homeX != null) && (Math.abs(s.x - s._homeX) + Math.abs(s.y - s._homeY) <= 25);
+      if (s._destroyed || s._homeX == null) continue;
       const tweening = window.__gsap ? window.__gsap.getTweensOf(s).length > 0 : false;
-      const bad = rp.aliveOf(uid) && !s._dashing && !tweening && !home && s._homeX != null;
-      window.__stuck[uid] = bad ? (window.__stuck[uid] || 0) + 1 : 0;
+      if (!rp.aliveOf(uid) || s._dashing || tweening) { window.__stuck[uid] = 0; continue; }
+      const dHome = Math.abs(s.x - s._homeX) + Math.abs(s.y - s._homeY);
+      // 找最近的「隊友格子」
+      let nearMate = null, nd = 1e9;
+      for (const o of all) {
+        if (o === s || o._info.team !== s._info.team || o._homeX == null) continue;
+        const d = Math.abs(s.x - o._homeX) + Math.abs(s.y - o._homeY);
+        if (d < nd) { nd = d; nearMate = o._info; }
+      }
+      const badMate = dHome > 30 && nd < dHome && nd < 40; // 離隊友格比自己家近
+      window.__stuck[uid] = badMate ? (window.__stuck[uid] || 0) + 1 : 0;
       if (window.__stuck[uid] === 3) {
-        console.log(`[PROBE] ⚠持續卡位 pos${s._info.pos}(${s._info.name}) x=${Math.round(s.x)} home=${Math.round(s._homeX)} y=${Math.round(s.y)} homeY=${Math.round(s._homeY)}`);
+        console.log(`[PROBE] ⚠跑到隊友格 t${s._info.team}p${s._info.pos}(${s._info.name}) 停(${Math.round(s.x)},${Math.round(s.y)}) 自己家(${Math.round(s._homeX)},${Math.round(s._homeY)}) 貼近隊友 p${nearMate.pos}(${nearMate.name})`);
       }
     }
   }, 120);
 });
-console.log('[PROBE] installed, watching 90s (多場)...');
-await sleep(90000);
+console.log('[PROBE] installed, watching 150s (多場、含後期)...');
+await sleep(150000);
 console.log('[PROBE] done');
 await browser.close();
