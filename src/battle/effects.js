@@ -220,7 +220,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
     }
     switch (effect.type) {
       case 'damage': {
-        // 超充：施放瞬間溢出的能量（energy/100）只放大直傷，DoT/治療/狀態不吃
+        // 超充：施放瞬間溢出的能量（energy/100）放大直傷與直接治療，DoT/HoT/護盾/狀態不吃
         let mult = effect.mult * (ctx.overcharge ?? 1);
         // 處決：目標血量比例低於 executeBelow → 倍率乘 executeBonus
         let executed = false;
@@ -239,7 +239,8 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
       case 'heal': {
         // 直接治療吃施放者暴擊（增益技能不受抗暴影響——只擲施放者的暴擊率/暴傷；
         // HoT 每跳與吸血回填不吃暴擊）
-        let amount = healAmount(ctx, resolvePower(effect, caster, u));
+        // 超充也放大直接治療（與直傷同規則）——爆發奶是合法 build；HoT/護盾/狀態仍不吃
+        let amount = Math.round(healAmount(ctx, resolvePower(effect, caster, u)) * (ctx.overcharge ?? 1));
         let hCrit = false;
         const roll = ctx.rng ? ctx.rng.next() : Math.random();
         if (roll < caster.critChance) {

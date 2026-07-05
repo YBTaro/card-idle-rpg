@@ -521,7 +521,7 @@ function scaleEffect(effect, lv) {
 }
 
 // 施放技能：解析主目標 → 逐效果依 scope 套用。
-// overcharge＝超充倍率（施放瞬間 energy/100），只放大 damage 直傷（見 applyEffect）。
+// overcharge＝超充倍率（施放瞬間 energy/100），放大 damage 直傷與 heal 直接治療（見 applyEffect）。
 export function castSkill(caster, skillId, ctx, { overcharge = 1 } = {}) {
   const def = SKILLS[skillId];
   if (!def) return;

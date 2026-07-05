@@ -1,6 +1,6 @@
 // 能量超充 + 竊能：
 //   能量池上限 200（施放門檻仍 100）；施放瞬間 energy/100 ＝直傷倍率，之後歸零。
-//   超充只放大 damage 直傷——DoT/治療/護盾/狀態不吃。
+//   超充放大 damage 直傷與 heal 直接治療——DoT/HoT/護盾/狀態不吃。
 //   竊能（energySteal）：奪走目標當前全部能量 → 轉給我方能量最低的存活隊友。
 import { describe, it, expect } from 'vitest';
 import { makeUnit } from './testHelpers.js';
@@ -39,6 +39,26 @@ describe('能量超充', () => {
     const d1 = 99999 - f1.hp;
     const d2 = 99999 - f2.hp;
     expect(Math.abs(d2 - d1 * 2)).toBeLessThanOrEqual(1); // 同 seed → 兩倍（容許四捨五入差 1）
+  });
+
+  it('直接治療吃超充：2.0 超充＝兩倍治療（同 seed 暴擊結果一致）', () => {
+    const mk = (overcharge) => {
+      const caster = makeUnit({ team: 0, pos: 4, atk: 100 });
+      const ally = makeUnit({ team: 0, pos: 1, hp: 99999 });
+      ally.hp = 1000;
+      castSkill(caster, 'radiantGrace', ctxFor(caster, [caster, ally], [makeUnit({ team: 1, pos: 1 })]), { overcharge });
+      return ally.hp - 1000;
+    };
+    expect(mk(2)).toBe(mk(1) * 2); // 聖恩 4.0 → 超充 8.0
+  });
+
+  it('HoT 每跳回復不吃超充（霧癒 frontAllies HoT）', () => {
+    const mk = (overcharge) => {
+      const caster = makeUnit({ team: 0, pos: 1, atk: 100 });
+      castSkill(caster, 'mistHeal', ctxFor(caster, [caster], [makeUnit({ team: 1, pos: 1 })]), { overcharge });
+      return caster.buffs.find((b) => b.kind === 'hot')?.amount;
+    };
+    expect(mk(2)).toBe(mk(1)); // 每跳值相同——超充不外漏到 HoT
   });
 
   it('DoT 每跳傷害不吃超充', () => {
