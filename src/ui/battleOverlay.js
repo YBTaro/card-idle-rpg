@@ -28,6 +28,7 @@ export class BattleOverlay {
   bind(battle) {
     this.battle = battle;
     this._syncSpeedBtn();
+    this._syncAutoBtn();
   }
 
   _build() {
@@ -70,7 +71,13 @@ export class BattleOverlay {
     this.roundEl = el('div', { class: 'bo-round', text: 'R1' });
     this.root.appendChild(this.roundEl);
 
-    // 右下：戰速 + 跳過
+    // 右下：自動 + 戰速 + 跳過
+    this.autoBtn = el('div', { class: 'bo-cb pressable on', title: '自動戰鬥：開＝勝敗後自動下一場；關＝停在結算等你確認' }, [el('span', { text: '自動' })]);
+    this.autoBtn.addEventListener('click', () => {
+      if (!this.battle) return;
+      this.battle.setAuto(!this.battle.auto);
+      this._syncAutoBtn();
+    });
     this.speedBtn = el('div', { class: 'bo-cb pressable on' }, [el('span', { text: '×2' })]);
     this.speedBtn.addEventListener('click', () => {
       if (!this.battle) return;
@@ -81,7 +88,7 @@ export class BattleOverlay {
     });
     const skipBtn = el('div', { class: 'bo-cb pressable' }, [el('span', { text: '⏭' })]);
     skipBtn.addEventListener('click', () => this.battle?.skip());
-    this.root.appendChild(el('div', { class: 'bo-ctrl' }, [this.speedBtn, skipBtn]));
+    this.root.appendChild(el('div', { class: 'bo-ctrl' }, [this.autoBtn, this.speedBtn, skipBtn]));
 
     // 底部 ticker
     this.ticker = el('div', { class: 'bo-ticker', text: '' });
@@ -91,6 +98,10 @@ export class BattleOverlay {
   _syncSpeedBtn() {
     const s = this.battle?.speed ?? 2;
     this.speedBtn.querySelector('span').textContent = `×${s}`;
+  }
+
+  _syncAutoBtn() {
+    this.autoBtn.classList.toggle('on', this.battle?.auto ?? true);
   }
 
   // 每場開打時同步靜態資訊。title 有值＝自訂回放（競技場/切磋/公會 Boss）。
@@ -176,8 +187,9 @@ export class BattleOverlay {
       return box;
     };
     cols.appendChild(mkCol('輸出', 'dealt', '#ff9a5c'));
-    cols.appendChild(mkCol('承傷', 'taken', '#8ecfe8'));
+    cols.appendChild(mkCol('承傷', 'taken', '#e8b46a'));
     cols.appendChild(mkCol('治療', 'healed', '#8ef2ae'));
+    cols.appendChild(mkCol('護盾', 'shielded', '#8ecfe8'));
     panel.appendChild(cols);
     this.root.appendChild(panel);
     this._statsPanel = panel;
@@ -247,7 +259,7 @@ export class BattleOverlay {
     } else if (result.win) {
       node.appendChild(el('div', { class: 'vt', text: 'VICTORY' }));
       node.appendChild(el('div', { class: 'vr', text: `🪙 +${result.gold}　✨ 前進 ${stageLabel(result.nextStage)}` }));
-      node.appendChild(el('div', { class: 'vnext', text: '即將開始下一場…' }));
+      node.appendChild(el('div', { class: 'vnext', text: result.onNext ? '手動模式：按「下一關」繼續' : '即將開始下一場…' }));
       this._flyCoins();
     } else if (result.draw) {
       node.appendChild(el('div', { class: 'vt', text: 'DRAW' }));
@@ -258,6 +270,14 @@ export class BattleOverlay {
       node.appendChild(
         el('button', { class: 'btn-gold', text: '🃏 調整陣容 →', onClick: () => nav.go('team') })
       );
+    }
+    // 手動模式：按了才開下一場（controller 傳 onNext 才顯示）
+    if (result.onNext) {
+      node.appendChild(el('button', {
+        class: 'btn-gold',
+        text: result.win ? '▶ 下一關' : '▶ 再戰一場',
+        onClick: result.onNext,
+      }));
     }
     // 戰鬥統計入口（controller 傳 onStats 才顯示）
     if (result.onStats) {

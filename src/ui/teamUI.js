@@ -20,6 +20,7 @@ import {
   isInFormation,
 } from '../systems/formation.js';
 import { openHeroSheet } from './heroSheet.js';
+import { openModal } from './modal.js';
 import { describePassive } from '../battle/skillText.js';
 import { longPress } from './gestures.js';
 import { cardFrame } from './cardFrame.js';
@@ -44,6 +45,7 @@ export class TeamUI {
     this.drawerOpen = false;
     this._drawerTarget = null;
     this._drawerShown = false;
+    this._benchFilter = { cls: null, elem: null };
     this.render();
   }
 
@@ -53,19 +55,22 @@ export class TeamUI {
 
     this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('back', 22)]));
     this.root.appendChild(el('div', { class: 'page-title left', text: '隊伍' }));
+    // 上陣數 + 隊伍技按鈕（點開看已觸發的隊伍技細節；不佔畫面正上方）
+    const syn = this._synergyData();
     this.root.appendChild(
       el('div', { class: 'tp-power' }, [
         el('span', { class: 'tp-count', text: `${s.formation.length}/6 上陣` }),
+        el('button', {
+          class: `tp-synbtn pressable${syn.active.length ? ' on' : ''}`,
+          text: `✦ 隊伍技 ${syn.active.length}`,
+          onClick: () => this._openSynModal(syn),
+        }),
       ])
     );
 
     if (this.drawerOpen) {
       this.root.appendChild(el('div', { class: 'tp-mode-tip', text: '點隊上英雄移出；把下方英雄拖到格位上陣' }));
     }
-
-    // 羈絆提示：系列/種族計數 + 這套陣容會觸發的隊伍技（隊伍技進場鎖定，上陣時算正好）
-    const syn = this._synergyBar();
-    if (syn) this.root.appendChild(syn);
 
     // 卡列
     const row = el('div', { class: 'tp-row' });
@@ -94,13 +99,12 @@ export class TeamUI {
     if (this.drawerOpen) this._mountDrawer();
   }
 
-  // 目前陣容的羈絆摘要：≥2 名的系列/種族 chips + 已觸發的隊伍技清單。空陣容回 null。
-  _synergyBar() {
+  // 目前陣容的羈絆摘要：≥2 名的系列/種族計數 + 已觸發的隊伍技（含持有者名）。
+  _synergyData() {
     const s = store.state;
     const lineup = s.formation
       .map((e) => CARDS[store.getCard(e.instanceId)?.cardId])
       .filter(Boolean);
-    if (lineup.length === 0) return null;
 
     // 系列/種族計數（只列 ≥2：湊不成對子的不佔版面）
     const counts = new Map();
@@ -111,9 +115,9 @@ export class TeamUI {
     const chips = [...counts.entries()]
       .filter(([, n]) => n >= 2)
       .sort((a, b) => b[1] - a[1])
-      .map(([key, n]) => el('span', { class: 'chip', text: `${key.split(':')[1]} ×${n}` }));
+      .map(([key, n]) => `${key.split(':')[1]} ×${n}`);
 
-    // 已觸發的隊伍技（與戰鬥開場判定同一套 where 條件）
+    // 已觸發的隊伍技（與戰鬥開場判定同一套 where 條件；進場鎖定制，上陣時算正好）
     const match = (c, where) => {
       if (!where) return true;
       if (where.race) return c.race === where.race;
@@ -128,15 +132,37 @@ export class TeamUI {
         const cond = p.when?.alliesAtLeast;
         if (!cond) continue;
         const n = lineup.filter((x) => match(x, cond.where)).length;
-        if (n >= cond.count) active.push(`${c.name}：${describePassive(p)}`);
+        if (n >= cond.count) active.push({ owner: c.name, desc: describePassive(p) });
       }
     }
+    return { chips, active };
+  }
 
-    if (chips.length === 0 && active.length === 0) return null;
-    const bar = el('div', { class: 'tp-syn' });
-    if (chips.length) bar.appendChild(el('div', { class: 'ts-chips' }, chips));
-    for (const t of active) bar.appendChild(el('div', { class: 'ts-skill', text: `✦ ${t}` }));
-    return bar;
+  // 隊伍技彈窗：羈絆計數 + 只列「成功觸發」的隊伍技。
+  _openSynModal(syn) {
+    openModal({
+      className: 'ov-syn',
+      build: (panel, close) => {
+        panel.appendChild(el('div', { class: 'ovc-title', text: '✦ 隊伍技' }));
+        if (syn.chips.length) {
+          panel.appendChild(
+            el('div', { class: 'syn-chips' }, syn.chips.map((t) => el('span', { class: 'chip', text: t })))
+          );
+        }
+        if (!syn.active.length) {
+          panel.appendChild(el('div', { class: 'syn-empty', text: '目前沒有觸發中的隊伍技——湊滿同系列或同種族的隊友即可點亮' }));
+        }
+        for (const a of syn.active) {
+          panel.appendChild(
+            el('div', { class: 'syn-row' }, [
+              el('b', { text: a.owner }),
+              el('span', { text: a.desc }),
+            ])
+          );
+        }
+        panel.appendChild(el('button', { class: 'btn', text: '關閉', onClick: () => close() }));
+      },
+    });
   }
 
   _group(label, positions) {
@@ -336,8 +362,32 @@ export class TeamUI {
       ])
     );
 
+    // 篩選列：職業 + 屬性（點同一顆再點一次＝取消）
+    const f = (this._benchFilter ??= { cls: null, elem: null });
+    const filterRow = el('div', { class: 'sd-filter' });
+    const mkChip = (label, isOn, onClick) =>
+      el('button', { class: `sd-fc pressable${isOn ? ' on' : ''}`, text: label, onClick });
+    const CLS = [['tank', '🛡 坦克'], ['dps', '⚔ 輸出'], ['support', '✚ 輔助']];
+    for (const [k, label] of CLS) {
+      filterRow.appendChild(mkChip(label, f.cls === k, () => { f.cls = f.cls === k ? null : k; this.render(); }));
+    }
+    filterRow.appendChild(el('i', { class: 'sd-fdiv' }));
+    for (const [k, label] of Object.entries(ELEMENT_LABEL)) {
+      filterRow.appendChild(mkChip(label, f.elem === k, () => { f.elem = f.elem === k ? null : k; this.render(); }));
+    }
+    drawer.appendChild(filterRow);
+
     const list = el('div', { class: 'sd-list' });
-    const sorted = [...bench].sort((a, b) => b.level - a.level);
+    const filtered = bench.filter((c) => {
+      const card = CARDS[c.cardId];
+      if (f.cls && card.class !== f.cls) return false;
+      if (f.elem && card.element !== f.elem) return false;
+      return true;
+    });
+    if (bench.length && !filtered.length) {
+      list.appendChild(el('div', { class: 'sd-none', text: '沒有符合篩選的英雄' }));
+    }
+    const sorted = [...filtered].sort((a, b) => b.level - a.level);
     for (const inst of sorted) {
       const card = CARDS[inst.cardId];
       const item = el('div', { class: 'swap-item pressable' }, [cardFrame(card, { level: inst.level, size: 'full', stars: inst.stars })]);

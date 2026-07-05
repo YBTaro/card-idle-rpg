@@ -349,13 +349,16 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         emitBuffs(u);
         break;
       }
-      case 'shield':
+      case 'shield': {
+        const shieldAmt = Math.round(resolvePower(effect, caster, u));
         applyBuffN(u, {
-          kind: 'shield', amount: Math.round(resolvePower(effect, caster, u)),
+          kind: 'shield', amount: shieldAmt,
           duration: effect.duration, key: defaultKey('shield'), stackable: effect.stackable,
         });
+        ctx.emit('shieldApplied', { source: caster, target: u, amount: shieldAmt }); // 盾量統計/飄字
         emitBuffs(u);
         break;
+      }
       case 'energy':
         u.gainEnergy(effect.amount);
         ctx.emit('energy', { unit: u, value: u.energy });

@@ -30,6 +30,8 @@ export class BattleController {
     this.scene = null;
     this._setup = null;
     this._cooldown = 0;
+    // 自動戰鬥：開＝勝敗後自動開下一場（預設）；關＝停在結算等玩家按「下一關」
+    this.auto = store.state.settings?.autoBattle ?? true;
 
     overlay?.bind?.(this);
     this.app.ticker.add(this._tick, this);
@@ -58,6 +60,7 @@ export class BattleController {
     this._setup = null;
     this._cooldown = 0;
     this._holdRestart = false;
+    this._awaitNext = false;
   }
 
   start() {
@@ -103,13 +106,16 @@ export class BattleController {
     // 點戰場上的棋子 → 資訊層彈出該單位目前狀態清單
     this.scene.onUnitTap = (uid) => this._showUnitStatus(uid);
     // 戰鬥統計：per-uid 累計輸出/承傷/治療（結算「詳情」面板的資料源）
-    this._stats = new Map(sim.setup.map((u) => [u.uid, { dealt: 0, taken: 0, healed: 0 }]));
+    this._stats = new Map(sim.setup.map((u) => [u.uid, { dealt: 0, taken: 0, healed: 0, shielded: 0 }]));
     this.replayer.on('damage', (e) => {
       if (e.sourceUid != null && this._stats.has(e.sourceUid)) this._stats.get(e.sourceUid).dealt += e.amount;
       if (this._stats.has(e.targetUid)) this._stats.get(e.targetUid).taken += e.amount;
     });
     this.replayer.on('heal', (e) => {
       if (e.sourceUid != null && this._stats.has(e.sourceUid)) this._stats.get(e.sourceUid).healed += e.amount;
+    });
+    this.replayer.on('shield', (e) => {
+      if (e.sourceUid != null && this._stats.has(e.sourceUid)) this._stats.get(e.sourceUid).shielded += e.amount;
     });
     // 戰鬥中換天氣/場地 → 資訊層徽章即時跟進
     this._envIds = { weather: env?.weather ?? null, terrain: env?.terrain ?? null };
@@ -132,6 +138,7 @@ export class BattleController {
     this.replayer.on('battleEnd', ({ winner }) => this._onEnd(winner));
     this._cooldown = 0;
     this._holdRestart = false;
+    this._awaitNext = false;
   }
 
   // 點擊單位 → 狀態面板（名字/屬性/職業/等級 + 目前狀態清單）
@@ -164,6 +171,15 @@ export class BattleController {
     if (this.director) this.director.speed = x;
   }
 
+  // 自動戰鬥開關（存檔記憶）。戰中切回自動且正停在結算 → 立刻放行下一場。
+  setAuto(on) {
+    this.auto = on;
+    store.state.settings ??= {};
+    store.state.settings.autoBattle = on;
+    saveGame();
+    if (on) this._awaitNext = false;
+  }
+
   // 快轉當前戰鬥到結束（瞬間結算 log）。battleEnd 事件照常觸發結算。
   skip() {
     if (!this.replayer || this.replayer.done) return;
@@ -185,20 +201,26 @@ export class BattleController {
       this._cooldown = 1.6;
       return;
     }
+    // 手動模式：停在結算畫面，等玩家按「下一關/再戰一場」才續跑
+    let onNext = null;
+    if (!this.auto) {
+      this._awaitNext = true;
+      onNext = () => { this._awaitNext = false; };
+    }
     const s = store.state;
     if (winner === 0) {
       s.progress.wins = (s.progress.wins || 0) + 1;
       s.progress.stage = (s.progress.stage || 1) + 1;
       s.currencies.gold += WIN_GOLD;
       trackQuest('win');
-      this.overlay?.showResult({ win: true, gold: WIN_GOLD, nextStage: s.progress.stage, onStats });
+      this.overlay?.showResult({ win: true, gold: WIN_GOLD, nextStage: s.progress.stage, onStats, onNext });
       this._cooldown = RESTART_DELAY_WIN;
     } else if (winner === 1) {
       s.progress.losses = (s.progress.losses || 0) + 1;
-      this.overlay?.showResult({ win: false, onStats });
+      this.overlay?.showResult({ win: false, onStats, onNext });
       this._cooldown = RESTART_DELAY_LOSE;
     } else {
-      this.overlay?.showResult({ win: false, draw: true, onStats });
+      this.overlay?.showResult({ win: false, draw: true, onStats, onNext });
       this._cooldown = RESTART_DELAY_DRAW;
     }
     saveGame();
@@ -211,7 +233,7 @@ export class BattleController {
 
     if (this.replayer.done) {
       this.scene?.renderTick();
-      if (this._holdRestart) return; // 統計面板開著：停在結算畫面
+      if (this._holdRestart || this._awaitNext) return; // 統計面板開著/手動模式等確認：停在結算畫面
       this._cooldown -= dt;
       if (this._cooldown <= 0) {
         if (this._custom) {

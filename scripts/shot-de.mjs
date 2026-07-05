@@ -44,10 +44,24 @@ for (let i = 0; i < 6; i++) {
 }
 await sleep(400);
 
-// 1) 隊伍頁：羈絆提示條
+// 1) 隊伍頁：隊伍技按鈕 + 彈窗
 await clickText('.hub-dk', '隊伍');
 await sleep(800);
-await shot('01-team-synergy');
+await shot('01-team');
+await click('.tp-synbtn');
+await sleep(500);
+await shot('01b-syn-modal');
+await clickText('.ov-syn button', '關閉');
+await sleep(400);
+
+// 1c) 英雄替換抽屜：篩選列
+await clickText('.tp-bottom button', '英雄替換');
+await sleep(500);
+await clickText('.sd-fc', '輸出');
+await sleep(400);
+await shot('01c-drawer-filter');
+await clickText('.sd-title button', '完成');
+await sleep(300);
 
 // 2) 英雄詳情：絕技 Lv chip（＋有特殊普攻的卡會多一列）
 await click('.tcard:not(.empty)');
@@ -85,14 +99,21 @@ await sleep(400);
 await shot('04-unit-status');
 await click('.bo-unitpanel .up-close');
 
-// 5) 跳過 → 結算 → 戰鬥詳情統計
+// 5) 關自動 → 跳過 → 結算應停住並出現「下一關」；統計含護盾欄
+await clickText('.bo-cb', '自動'); // 切到手動
+await sleep(200);
 await clickText('.bo-cb', '⏭');
 await page.waitForSelector('.bo-result', { timeout: 20000 }).catch(() => {});
-await sleep(500);
-await shot('05-result');
+await sleep(2500); // 手動模式：等 2.5s 確認沒有自動開下一場
+await shot('05-result-manual');
 await clickText('.bo-result button', '詳情');
 await sleep(500);
 await shot('06-stats');
+await click('.bo-stats .up-close');
+await sleep(200);
+await clickText('.bo-result button', '下一關');
+await sleep(2000);
+await shot('07-next-started');
 
 await browser.close();
 console.log('done');

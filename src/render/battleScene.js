@@ -1160,6 +1160,14 @@ export class BattleScene {
         });
         floatText(this.fxLayer, s.x, this._chestY(s) - 20, txt);
       }),
+      rp.on('shield', ({ targetUid, amount }) => {
+        if (this._instant) return;
+        const s = this.sprites.get(targetUid);
+        if (!s) return;
+        // 上盾飄字：淡藍金（盾條本身在血條上，這裡補「加了多少」的數字回饋）
+        const txt = new Text({ text: `🛡 ${amount}`, style: { fontSize: 18, fill: 0xa8d8f0, fontWeight: '800', stroke: { color: 0x000000, width: 3 } } });
+        floatText(this.fxLayer, s.x, this._chestY(s) - 24, txt);
+      }),
       rp.on('resist', ({ uid }) => {
         if (this._instant) return;
         const s = this.sprites.get(uid);
@@ -1196,7 +1204,7 @@ export class BattleScene {
         if (!s) return;
         const txt = new Text({ text: '破防！', style: { fontSize: 26, fill: 0xffb066, fontWeight: '900', stroke: { color: 0x000000, width: 4 } } });
         floatText(this.fxLayer, s.x, this._chestY(s) - 34, txt);
-        hitFlash(s._body);
+        hitFlash(s, s._body);
         screenShake(this.root, 5);
       }),
       rp.on('bossEnrage', ({ uid }) => {

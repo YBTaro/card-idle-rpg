@@ -110,6 +110,10 @@ export function hitFlash(sprite, body, dir = 0) {
     .set(body, { tint: 0xff5555 })
     .to(body, { tint: 0xffffff, duration: 0.28, ease: 'power1.out' });
 
+  // 本體位置正在補間（自己的突進還沒回位）→ 只閃紅不擊退。
+  // 荊棘/反擊/獵印等會在攻擊者突進途中對它發 damage，此時 killTweensOf
+  // 會切斷回位補間、且擊退只還原 x —— 棋子就永遠卡在目標排的 y 上（擠成一團）。
+  if (gsap.isTweening(sprite)) return;
   const baseX = sprite._homeX ?? sprite.x;
   const baseY = sprite._homeY ?? sprite.y;
   sprite._homeX = baseX;
@@ -118,11 +122,11 @@ export function hitFlash(sprite, body, dir = 0) {
   if (dir) {
     fxTl()
       .to(sprite, { x: baseX + dir * 12, duration: 0.06, ease: 'power2.out' })
-      .to(sprite, { x: baseX, duration: 0.42, ease: 'elastic.out(1, 0.45)' });
+      .to(sprite, { x: baseX, y: baseY, duration: 0.42, ease: 'elastic.out(1, 0.45)' });
   } else {
     fxTl()
       .to(sprite, { y: baseY - 4, duration: 0.05 })
-      .to(sprite, { y: baseY, duration: 0.2, ease: 'elastic.out(1, 0.4)' });
+      .to(sprite, { x: baseX, y: baseY, duration: 0.2, ease: 'elastic.out(1, 0.4)' });
   }
 }
 

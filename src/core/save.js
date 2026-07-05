@@ -65,6 +65,9 @@ function migrate(data) {
   data.shop ??= { day: '', bought: {} };
   // 裝備插座（E2）：每張卡帶 gear 陣列（裝備系統之後開；空陣列＝數值乘區 ×1 零影響）
   for (const c of data.cards) c.gear ??= [];
+  // 遊戲設定：自動戰鬥（關＝結算後停住等玩家按「下一關」）
+  data.settings ??= { autoBattle: true };
+  data.settings.autoBattle ??= true;
   data.version = SCHEMA_VERSION;
   return data;
 }

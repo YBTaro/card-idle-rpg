@@ -52,7 +52,7 @@ describe('AnimationDirector', () => {
     expect(DELAYS).toEqual({
       turn: 0.1, attack: 0.25, ultimate: 1.05, damage: 0.18,
       heal: 0.15, death: 0.25, stunned: 0.25, revive: 0.45, dispel: 0.25,
-      weather: 1.25, terrain: 1.25, drain: 0.12, miss: 0.22, steal: 0.3, trigger: 0.25, resist: 0.2, blocked: 0.22, cheated: 0.4, bossPhase: 0.8, bossBreak: 0.5, bossEnrage: 0.8,
+      weather: 1.25, terrain: 1.25, drain: 0.12, miss: 0.22, steal: 0.3, shield: 0.15, trigger: 0.25, resist: 0.2, blocked: 0.22, cheated: 0.4, bossPhase: 0.8, bossBreak: 0.5, bossEnrage: 0.8,
     });
   });
 });
