@@ -1005,10 +1005,11 @@ export class BattleScene {
           bolt(this.fxLayer, s.x + dir * 24, this._chestY(s), t.x, this._chestY(t), color, this._dotTex);
           lunge(s, dir);
         } else {
-          // 近戰：水平突進到目標「同列」面前揮擊（保持自己那排的 y，不 snap 到目標 y——
-          // 否則多個攻擊者打同一目標會全部疊到 (目標x,目標y) 同一點、看起來往彼此靠攏）
+          // 近戰：突進到目標「格子」面前揮擊。用目標的 _homeX（格子）而非 t.x（當下位置）——
+          // 否則若目標自己正在突進（跑到我方這側還沒回位），攻擊者會朝那個暫時位置衝、
+          // 看起來像「攻擊時跑到隊友格再回來」。y 保持自己那排（不 snap 到目標、多攻擊者不疊點）。
           s.zIndex = 800;
-          meleeDash(s, t.x, s._homeY ?? s.y, dir);
+          meleeDash(s, t._homeX ?? t.x, s._homeY ?? s.y, dir);
           fxDelay(0.85, () => {
             // 聚光燈期間被點亮者不在此覆蓋（收燈時會統一還原）
             if (!s.destroyed && !this._ultRaised?.has(s)) s.zIndex = s._homeY ?? s.y;
