@@ -912,13 +912,16 @@ export class BattleScene {
         if (this._instant) return;
         const s = this.sprites.get(targetUid);
         if (!s) return;
-        // 迴避身體語言：朝後方快速側移再彈回，留一道殘影
+        // 迴避身體語言：朝後方快速側移再彈回。
+        // 若本體正在補間（例如自己的突進攻擊還沒回位）就只飄字——
+        // 不可 killTweensOf 打斷回位補間，否則棋子會卡在半路。
         const dir = s._info.team === 0 ? -1 : 1;
-        gsap.killTweensOf(s, 'x');
-        const x0 = s.x;
-        gsap.timeline()
-          .to(s, { x: x0 + dir * 26, duration: 0.08, ease: 'power2.out' })
-          .to(s, { x: x0, duration: 0.22, ease: 'power2.inOut' });
+        if (!gsap.isTweening(s)) {
+          const x0 = s._homeX ?? s.x;
+          gsap.timeline()
+            .to(s, { x: x0 + dir * 26, duration: 0.08, ease: 'power2.out' })
+            .to(s, { x: x0, duration: 0.22, ease: 'power2.inOut' });
+        }
         const txt = new Text({
           text: 'MISS',
           style: { fontSize: 18, fill: 0xbfe8d8, fontStyle: 'italic', fontWeight: '800', stroke: { color: 0x000000, width: 3 } },

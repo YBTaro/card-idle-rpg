@@ -127,7 +127,8 @@ export class BattleEngine {
             const units = resolveScope(effect.scope, owner, [subject], ctx);
             applyEffect(effect, owner, units, ctx, `trigger:${on}`);
           }
-          this._checkEnd();
+          // 不在此呼叫 _checkEnd：觸發可能在技能結算中途發生，
+          // battleEnd 必須等該次行動完整結算後（step 層）才發，否則 log 會有事件排在勝負宣告之後。
         } finally {
           this._trigDepth -= 1;
         }

@@ -44,6 +44,15 @@ describe('技能治理', () => {
     }
   });
 
+  it('觸發不得開環境：weather/terrain 只能由環境技或進場被動承載（戰略級不外漏）', () => {
+    for (const card of Object.values(CARDS)) {
+      for (const t of card.triggers ?? []) {
+        const env = t.effects.filter((e) => e.type === 'weather' || e.type === 'terrain').length;
+        expect({ id: card.id, env }).toEqual({ id: card.id, env: 0 });
+      }
+    }
+  });
+
   it('被動軸互斥：每卡至多一個被動軸（光環/隊伍技/觸發/進場擇一；普攻＋絕技才是必備）', () => {
     for (const card of Object.values(CARDS)) {
       const axes = [];

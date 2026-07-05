@@ -120,6 +120,19 @@ describe('觸發：連鎖上限與機率', () => {
     expect(fired).not.toContain('不可能');
   });
 
+  it('battleEnd 永遠是 log 最後一筆（觸發在技能中途擊殺也不例外）', async () => {
+    const { simulateBattle } = await import('./battleLog.js');
+    // 多段技使用者 vs 帶亡語的獨行敵人：第一段擊殺 → 亡語觸發 → 後續段數與自身效果照常結算
+    const striker = makeUnit({ team: 0, pos: 1, cardId: 'zephyrmonk', class: 'dps', atk: 500, energy: 100 });
+    const martyr = makeUnit({ team: 1, pos: 1, hp: 50, def: 0, triggers: [
+      { name: '遺恨', on: 'death', who: 'self', effects: [{ type: 'damage', mult: 0.1, scope: 'allEnemies' }] },
+    ] });
+    const res = simulateBattle([striker], [martyr], { rng: new Rng(9) });
+    expect(res.winner).toBe(0);
+    expect(res.log[res.log.length - 1].type).toBe('battleEnd'); // 勝負宣告之後不得再有任何事件
+    expect(res.log.some((e) => e.type === 'trigger' && e.name === '遺恨')).toBe(true);
+  });
+
   it('滿氣觸發回能不會超出施放門檻語義（能量夾在 0..200）', () => {
     const u = mk({ team: 0, pos: 1, energy: ENERGY_MAX, triggers: [
       { name: '收割', on: 'death', who: 'enemy', effects: [{ type: 'energy', amount: 999, scope: 'self' }] },
