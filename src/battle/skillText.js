@@ -370,7 +370,8 @@ export function buffLabel(b) {
     case 'cheatDeath': return '不滅意志（致死傷害改留 1 點生命）';
     case 'stat': {
       const base = STAT_LABEL[b.stat] ?? b.stat;
-      return `${base}${b.neg ? '降低' : '提升'}`;
+      // 依屬性實際升降方向（up），不是好壞（neg）——dotTaken 上升是壞事但方向是「提升」
+      return `${base}${(b.up ?? !b.neg) ? '提升' : '降低'}`;
     }
     default: return b.kind;
   }

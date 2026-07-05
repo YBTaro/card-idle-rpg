@@ -90,6 +90,8 @@ export function summarizeBuffs(unit) {
       control: b.control,
       element: b.element,
       neg: isNegative(b),
+      // 屬性實際升降方向（提升/降低用；與 neg「好壞」不同——如 dotTaken 上升是壞事但方向仍是「提升」）
+      up: b.kind === 'stat' ? (b.op === 'mul' ? b.value > 1 : b.value > 0) : null,
       turns: b.duration ?? null, // 剩餘回合（無期限＝null，前端不顯示數字）
       charges: b.charges ?? null, // 格擋層數（debuffBlock 的角標數字）
     }));
