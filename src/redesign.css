@@ -7,7 +7,7 @@
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(90% 55% at 50% -12%, rgba(96, 84, 168, 0.30), transparent 62%),
+    radial-gradient(90% 55% at 50% -12%, rgba(196, 148, 78, 0.30), transparent 62%),
     radial-gradient(55% 38% at 85% 108%, rgba(232, 196, 106, 0.07), transparent 65%),
     radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.32) 100%);
 }
@@ -18,9 +18,9 @@
   height: 30%;
   pointer-events: none;
   background:
-    radial-gradient(60% 130% at 18% 118%, rgba(38, 34, 66, 0.75), transparent 65%),
-    radial-gradient(70% 150% at 82% 128%, rgba(30, 27, 54, 0.8), transparent 62%),
-    linear-gradient(to top, rgba(16, 14, 30, 0.55), transparent 80%);
+    radial-gradient(60% 130% at 18% 118%, rgba(74, 56, 32, 0.75), transparent 65%),
+    radial-gradient(70% 150% at 82% 128%, rgba(56, 40, 22, 0.8), transparent 62%),
+    linear-gradient(to top, rgba(34, 22, 10, 0.55), transparent 80%);
 }
 /* 場景層為 ::before/::after（非定位偽元素），一定墊在定位內容之下——不需覆寫子元素定位 */
 
@@ -38,7 +38,7 @@
 /* ---- 首頁重排（參考原型：橫幅/貨幣列/小功能列/大冒險鈕/底部大功能列） ---- */
 .hub-tl {
   display: flex; gap: 10px; align-items: center;
-  background: linear-gradient(90deg, rgba(20, 18, 38, 0.78), rgba(20, 18, 38, 0.35));
+  background: linear-gradient(90deg, rgba(40, 28, 14, 0.78), rgba(40, 28, 14, 0.35));
   border: 1px solid rgba(232, 196, 106, 0.35);
   border-radius: 999px; padding: 5px 18px 5px 6px;
 }
@@ -55,7 +55,7 @@
 .hub-feat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .hub-feat .fsq {
   position: relative; width: 46px; height: 46px; border-radius: 14px;
-  background: linear-gradient(160deg, rgba(38, 34, 66, 0.9), rgba(24, 21, 44, 0.9));
+  background: linear-gradient(160deg, rgba(74, 56, 32, 0.9), rgba(48, 34, 18, 0.9));
   border: 1.5px solid rgba(232, 196, 106, 0.45);
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
@@ -83,7 +83,7 @@
 .hub-dk { display: flex; flex-direction: column; align-items: center; gap: 0; }
 .hub-dk .dksq {
   width: 58px; height: 58px; border-radius: 18px;
-  background: linear-gradient(160deg, rgba(44, 39, 76, 0.95), rgba(26, 23, 48, 0.95));
+  background: linear-gradient(160deg, rgba(86, 62, 36, 0.95), rgba(52, 36, 18, 0.95));
   border: 2px solid rgba(232, 196, 106, 0.55);
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -105,7 +105,7 @@
 }
 .hx-rail {
   width: 172px; flex: none; overflow-y: auto;
-  background: rgba(10, 9, 22, 0.45);
+  background: rgba(26, 17, 7, 0.45);
   border: 1px solid rgba(232, 196, 106, 0.18);
   border-radius: 14px; padding: 10px 12px;
   display: flex; flex-direction: column; gap: 6px;
@@ -136,7 +136,7 @@
 .hx-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .hx-count {
   align-self: flex-end; font-size: 12px; color: var(--text-dim, #a89f92);
-  background: rgba(0, 0, 0, 0.3); border-radius: 99px; padding: 3px 12px; margin-bottom: 8px;
+  background: rgba(20, 10, 0, 0.35); border-radius: 99px; padding: 3px 12px; margin-bottom: 8px;
 }
 .hx-empty { color: var(--text-dim, #a89f92); font-size: 13px; text-align: center; padding: 40px 0; grid-column: 1 / -1; }
 .hx-empty.hidden { display: none; }
@@ -184,7 +184,7 @@
 /* ---- 角色詳情：單頁式面板（身分 → 等級/星級 → 數值 → 技能 → 強化） ---- */
 .hs-lvcard {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  background: linear-gradient(120deg, rgba(255, 215, 129, 0.12), rgba(58, 68, 110, 0.35));
+  background: linear-gradient(120deg, rgba(255, 215, 129, 0.12), rgba(110, 82, 46, 0.35));
   border: 1px solid rgba(255, 215, 129, 0.35);
   border-radius: 12px; padding: 8px 14px;
 }
@@ -200,7 +200,7 @@
 /* ---- 返回鈕：金環圓鈕 + 壓下回饋 ---- */
 .back-btn {
   width: 2.8rem; height: 2.8rem;
-  background: linear-gradient(165deg, rgba(44, 39, 76, 0.95), rgba(22, 19, 42, 0.95));
+  background: linear-gradient(165deg, rgba(86, 62, 36, 0.95), rgba(22, 19, 42, 0.95));
   border: 2px solid rgba(232, 196, 106, 0.55);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
