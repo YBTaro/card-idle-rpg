@@ -222,16 +222,15 @@ class HeroSheet {
         ])
       );
     }
-    // 普攻變體（有特殊普攻的卡才顯示；一般普攻不佔版面）
+    // 普攻：每張卡固定顯示（標準卡寫「對位單體 100%」、變體卡寫各自描述）
     const basic = basicInfoForCard(inst.cardId);
-    if (basic) {
-      p.appendChild(
-        el('div', { class: 'hs-skills' }, [
-          el('div', { class: 'hs-sk' }, [el('div', { class: 'ic psv', text: '🗡' }), el('span', { class: 't', text: '普攻' })]),
-          el('div', { class: 'hs-skdesc', html: `<b>特殊普攻</b>${basic}` }),
-        ])
-      );
-    }
+    const basicLabel = card.basicAttack ? '特殊普攻' : '普攻';
+    p.appendChild(
+      el('div', { class: 'hs-skills' }, [
+        el('div', { class: 'hs-sk' }, [el('div', { class: 'ic psv', text: '🗡' }), el('span', { class: 't', text: '普攻' })]),
+        el('div', { class: 'hs-skdesc', html: `<b>${basicLabel}</b>${basic}` }),
+      ])
+    );
     // 被動四分類（進場 / 光環被動含觸發 / 隊伍技；星級里程碑在星級區）
     const skillRow = (glyph, label, html) =>
       el('div', { class: 'hs-skills' }, [
