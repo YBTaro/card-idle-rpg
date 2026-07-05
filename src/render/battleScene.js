@@ -109,6 +109,7 @@ export class BattleScene {
     this._dotTex = this._makeDotTexture();
     this._drawBackground();
     this._drawWeather(this.env?.weather ?? null);
+    this._drawTerrain(this.env?.terrain ?? null);
     this._buildUnits();
     this._bindEvents();
     this._showBattleStart(); // 開場橫幅；director 的 initialDelay 讓開場宣告不搶拍
@@ -133,7 +134,8 @@ export class BattleScene {
   }
 
   // 環境宣告演出：開場進場被動與戰中技能開天氣/場地共用——
-  // 半拍壓暗＋宣告者光柱抬亮＋全場大字橫幅，「看得清是誰開的、蓋掉了什麼」。
+  // 半拍壓暗＋宣告者光柱抬亮；宣告字直接浮在「發動者頭上」（有 uid 時），
+  // 只有關卡預設環境（無宣告者）才用全場置中橫幅。
   // 宣告之間的節奏由 DELAYS.weather/terrain（1.25s）拉開，互蓋依事件順序逐一亮相。
   _envAnnounce(uid, colorHex, title) {
     const color = Number(`0x${colorHex.slice(1)}`);
@@ -158,7 +160,15 @@ export class BattleScene {
           pillar.destroy({ children: true });
         }
       });
+      // 宣告字浮在發動者頭上（誰開的環境一目瞭然）
+      const txt = new Text({
+        text: title,
+        style: { fontSize: 22, fill: color, fontWeight: '900', letterSpacing: 2, stroke: { color: 0x000000, width: 4 } },
+      });
+      floatText(this.fxLayer, s.x, this._chestY(s) - 64, txt);
+      return;
     }
+    // 關卡預設環境：無宣告者 → 全場置中橫幅
     const txt = new Text({
       text: title,
       style: { fontSize: 30, fill: color, fontWeight: '900', letterSpacing: 3, stroke: { color: 0x000000, width: 5 } },
@@ -185,7 +195,7 @@ export class BattleScene {
     const glow = new Graphics();
     for (let i = 8; i >= 1; i -= 1) {
       const t = i / 8;
-      glow.ellipse(STAGE_W / 2, -40, STAGE_W * 0.55 * t, 150 * t).fill({ color, alpha: 0.018 });
+      glow.ellipse(STAGE_W / 2, -40, STAGE_W * 0.55 * t, 150 * t).fill({ color, alpha: 0.03 });
     }
     glow.blendMode = 'add';
     layer.addChild(glow);
@@ -209,6 +219,110 @@ export class BattleScene {
         : { x: x0 + (Math.random() * 50 - 25), y: y0 + (drift === 'down' ? 180 : -180) };
       gsap.fromTo(p, { alpha: 0 }, { alpha: 0.5, duration: dur * 0.3, delay: i * 0.4, repeat: -1, repeatDelay: dur * 0.7, yoyo: false, ease: 'sine.out' });
       gsap.fromTo(p, { x: x0, y: y0 }, { ...move, duration: dur, delay: i * 0.4, repeat: -1, ease: 'none' });
+    }
+  }
+
+  // 場地氛圍層：地面色帶 + 各場地專屬的常駐粒子（換場地時拆舊建新）。
+  // 湧能磁場＝地面金環＋升騰能量光屑；侵蝕之地＝暗紫地霧脈動＋腐蝕光點；
+  // 迷霧沼澤＝貼地橫飄霧帶。全部 additive、循環動畫，killFx 掃得到。
+  _drawTerrain(terrainId) {
+    if (this._terrainLayer) {
+      killFx(this._terrainLayer);
+      if (!this._terrainLayer.destroyed) this._terrainLayer.destroy({ children: true });
+      this._terrainLayer = null;
+    }
+    const terrain = terrainOf(terrainId);
+    if (!terrain) return;
+    const layer = new Container();
+    layer.zIndex = -880; // 天氣層(-890)之上、單位之下
+    this._terrainLayer = layer;
+    this.root.addChild(layer);
+    const color = Number(`0x${terrain.color.slice(1)}`);
+
+    // 共通：地面色帶（讓「整個地板」一眼看出場地屬性）
+    const band = new Graphics();
+    band.ellipse(STAGE_W / 2, GROUND_Y + 150, STAGE_W * 0.62, 190).fill({ color, alpha: 0.12 });
+    band.ellipse(STAGE_W / 2, GROUND_Y + 150, STAGE_W * 0.45, 130).fill({ color, alpha: 0.1 });
+    band.blendMode = 'add';
+    layer.addChild(band);
+    gsap.fromTo(band, { alpha: 0.7 }, { alpha: 1, duration: 1.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+
+    if (terrain.id === 'surge') {
+      // 湧能磁場：兩道地面符文環反向緩轉 + 升騰能量光屑
+      const mkRing = (rx, ry, w, a) => {
+        const g = new Graphics();
+        g.ellipse(0, 0, rx, ry).stroke({ width: w, color, alpha: a });
+        g.blendMode = 'add';
+        g.x = STAGE_W / 2;
+        g.y = GROUND_Y + 130;
+        layer.addChild(g);
+        return g;
+      };
+      // 透視橢圓不能繞 z 軸轉（會豎起來）——改用呼吸縮放交錯脈動
+      const r1 = mkRing(STAGE_W * 0.34, 95, 3, 0.5);
+      const r2 = mkRing(STAGE_W * 0.24, 66, 2, 0.4);
+      gsap.fromTo(r1.scale, { x: 0.96, y: 0.96 }, { x: 1.04, y: 1.04, duration: 1.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      gsap.fromTo(r2.scale, { x: 1.05, y: 1.05 }, { x: 0.95, y: 0.95, duration: 1.4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      gsap.fromTo(r1, { alpha: 0.35 }, { alpha: 0.65, duration: 1.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      for (let i = 0; i < 10; i += 1) {
+        const p = new Sprite(this._dotTex);
+        p.anchor.set(0.5);
+        p.blendMode = 'add';
+        p.tint = color;
+        p.scale.set(0.25 + Math.random() * 0.3);
+        const x0 = STAGE_W * (0.18 + Math.random() * 0.64);
+        const y0 = GROUND_Y + 60 + Math.random() * 160;
+        p.position.set(x0, y0);
+        p.alpha = 0;
+        layer.addChild(p);
+        gsap.fromTo(p, { y: y0, alpha: 0 }, {
+          y: y0 - 130, alpha: 0.8, duration: 2 + Math.random() * 1.5,
+          delay: i * 0.35, repeat: -1, ease: 'power1.out',
+        });
+      }
+    } else if (terrain.id === 'erosion') {
+      // 侵蝕之地：暗紫地霧塊脈動 + 緩慢下沉的腐蝕光點
+      for (let i = 0; i < 5; i += 1) {
+        const fog = new Graphics();
+        const w = 160 + Math.random() * 180;
+        fog.ellipse(0, 0, w, 34).fill({ color, alpha: 0.1 });
+        fog.blendMode = 'add';
+        fog.position.set(STAGE_W * (0.12 + Math.random() * 0.76), GROUND_Y + 90 + Math.random() * 150);
+        layer.addChild(fog);
+        gsap.fromTo(fog, { alpha: 0.4 }, { alpha: 1, duration: 1.4 + Math.random(), yoyo: true, repeat: -1, delay: i * 0.4, ease: 'sine.inOut' });
+        gsap.to(fog, { x: fog.x + 40, duration: 6 + Math.random() * 3, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      }
+      for (let i = 0; i < 8; i += 1) {
+        const p = new Sprite(this._dotTex);
+        p.anchor.set(0.5);
+        p.blendMode = 'add';
+        p.tint = color;
+        p.scale.set(0.2 + Math.random() * 0.25);
+        const x0 = STAGE_W * (0.15 + Math.random() * 0.7);
+        const y0 = GROUND_Y + 40;
+        p.position.set(x0, y0);
+        layer.addChild(p);
+        gsap.fromTo(p, { y: y0, alpha: 0.7 }, {
+          y: y0 + 150, alpha: 0, duration: 2.4 + Math.random(),
+          delay: i * 0.45, repeat: -1, ease: 'power1.in',
+        });
+      }
+    } else if (terrain.id === 'swamp') {
+      // 迷霧沼澤：貼地霧帶橫向緩飄（雙層交錯）
+      for (let i = 0; i < 6; i += 1) {
+        const mist = new Graphics();
+        const w = 220 + Math.random() * 200;
+        mist.ellipse(0, 0, w, 26 + Math.random() * 14).fill({ color, alpha: 0.12 });
+        mist.blendMode = 'add';
+        const y0 = GROUND_Y + 70 + Math.random() * 180;
+        mist.position.set(STAGE_W * Math.random(), y0);
+        layer.addChild(mist);
+        gsap.to(mist, {
+          x: `+=${140 + Math.random() * 120}`, duration: 7 + Math.random() * 4,
+          yoyo: true, repeat: -1, ease: 'sine.inOut', delay: i * 0.5,
+        });
+        gsap.fromTo(mist, { alpha: 0.5 }, { alpha: 1, duration: 2 + Math.random(), yoyo: true, repeat: -1, ease: 'sine.inOut' });
+      }
     }
   }
 
@@ -904,6 +1018,7 @@ export class BattleScene {
       }),
       rp.on('terrain', ({ id, uid }) => {
         if (this._instant) return;
+        this._drawTerrain(id);
         const t = terrainOf(id);
         if (!t) return;
         this._envAnnounce(uid, t.color, `場地：${t.name}`);
