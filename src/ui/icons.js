@@ -178,3 +178,6 @@ export function icon(name, size = 24) {
 }
 
 export const hasIcon = (name) => !!ICONS[name];
+
+// 原始 SVG 字串（給 pixi 端轉材質——戰鬥頭頂職業章要與卡面同款設計）。
+export const iconSvg = (name) => ICONS[name] ?? null;

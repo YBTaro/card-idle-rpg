@@ -43,6 +43,7 @@ import { casterVfx, targetVfx, ultTiming, thornsBurst, executeSlash, pierceFlash
 import { syncStatusAuras } from './statusAuras.js';
 import { weatherOf, terrainOf } from '../battle/environments.js';
 import { playVoice } from './audio.js';
+import { iconSvg } from '../ui/icons.js';
 
 // 與 style.css 的 --fire/--wind/--water/--light/--dark 同色值。
 const ELEMENT_COLOR = {
@@ -388,6 +389,23 @@ export class BattleScene {
     }
   }
 
+  // 職業章材質：與卡面同款 SVG 轉 pixi 材質，app 層級快取（跨場景復用、不銷毀）。
+  async _classBadgeTex(cls) {
+    const key = `cls_${cls}`;
+    this.app._uiIconTex ??= {};
+    if (this.app._uiIconTex[key]) return this.app._uiIconTex[key];
+    const svg = iconSvg(key);
+    if (!svg) return null;
+    try {
+      const url = `data:image/svg+xml;charset=utf8,${encodeURIComponent(svg)}`;
+      const tex = await Assets.load({ src: url, data: { resolution: 6 } }); // 高解析：13px 顯示也銳利
+      this.app._uiIconTex[key] = tex;
+      return tex;
+    } catch {
+      return null;
+    }
+  }
+
   // 柔邊光點材質：app 層級共享（每場重建場景不重做、也不銷毀——
   // 銷毀會和仍在飛行的特效 sprite 產生 render 競態）。
   _makeDotTexture() {
@@ -652,21 +670,24 @@ export class BattleScene {
     // 立繪（async 載入後替換佔位）
     this._loadArt(c, info);
 
-    // 頭頂資訊條：元素小點 + 職業符號（坦🛡/打⚔/輔✚）+ 血條/能量條
+    // 頭頂資訊條：屬性外環 + 卡面同款職業章壓在中央 + 血條/能量條
+    // ——外環顏色＝屬性、中央徽章＝職業（與卡面右下角職業章同一套 SVG）
     const infoBar = new Container();
     infoBar.y = -BODY_H - 16;
+    const chipX = -BAR_W / 2 - 11;
     const chip = new Graphics();
-    chip.circle(-BAR_W / 2 - 10, 5, 5.5).fill(color);
-    chip.circle(-BAR_W / 2 - 10, 5, 5.5).stroke({ color: 0x14101f, width: 1.5 });
+    chip.circle(chipX, 5, 8.5).fill(color); // 屬性外環（比職業章大一圈）
+    chip.circle(chipX, 5, 8.5).stroke({ color: 0x14101f, width: 1.5 });
     infoBar.addChild(chip);
-    const clsMark = new Text({
-      text: CLASS_GLYPH[info.class] || '',
-      style: { fontSize: 10, stroke: { color: 0x14101f, width: 2 } },
+    this._classBadgeTex(info.class).then((tex) => {
+      if (!tex || c.destroyed || infoBar.destroyed) return;
+      const badge = new Sprite(tex);
+      badge.anchor.set(0.5);
+      badge.width = 13;
+      badge.height = 13;
+      badge.position.set(chipX, 5);
+      infoBar.addChild(badge);
     });
-    clsMark.anchor.set(0.5);
-    clsMark.x = -BAR_W / 2 - 10;
-    clsMark.y = -7; // 元素點正上方（垂直堆疊，不佔血條寬度）
-    infoBar.addChild(clsMark);
     const bars = new Graphics();
     infoBar.addChild(bars);
     c._bars = bars;
