@@ -292,7 +292,9 @@ export function onEnterInfoForCard(cardId) {
     const d = describeEffect(e, '目標');
     if (d) parts.push(d);
   }
-  return parts.length ? `進場時${parts.join('；')}（開場一次性結算）` : null;
+  if (!parts.length) return null;
+  const named = card.onEnter.name ? `「${card.onEnter.name}」——` : '';
+  return `進場時${named}${parts.join('；')}（開場一次性結算）`;
 }
 
 // ---- 觸發描述（triggers 資料 → 人話）----
