@@ -34,10 +34,10 @@
   ```
   （2026-07-06 追加：原 `basis:'selfDef'` 100% 改為 `basis:'targetMaxHp'` 20%；DEF 基準機制仍由被動沿用。）
 - **被動 多門檻觸發**（cards.js `triggers`）：自身血量首次跌破 75% / 50% / 25% 各一次 →
-  對敵全體造成**自身防禦力 200%**、無視防禦、**無屬性**傷害，**吸血 30%**。
+  對敵全體造成**自身防禦力 150%**、無視防禦、**無屬性**傷害，**吸血 50%**。
   ```js
   triggers: [{ name: '崩壁反噬', on: 'hpBelow', pcts: [0.75, 0.5, 0.25], who: 'self',
-    effects: [{ type: 'damage', mult: 2.0, basis: 'selfDef', ignoreDef: true, noElement: true, lifesteal: 0.3, scope: 'allEnemies' }] }]
+    effects: [{ type: 'damage', mult: 1.5, basis: 'selfDef', ignoreDef: true, noElement: true, lifesteal: 0.5, scope: 'allEnemies' }] }]
   ```
   （原被動「生命<50% 自身防禦+30%」移除——改為此觸發軸；仍是單一被動軸。）
 
