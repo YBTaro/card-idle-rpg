@@ -122,10 +122,17 @@ const ELEMENT_COLORS = {
 };
 const NEUTRAL_COLOR = '#8a8f99'; // 未知元素退中性灰
 
-// → 卡圖路徑字串或 null
+// 卡面點陣圖：SVG 已用 scripts/make-card-raster.mjs 光柵化成同內容 WebP（模糊濾鏡烘進點陣）。
+// DOM/canvas 顯示一律走 WebP——手機捲動/進頁不再即時光柵化 feGaussianBlur（實測捲動繪製 368ms→5ms）。
+// 註：cutoutFor 仍走 SVG（見下），pixi 戰場立繪不受影響。
+function rasterArt(art) {
+  return art ? art.replace(/\.svg$/, '.webp') : art;
+}
+
+// → 卡圖路徑字串或 null（DOM/canvas 用；回傳烘好的 WebP）
 export function artFor(cardId) {
   const entry = CARD_ART[cardId];
-  return entry && entry.art ? entry.art : null;
+  return entry && entry.art ? rasterArt(entry.art) : null;
 }
 
 // → 去背立繪路徑或 null（戰場單位 / 主城看板 / 召喚看板用）。
@@ -153,7 +160,7 @@ export function portraitFor(cardId) {
   if (!entry || !entry.art) return null;
   const p = entry.portrait || {};
   return {
-    src: entry.art,
+    src: rasterArt(entry.art),
     x: p.x ?? DEFAULT_PORTRAIT.x,
     y: p.y ?? DEFAULT_PORTRAIT.y,
     zoom: p.zoom ?? DEFAULT_PORTRAIT.zoom,

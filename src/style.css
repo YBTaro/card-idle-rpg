@@ -611,9 +611,10 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .deck { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.6rem, 1fr)); gap: .7rem; }
 .deck-item {
   position: relative;
-  /* 大卡冊效能：離屏的卡整張跳過渲染（原生虛擬化），捲到才畫 */
-  content-visibility: auto;
-  contain-intrinsic-size: 7.6rem 10.6rem;
+  /* 卡面已是烘好模糊的輕量 WebP（make-card-raster.mjs），整冊一次畫完很便宜。
+     曾用 content-visibility:auto 做原生虛擬化，但它把每張卡的排版/繪製延到「捲到才畫」，
+     手機捲動時一張接一張 materialize → 嚴重掉幀（實測捲動 Paint+Layout 從 0 暴增到 ~380ms）。
+     卡片已輕量，改回一次渲染：捲動繪製成本歸 0（進頁多 ~一次性 layout，換全程順捲）。 */
 }
 .deck-item.hidden { display: none; }
 .deck-item .flag {
