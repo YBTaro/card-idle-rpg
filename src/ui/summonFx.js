@@ -1002,6 +1002,9 @@ class SummonStage {
     this._disposables.clear();
     this.composer.dispose?.();
     this.renderer.dispose();
+    // 關鍵：dispose() 不會釋放底層 WebGL context，必須強制釋放，
+    // 否則每次召喚都 new 一個 renderer、context 累積到瀏覽器上限（~16）就整個凍結。
+    this.renderer.forceContextLoss?.();
     this.ov.remove();
   }
 }
