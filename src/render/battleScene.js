@@ -993,7 +993,8 @@ export class BattleScene {
         const dir = s._info.team === 0 ? 1 : -1;
         const t = targetUid != null ? this.sprites.get(targetUid) : null;
         playVoice(s._info.cardId, 'attack'); // 普攻語音（抽播；無音檔＝靜默）
-        if (!t) {
+        // 目標不存在或已死（極少數：log 對屍體補刀）→ 原地前刺，不衝去空格/屍體
+        if (!t || (targetUid != null && !this.replayer.aliveOf(targetUid))) {
           lunge(s, dir);
           return;
         }
@@ -1005,11 +1006,15 @@ export class BattleScene {
           bolt(this.fxLayer, s.x + dir * 24, this._chestY(s), t.x, this._chestY(t), color, this._dotTex);
           lunge(s, dir);
         } else {
-          // 近戰：突進到目標「格子」面前揮擊。用目標的 _homeX（格子）而非 t.x（當下位置）——
-          // 否則若目標自己正在突進（跑到我方這側還沒回位），攻擊者會朝那個暫時位置衝、
-          // 看起來像「攻擊時跑到隊友格再回來」。y 保持自己那排（不 snap 到目標、多攻擊者不疊點）。
+          // 近戰：衝去砍「這回合目標」的當下位置（t.x）。但夾住落點——只准向前踏、
+          // 絕不越過自己阵線往後（否則若目標正衝進我方territory，攻擊者會追過頭衝到
+          // 自己隊友格）。meleeDash 內部會再退 58（站到目標腳前一步），故這裡先把
+          // 「最終落點」夾在自家前方 [40, 半個場寬] 內、再補回 58 傳入。y 保持自己那排。
+          const hx = s._homeX ?? s.x;
+          const land = Math.min(Math.max((t.x - hx) * dir - 58, 40), STAGE_W * 0.5); // 目標落點朝前距離
+          const tx = hx + dir * (land + 58);
           s.zIndex = 800;
-          meleeDash(s, t._homeX ?? t.x, s._homeY ?? s.y, dir);
+          meleeDash(s, tx, s._homeY ?? s.y, dir);
           fxDelay(0.85, () => {
             // 聚光燈期間被點亮者不在此覆蓋（收燈時會統一還原）
             if (!s.destroyed && !this._ultRaised?.has(s)) s.zIndex = s._homeY ?? s.y;
