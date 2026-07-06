@@ -557,7 +557,8 @@ class SummonStage {
     return this._track(tex);
   }
 
-  // 稀有卡背後旋轉光芒（12 道放射光，render 迴圈轉動）
+  // 稀有卡背後旋轉聖光（12 道放射光，render 迴圈轉動）
+  // 烘成「白色」放射光，實際顏色由 material.color 依卡片屬性著色（加法混色乾淨可調）。
   _bakeRays() {
     if (this._rayTex) return this._rayTex;
     const S = 256;
@@ -568,8 +569,8 @@ class SummonStage {
     for (let i = 0; i < 12; i += 1) {
       ctx.rotate(Math.PI / 6);
       const g = ctx.createLinearGradient(0, 0, 0, -S / 2);
-      g.addColorStop(0, 'rgba(255,215,130,.55)');
-      g.addColorStop(1, 'rgba(255,215,130,0)');
+      g.addColorStop(0, 'rgba(255,255,255,.6)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -661,7 +662,9 @@ class SummonStage {
       this.scene.add(grp);
       // 螺旋參數（Act3 用）：ang/rad/y 由 GSAP 驅動，onUpdate 換算座標
       const ang0 = (i / batch.length) * Math.PI * 2;
-      this.cards.push({ grp, backMat, rare, slot: this._slotPos(i, batch.length), p: { ang: ang0, rad: 0.05, y: -1.3, s: 0.12 }, ang0, splash: splashes[i] });
+      // 背後聖光顏色＝卡片屬性色（非英雄卡退回金色）
+      const rayHex = rare && CARDS[result.cardId] ? (ELEMENT_HEX[CARDS[result.cardId].element] || GOLD) : GOLD;
+      this.cards.push({ grp, backMat, rare, rayHex, slot: this._slotPos(i, batch.length), p: { ang: ang0, rad: 0.05, y: -1.3, s: 0.12 }, ang0, splash: splashes[i] });
     });
 
     const applyHelix = (c) => {
@@ -778,6 +781,7 @@ class SummonStage {
         tl.add(() => {
           this.spWashMat.map = c.splash.wash;
           this.spWashMat.needsUpdate = true;
+          this.spRaysMat.color.set(c.rayHex ?? GOLD); // 登場大光芒＝屬性色聖光
           if (c.splash.artTex) {
             this.spArtMat.map = c.splash.artTex;
             this.spArtMat.needsUpdate = true;
@@ -844,10 +848,11 @@ class SummonStage {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) tl.progress(1);
   }
 
-  // 稀有卡背後旋轉光芒
+  // 稀有卡背後旋轉聖光（顏色依卡片屬性）
   _attachRays(c) {
     if (this.destroyed || c.rays) return;
     const mat = this._track(new THREE.MeshBasicMaterial({ map: this._bakeRays(), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+    mat.color.set(c.rayHex ?? GOLD);
     const mesh = new THREE.Mesh(this._track(new THREE.PlaneGeometry(2.6, 2.6)), mat);
     mesh.position.copy(c.grp.position);
     mesh.position.z -= 0.08;
