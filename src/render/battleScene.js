@@ -1006,12 +1006,13 @@ export class BattleScene {
           bolt(this.fxLayer, s.x + dir * 24, this._chestY(s), t.x, this._chestY(t), color, this._dotTex);
           lunge(s, dir);
         } else {
-          // 近戰：衝去砍「這回合目標」的當下位置（t.x）。但夾住落點——只准向前踏、
-          // 絕不越過自己阵線往後（否則若目標正衝進我方territory，攻擊者會追過頭衝到
-          // 自己隊友格）。meleeDash 內部會再退 58（站到目標腳前一步），故這裡先把
-          // 「最終落點」夾在自家前方 [40, 半個場寬] 內、再補回 58 傳入。y 保持自己那排。
+          // 近戰：衝去砍「這回合目標」的當下位置（t.x），站到目標腳前一步（-58）。
+          // 落點只夾「最小前踏 40」：目標若衝進我方 territory（t.x 落在我後方）→ (t.x-hx)*dir
+          // 為負，夾回 40 只前刺、不倒退追到隊友格。上限交給目標本身——瞄準點永遠是 t.x-58，
+          // 天生不會越過目標，故不再設固定上限（舊「半場寬」上限會讓後排打後排少走約 200px、
+          // 停在敵前排格＝像在砍屍體/沒踏到目標前）。y 保持自己那排（多攻擊者不疊點）。
           const hx = s._homeX ?? s.x;
-          const land = Math.min(Math.max((t.x - hx) * dir - 58, 40), STAGE_W * 0.5); // 目標落點朝前距離
+          const land = Math.max((t.x - hx) * dir - 58, 40); // 目標落點朝前距離
           const tx = hx + dir * (land + 58);
           s.zIndex = 800;
           meleeDash(s, tx, s._homeY ?? s.y, dir);
