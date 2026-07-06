@@ -92,6 +92,12 @@ export function rollHit(caster, target, ctx) {
 const DODGEABLE = new Set(['damage', 'dot', 'control', 'buff', 'transmute', 'nightmare']);
 // 敵對「狀態」型別（不含傷害）：效果抗性與格擋 buff 只擋這些——傷害照常命中，狀態可被抵抗/彈開。
 const HOSTILE_STATUS = new Set(['dot', 'control', 'buff', 'transmute', 'nightmare', 'mark']);
+// 傷害門檻（castSkill 兩段式）放行的對敵後續效果：敵對狀態 + 操作類。
+// 傷害命中的敵人才吃這些——取代其自身閃避判定（命中後仍照跑 chance/抗性/格擋）。
+const GATED_FOLLOWUP = new Set([
+  'dot', 'control', 'buff', 'transmute', 'nightmare', 'mark',
+  'dispel', 'extend', 'detonateDot', 'energySteal', 'stealBuff', 'transferDebuff',
+]);
 
 // 共用傷害：走完整公式、護盾/hp、被擊回能、事件。
 // opts.ignoreDef＝無視防禦；opts.noRetaliate＝不觸發荊棘/反擊（避免連鎖遞迴）。
@@ -210,7 +216,7 @@ export function matchesWhere(unit, where) {
   return true;
 }
 
-export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
+export function applyEffect(effect, caster, units, ctx, skillId = 'skill', opts = {}) {
   // ---- 全場效果（無目標概念）：不進逐目標迴圈，機率整體擲一次 ----
   if (effect.type === 'weather' || effect.type === 'terrain') {
     if (effect.chance != null && (ctx.rng ? ctx.rng.next() : Math.random()) >= effect.chance) return;
@@ -231,8 +237,15 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
   // 技能資料可用 key 讓跨技能互斥（如 'guard'），或 stackable:true 明示可疊層。
   const defaultKey = (kindTag) => effect.key ?? `${skillId}:${kindTag}`;
   for (const u of targets) {
-    // 命中判定（迴避）：敵對的攻擊與上狀態「每段」獨立判定，閃掉＝該段對此目標無效
-    if (DODGEABLE.has(effect.type) && caster && u.team !== caster.team && !rollHit(caster, u, ctx)) {
+    const hostile = caster && u.team !== caster.team;
+    // 傷害門檻（castSkill 兩段式）：對敵的可門檻後續效果依「命中集合」放行，取代自身閃避判定；
+    // 否則走原本的每段獨立迴避（onEnter/環境/觸發等不傳 opts 的路徑行為不變）。
+    if (opts.gate && hostile && GATED_FOLLOWUP.has(effect.type)) {
+      if (!opts.gate.has(u)) {
+        ctx.emit('miss', { source: caster, target: u, skill: skillId });
+        continue;
+      }
+    } else if (DODGEABLE.has(effect.type) && hostile && !rollHit(caster, u, ctx)) {
       ctx.emit('miss', { source: caster, target: u, skill: skillId });
       continue;
     }
@@ -261,6 +274,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
     }
     switch (effect.type) {
       case 'damage': {
+        if (opts.recordHits && hostile) opts.recordHits.add(u); // 命中集合：本段未被閃 → 記錄（供後續段門檻放行）
         // 超充：施放瞬間溢出的能量（energy/100）放大直傷與直接治療，DoT/HoT/護盾/狀態不吃
         let mult = effect.mult * (ctx.overcharge ?? 1);
         // 處決：目標血量比例低於 executeBelow → 倍率乘 executeBonus

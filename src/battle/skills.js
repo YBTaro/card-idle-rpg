@@ -30,6 +30,7 @@ export const SKILLS = {
     { type: 'buff', stat: 'dotTaken', op: 'mul', value: 1.25, duration: 3, scope: 'target' }, // 火油：受到的持續傷害 +25%（3 回合）
   ]},
   moltenBulwark: { name: '熔壁', target: 'enemyFrontRow', effects: [ // 定位：灼熱裝甲坦——貼近我的人更怕火
+    { type: 'damage', mult: 1.2, scope: 'target' }, // 補傷害段（傷害門檻模型）——敵前排，範圍窄故較高
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'buff', stat: 'dotTaken', op: 'mul', value: 1.3, duration: 2, scope: 'target' },
   ]},
@@ -59,6 +60,7 @@ export const SKILLS = {
     { type: 'damage', mult: 3.0, scope: 'target' }, // 全遊戲最高單體倍率＝它的簽名
   ]},
   gravePact: { name: '墓約', effects: [
+    { type: 'damage', mult: 0.8, scope: 'allEnemies' }, // 補傷害段（傷害門檻模型）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'buff', stat: 'atk', op: 'mul', value: 0.7, duration: 2, scope: 'allEnemies' },
   ]},
@@ -79,6 +81,7 @@ export const SKILLS = {
     { type: 'dot', power: 0.68, element: 'fire', duration: 3, scope: 'target', chance: 0.7, stackable: true }, // 70% 全體附灼燒（可疊層，每跳 68%、持續 3 回合）
   ]},
   emberWarmth: { name: '餘溫', effects: [ // 定位：延燒輔助（淨化歸潮頌）——治療收窄前排、數值加厚
+    { type: 'damage', mult: 0.8, scope: 'allEnemies' }, // 補傷害段（傷害門檻模型）
     { type: 'heal', power: 1.5, scope: 'frontAllies' },
     { type: 'extend', what: 'dot', element: 'fire', turns: 2, scope: 'allEnemies' }, // 餘燼不熄：敵方灼燒 +2 次行動
   ]},
@@ -121,6 +124,7 @@ export const SKILLS = {
     { type: 'heal', power: 1.8, scope: 'allAllies', where: { race: '精靈' } },
   ]},
   thunderMark: { name: '雷紋', effects: [ // 定位：風屬專屬狀態載體——全體易傷
+    { type: 'damage', mult: 0.8, scope: 'allEnemies' }, // 補傷害段（傷害門檻模型）
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 1.2, duration: 2, scope: 'allEnemies' },
   ]},
   cloudPiercer: { name: '貫雲', target: 'enemyColumn', effects: [ // 乘風：貫穿直排並鼓舞風屬同袍
@@ -215,6 +219,7 @@ export const SKILLS = {
     { type: 'castDrain', amount: 20, duration: 2, scope: 'self', stackable: true }, // 敵方施法→其餘敵人 -20 能量
   ]},
   boneRampart: { name: '骨牆', effects: [ // 定位：凝咒守望（不搶仇恨）——延長敵方負面＋自身厚盾撐著慢慢磨
+    { type: 'damage', mult: 0.8, scope: 'allEnemies' }, // 補傷害段（傷害門檻模型）
     { type: 'extend', what: 'negative', turns: 1, scope: 'allEnemies' },
     { type: 'shield', power: 2.0, duration: 3, scope: 'self' },
   ]},
@@ -231,6 +236,7 @@ export const SKILLS = {
     { type: 'dot', power: 0.18, basis: 'targetMaxHp', duration: 2, scope: 'target', chance: 0.7 }, // 70% 蛛毒（單體補刀＝毒最深：每跳 18% 最大生命）
   ]},
   duskVeil: { name: '暮幕', effects: [ // 定位：遁影奪光坦——入夜奪增益、自身沒入暮色（精靈＝迴避值最高）
+    { type: 'damage', mult: 0.8, scope: 'allEnemies' }, // 補傷害段（傷害門檻模型）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'buff', stat: 'dodge', op: 'add', value: 0.3, duration: 2, scope: 'self' },
     { type: 'dispel', what: 'buff', count: 1, scope: 'allEnemies' },
@@ -306,6 +312,7 @@ export const SKILLS = {
     { type: 'buff', stat: 'healTaken', op: 'mul', value: 1.3, duration: 2, scope: 'allAllies' },
   ]},
   deathKnell: { name: '喪鐘', effects: [ // 定位：重傷——不死專屬（戰略級獨立承載：專剋治療隊）
+    { type: 'damage', mult: 0.8, scope: 'allEnemies' }, // 補傷害段（傷害門檻模型）
     { type: 'buff', stat: 'healTaken', op: 'mul', value: 0.5, duration: 2, scope: 'allEnemies' },
   ]},
 
@@ -343,6 +350,7 @@ export const SKILLS = {
     { type: 'stealBuff', count: 1, scope: 'target' },
   ]},
   blameShift: { name: '嫁禍', target: 'randomEnemy', effects: [ // 定位：轉嫁詛咒——把我方的壞東西丟回去再補一口毒
+    { type: 'damage', mult: 1.5, scope: 'target' }, // 補傷害段（傷害門檻模型）——單體較高
     { type: 'transferDebuff', count: 2, scope: 'target' },
     { type: 'dot', power: 0.12, basis: 'targetMaxHp', duration: 2, scope: 'target' },
   ]},
@@ -530,10 +538,16 @@ export function castSkill(caster, skillId, ctx, { overcharge = 1 } = {}) {
   const primary = def.target ? SELECTORS[def.target](caster, ctx) : [];
   ctx.emit('ultimate', { caster, skill: skillId, target: primary[0], overcharge });
   const castCtx = overcharge > 1 ? { ...ctx, overcharge } : ctx;
-  for (const effect of def.effects) {
-    const eff = scaleEffect(effect, lv);
+  // 傷害門檻兩段式：先跑傷害段記錄命中的敵人，再跑其餘段——對敵的可門檻效果只落在命中者身上。
+  const scaled = def.effects.map((effect) => scaleEffect(effect, lv));
+  const hitSet = new Set();
+  for (const eff of scaled.filter((e) => e.type === 'damage')) {
     const units = resolveScope(eff.scope, caster, primary, ctx, eff);
-    applyEffect(eff, caster, units, castCtx, skillId);
+    applyEffect(eff, caster, units, castCtx, skillId, { recordHits: hitSet });
+  }
+  for (const eff of scaled.filter((e) => e.type !== 'damage')) {
+    const units = resolveScope(eff.scope, caster, primary, ctx, eff);
+    applyEffect(eff, caster, units, castCtx, skillId, { gate: hitSet });
   }
 }
 

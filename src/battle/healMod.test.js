@@ -55,7 +55,7 @@ describe('受治療量（healTaken）', () => {
   it('喪鐘（knellwitch）：敵方全體重傷 50%', () => {
     const caster = makeUnit({ team: 0, pos: 1, race: '不死' });
     const foe = makeUnit({ team: 1, pos: 1, hp: 1000 });
-    foe.hp = 100;
+    foe.hp = 900; // 喪鐘現含 80% 傷害段——留足血量存活，仍可驗 healTaken 砍半
     castSkill(caster, 'deathKnell', ctxFor(caster, [caster], [foe]));
     expect(foe.heal(100)).toBe(50); // 治療砍半
   });
