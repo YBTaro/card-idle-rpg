@@ -59,10 +59,10 @@ html {
   /* 全域縮放單位：手機橫持（矮視窗）到桌機平滑縮放。
      下限 12px——矮視窗（手機橫持，高 ~360-430）原本 2.05vmin 會掉到 9px 太小；
      桌機/平板（高 ≥585）落在 2.05vmin 區間不受影響，維持原本大小。 */
-  font-size: clamp(12px, 2.05vmin, 16px);
+  font-size: clamp(13px, 2.05vmin, 16px);
   /* 動態視窗單位（dvmin）：以「當下真正可見」的尺寸縮放，手機網址列顯示/收起不再破版
      （dvmin 不支援的舊瀏覽器會退回上一行的 vmin） */
-  font-size: clamp(12px, 2.05dvmin, 16px);
+  font-size: clamp(13px, 2.05dvmin, 16px);
 }
 
 html, body {
@@ -365,8 +365,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   background: rgba(255, 255, 255, .03); padding: .6rem .3rem .5rem; text-align: center;
 }
 .signin-cell .sic { font-size: 1.4rem; }
-.signin-cell .sd { font-size: .68rem; color: var(--dim); font-weight: 800; margin-top: .15rem; }
-.signin-cell .sr { font-size: .66rem; color: var(--text); margin-top: .1rem; }
+.signin-cell .sd { font-size: .76rem; color: var(--dim); font-weight: 800; margin-top: .15rem; }
+.signin-cell .sr { font-size: .76rem; color: var(--text); margin-top: .1rem; }
 .signin-cell.today { border-color: var(--gold); box-shadow: 0 0 14px rgba(248, 203, 92, .3); background: rgba(248, 203, 92, .08); }
 .signin-cell.past { opacity: .45; }
 .signin-cell.past::after { content: '✓'; position: absolute; top: .2rem; right: .35rem; color: var(--hp); font-weight: 900; }
@@ -760,7 +760,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   border: 2px solid var(--gold); box-shadow: 0 2px 6px rgba(0, 0, 0, .5);
 }
 .hs-sk .ic.psv { background: radial-gradient(circle at 35% 28%, #5a4a8a, #2e2450); border-color: var(--dark); }
-.hs-sk .t { font-size: .65rem; font-weight: 800; color: var(--dim); }
+.hs-sk .t { font-size: .76rem; font-weight: 800; color: var(--dim); }
 .hs-skdesc { flex: 1; font-size: .78rem; color: var(--dim); line-height: 1.65; min-width: 0; }
 .hs-skdesc b { color: var(--gold); display: block; font-size: .85rem; }
 /* 絕技等級 chip（C4 技能等級；升級入口之後開） */
@@ -776,7 +776,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   background: linear-gradient(180deg, #ffdd7e, var(--gold) 58%, #e0ac36); color: #4a3200;
   box-shadow: 0 3px 10px rgba(248, 203, 92, .3);
 }
-.hs-btn small { display: block; font-size: .68rem; font-weight: 800; color: #7a5a10; }
+.hs-btn small { display: block; font-size: .76rem; font-weight: 800; color: #7a5a10; }
 .hs-btn.disabled { opacity: .5; cursor: not-allowed; }
 .hs-btn .dot { top: -.2rem; right: .6rem; }
 /* 次要動作（升到頂）：暗金空心，不與主鈕搶眼 */
@@ -805,7 +805,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   border: 2px solid var(--gold); box-shadow: 0 0 12px rgba(248, 203, 92, .3);
   text-shadow: 0 1px 2px #000;
 }
-.gx-rb .cd { display: block; font-size: .68rem; font-weight: 800; color: #ffe9b0; }
+.gx-rb .cd { display: block; font-size: .76rem; font-weight: 800; color: #ffe9b0; }
 .gx-rb.off { border-color: var(--border-soft); box-shadow: none; opacity: .45; background: linear-gradient(120deg, #333959, #5b4227); cursor: default; }
 .gx-hero {
   position: absolute; left: 24%; bottom: 0; width: 36%; height: 88%; z-index: 1;
@@ -1014,7 +1014,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .bo-stats .st-side.ally { color: #9fe0a8; }
 .bo-stats .st-side.foe { color: #f0a08c; }
 .bo-stats .st-side:first-of-type { margin-top: .1rem; }
-.bo-stats .st-env { font-size: .68rem; color: #cbb691; margin-top: .25rem; }
+.bo-stats .st-env { font-size: .76rem; color: #cbb691; margin-top: .25rem; }
 .bo-stats .st-h { font-size: .78rem; font-weight: 900; text-align: center; margin-bottom: .3rem; letter-spacing: .15em; }
 .bo-stats .st-row {
   display: flex; align-items: center; gap: .3rem; font-size: .72rem; color: #f0e3c8; padding: .16rem 0;
