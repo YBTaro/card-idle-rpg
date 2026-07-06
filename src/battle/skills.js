@@ -356,7 +356,7 @@ export const SKILLS = {
   // 不死：不滅與亡語
   undyingOath: { name: '不滅誓約', effects: [ // 定位：免死坦——致死傷害改留 1 血（不死的種族語言）
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'cheatDeath', scope: 'self' },
+    { type: 'cheatDeath', duration: 1, scope: 'self' }, // 免死只保護 1 回合
   ]},
   spiteSlash: { name: '怨斬', target: 'singleEnemyByColumn', effects: [ // 定位：亡語刺客的主動軸（亡語見卡片觸發「遺恨爆發」）
     { type: 'damage', mult: 2.6, scope: 'target' },
@@ -391,7 +391,7 @@ export const SKILLS = {
   ]},
   // 神：奇蹟與聖域
   miracleWard: { name: '神蹟', target: 'lowestHpAlly', effects: [ // 定位：免死護符（隊友版）唯一承載者+大治療
-    { type: 'cheatDeath', scope: 'target' },
+    { type: 'cheatDeath', duration: 1, scope: 'target' }, // 免死只保護 1 回合
     { type: 'heal', power: 2.2, scope: 'target' },
   ]},
   sanctumWall: { name: '聖域壁壘', effects: [ // 定位：聖域守護（不搶仇恨）——為前排張開格擋護符（免一次負面）＋自身盾
