@@ -90,12 +90,16 @@ describe('貝盾（盾襲 atkRider）', () => {
     expect(before - foe.hp).toBeGreaterThanOrEqual(Math.round(foe.maxHp * 0.1));
   });
 
-  it('機械坦克 → 盾襲 20%；非坦克不獲盾襲', () => {
+  it('坦克10% / 機械坦克20% / 機械非坦克與其他職業皆無', () => {
     const caster = makeUnit({ team: 0, pos: 5, class: 'support' });
-    const mtank = makeUnit({ team: 0, pos: 1, class: 'tank', race: '機械' });
-    const dps = makeUnit({ team: 0, pos: 2, class: 'dps' });
-    castSkill(caster, 'pearlBulwark', ctxFor(caster, [caster, mtank, dps], []));
-    expect(mtank.buffs.find((b) => b.kind === 'atkRider').pctMaxHp).toBe(0.2);
+    const tank = makeUnit({ team: 0, pos: 1, class: 'tank', race: '人' });      // 一般坦 → 10%
+    const mtank = makeUnit({ team: 0, pos: 2, class: 'tank', race: '機械' });    // 機械坦 → 20%
+    const mdps = makeUnit({ team: 0, pos: 3, class: 'dps', race: '機械' });      // 機械輸出 → 無
+    const dps = makeUnit({ team: 0, pos: 4, class: 'dps', race: '人' });         // 一般輸出 → 無
+    castSkill(caster, 'pearlBulwark', ctxFor(caster, [caster, tank, mtank, mdps, dps], []));
+    expect(tank.buffs.find((b) => b.kind === 'atkRider').pctMaxHp).toBe(0.1);
+    expect(mtank.buffs.find((b) => b.kind === 'atkRider').pctMaxHp).toBe(0.2); // 20% 蓋過 10%，不疊加
+    expect((mdps.buffs ?? []).some((b) => b.kind === 'atkRider')).toBe(false); // 機械但非坦 → 無
     expect((dps.buffs ?? []).some((b) => b.kind === 'atkRider')).toBe(false);
   });
 });
