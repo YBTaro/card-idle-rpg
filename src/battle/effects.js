@@ -1,7 +1,7 @@
 // src/battle/effects.js
 // 效果原語：技能由多個 effect 組成，每個 effect 依 type 套用到 scope 解析出的目標。
 import { computeDamage } from './damage.js';
-import { elementMultiplier, COUNTERS } from '../data/elements.js';
+import { COUNTERS } from '../data/elements.js';
 import { applyBuff, summarizeBuffs, dispelBuffs, isNegative, resolve } from './buffs.js';
 
 // 狀態變更通知：任何在傷害路徑上被消耗/移除的 buff（盾/免死…）都要發，前端圖示才即時清。
@@ -369,8 +369,8 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill') {
         emitBuffs(u);
         break;
       case 'dot': {
-        const elem = effect.element ? elementMultiplier(caster.element, u.element) : 1;
-        const damage = Math.round(resolvePower(effect, caster, u) * elem);
+        // 灼燒/劇毒不吃屬性相剋（只有直傷才算屬性）；effect.element 僅供演出字色與引爆過濾。
+        const damage = Math.round(resolvePower(effect, caster, u));
         if (effect.stackable) {
           // 明示可疊層（業火/瘟疫）：同人也疊新層
           applyBuffN(u, { kind: 'dot', damage, element: effect.element, duration: effect.duration, stackable: true, src: caster });
