@@ -673,7 +673,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .cardframe.shine::after {
   content: ''; position: absolute; top: 0; left: 0; width: 60%; height: 100%;
   background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, .55) 50%, transparent 100%);
-  transform: skewX(-18deg); animation: cardShine 1s ease-in-out .25s 1 both; pointer-events: none;
+  animation: cardShine 1s ease-in-out .25s 1 both; pointer-events: none;
 }
 /* 升星星帶（名牌上方） */
 .cardframe-stars {
@@ -684,7 +684,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 }
 
 @keyframes cardPop { 0% { transform: scale(.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-@keyframes cardShine { 0% { left: -70%; } 100% { left: 130%; } }
+@keyframes cardShine { 0% { transform: translateX(-120%) skewX(-18deg); } 100% { transform: translateX(210%) skewX(-18deg); } }
 
 /* =====================================================================
    角色詳情頁（英雄強化）— 全螢幕 overlay
