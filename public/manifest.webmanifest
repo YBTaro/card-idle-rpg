@@ -1,0 +1,14 @@
+{
+  "name": "卡牌每日養成 · 自動戰鬥",
+  "short_name": "卡牌養成",
+  "description": "每日養成 · 自動戰鬥卡牌 RPG",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#08060f",
+  "theme_color": "#08060f",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

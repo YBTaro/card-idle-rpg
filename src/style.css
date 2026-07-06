@@ -56,14 +56,20 @@
 * { box-sizing: border-box; }
 
 html {
-  /* 全域縮放單位：手機橫持（矮視窗）到桌機平滑縮放 */
-  font-size: clamp(9px, 2.05vmin, 16px);
+  /* 全域縮放單位：手機橫持（矮視窗）到桌機平滑縮放。
+     下限 12px——矮視窗（手機橫持，高 ~360-430）原本 2.05vmin 會掉到 9px 太小；
+     桌機/平板（高 ≥585）落在 2.05vmin 區間不受影響，維持原本大小。 */
+  font-size: clamp(12px, 2.05vmin, 16px);
+  /* 動態視窗單位（dvmin）：以「當下真正可見」的尺寸縮放，手機網址列顯示/收起不再破版
+     （dvmin 不支援的舊瀏覽器會退回上一行的 vmin） */
+  font-size: clamp(12px, 2.05dvmin, 16px);
 }
 
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  height: 100dvh; /* 動態視窗高度：扣掉網址列後的實際可見高度（不支援則退回 100%） */
   overflow: hidden;
   background: var(--bg-deep);
   color: var(--text);
