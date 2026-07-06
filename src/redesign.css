@@ -100,7 +100,9 @@
 
 /* ---- 英雄頁：左篩選欄 + 卡冊 ---- */
 .hx-wrap {
-  position: absolute; inset: 84px 16px 12px;
+  /* 上緣對齊標題列（56px，同公會/商店）——原本 84px 在手機橫持(高~375)
+     頂端空出一大塊、佔掉 ~22% 高度。 */
+  position: absolute; inset: 56px 16px 12px;
   display: flex; gap: 14px; min-height: 0;
 }
 .hx-rail {
