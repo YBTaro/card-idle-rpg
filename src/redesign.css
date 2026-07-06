@@ -170,9 +170,9 @@
 .cardframe.mini .cardframe-elbadge, .cardframe.mini .cardframe-clsbadge, .cardframe.mini .cardframe-inner { display: none; }
 
 /* ---- 角色詳情：情報標籤 ---- */
-.hs-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+.hs-tags { display: flex; flex-wrap: wrap; gap: .38rem; margin: 4px 0 2px; }
 .hs-tag {
-  font-size: 12px; border-radius: 999px; padding: 3px 11px;
+  font-size: .78rem; border-radius: 999px; padding: .18rem .66rem; /* px→rem：跟手遊縮放系統一起縮，手機不再過大 */
   background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14);
 }
 .hs-tag.race { border-color: rgba(140, 220, 170, 0.5); color: #a9e8c3; }
@@ -183,15 +183,15 @@
 
 /* ---- 角色詳情：單頁式面板（身分 → 等級/星級 → 數值 → 技能 → 強化） ---- */
 .hs-lvcard {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: .6rem;
   background: linear-gradient(120deg, rgba(255, 215, 129, 0.12), rgba(110, 82, 46, 0.35));
   border: 1px solid rgba(255, 215, 129, 0.35);
-  border-radius: 12px; padding: 8px 14px;
+  border-radius: .7rem; padding: .45rem .85rem; /* px→rem：手機隨縮放系統縮小 */
 }
-.hs-lvbig { display: flex; align-items: baseline; gap: 10px; }
-.hs-lvbig b { font-size: 24px; color: var(--gold, #e8c46a); }
+.hs-lvbig { display: flex; align-items: baseline; gap: .55rem; }
+.hs-lvbig b { font-size: 1.35rem; color: var(--gold, #e8c46a); }
 .hs-lvbig .arr { color: var(--text-dim, #a89f92); font-weight: 800; }
-.hs-lvbig i { font-style: normal; font-size: 20px; font-weight: 800; color: #7cc4ff; }
+.hs-lvbig i { font-style: normal; font-size: 1.1rem; font-weight: 800; color: #7cc4ff; }
 .hs-lvbig .maxmark { color: #ff9a84; font-weight: 800; letter-spacing: 0.1em; }
 .hs-stats .v small.up { color: #7cc4ff; font-weight: 800; }
 .hs-tag.cls { display: inline-flex; align-items: center; border-color: rgba(232, 196, 106, 0.5); }
