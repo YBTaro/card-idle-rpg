@@ -167,46 +167,114 @@
 .gd-hexbtn.wide { width: 100%; }
 .gd-hexbtn.mini { padding: 4px 12px; font-size: 12px; flex: none; }
 
-/* 入會主頁三欄 */
-.gd-body { position: absolute; inset: 56px 14px 12px; display: flex; gap: 12px; min-height: 0; }
-.gd-side { width: 220px; flex: none; display: flex; flex-direction: column; gap: 8px; }
-.gd-info { display: flex; gap: 10px; align-items: center; padding: 10px 12px; }
-.gd-notice { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; font-size: 12.5px; line-height: 1.55; padding: 9px 12px; min-height: 52px; }
-.gd-mid { flex: 1.15; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.gd-subtitle { font-size: 13px; font-weight: 800; color: var(--gold, #f2c95c); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); padding-left: 4px; }
-.gd-memlist { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 7px; padding: 2px; }
+/* 入會主頁三欄（左：資訊/動作 250 · 中：成員 flex · 右：Boss+留言板 270） */
+.gd-body { position: absolute; inset: 56px 16px 14px; display: flex; gap: 14px; min-height: 0; }
+
+/* ── 左欄 ── */
+.gd-side { width: 250px; flex: none; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+/* 公會資訊卡：深綠章紋 */
+.gd-info {
+  padding: 16px; border-radius: 13px;
+  background: linear-gradient(180deg, #204438, #0f2419);
+  border: 2px solid var(--border, #8a6a3f);
+  box-shadow: inset 0 1px 0 rgba(255, 235, 180, 0.14), 0 4px 12px rgba(0, 0, 0, 0.45);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.gd-emblem {
+  width: 76px; height: 86px; display: flex; align-items: center; justify-content: center;
+  font-size: 34px; line-height: 1;
+  background: radial-gradient(circle at 45% 32%, #f8e6ac, #b0862f);
+  clip-path: polygon(50% 0, 100% 22%, 100% 66%, 50% 100%, 0 66%, 0 22%);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+.gd-gname { color: var(--gold, #f2c95c); font: 900 18px Georgia, "Songti TC", serif; letter-spacing: 0.04em; }
+.gd-gmeta { display: flex; gap: 14px; color: var(--text, #f4e8cd); font: 700 12px system-ui; }
+.gd-gmeta .sep { color: var(--dim, #c9b28a); }
+.gd-coinpill {
+  width: 100%; margin-top: 4px; padding: 7px 12px; border-radius: 8px;
+  background: rgba(9, 20, 14, 0.4); border: 1px solid var(--border-soft, #755a34);
+  display: flex; justify-content: space-between; color: var(--text, #f4e8cd); font: 700 12px system-ui;
+}
+.gd-coinpill .lbl { color: var(--dim, #c9b28a); }
+.gd-coinpill .val { color: var(--gold, #f2c95c); font-variant-numeric: tabular-nums; }
+/* 公告（羊皮紙告示） */
+.gd-notice { padding: 13px 14px; color: var(--ink, #4a3018); font: 600 12px/1.6 system-ui; }
+.gd-noticehd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.gd-noticehd b { font-weight: 800; color: var(--ink, #4a3018); }
+.gd-noticehd .edit { cursor: pointer; }
+/* 直排動作鈕（斜切角，金/藍/石三色） */
+.gd-actions { display: flex; flex-direction: column; gap: 8px; }
+.gd-actbtn {
+  box-sizing: border-box; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  padding: 11px 14px; font: 800 14px system-ui; letter-spacing: 0.05em;
+  clip-path: polygon(0 6px, 6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px));
+  transition: transform 0.12s; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: linear-gradient(180deg, #ffe08a, #f2c95c 45%, #d79a34); color: #5a3410; border: 1px solid #8a5e20;
+}
+.gd-actbtn.blue { background: linear-gradient(180deg, #a9dcf2, #7fc4e8 45%, #3f8fc0); color: #0e3550; border-color: #2e6a90; }
+.gd-actbtn.stone { background: linear-gradient(180deg, #c4b79c, #8f8068 45%, #5f5340); color: #241d12; border-color: #4a4030; text-shadow: none; }
+.gd-actbtn.done { filter: grayscale(0.5) brightness(0.9); }
+.gd-actbtn.sm { padding: 9px 12px; font-size: 13px; letter-spacing: 0; }
+
+/* ── 中欄：成員 ── */
+.gd-mid { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.gd-memhd {
+  padding: 8px 16px; border-radius: 9px; text-align: center;
+  background: linear-gradient(180deg, #3a2f1a, #241c0e);
+  border: 1.5px solid var(--border, #8a6a3f); color: var(--gold, #f2c95c);
+  font: 800 14px Georgia, "Songti TC", serif; letter-spacing: 0.08em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.gd-memlist { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
 .gd-memlist::-webkit-scrollbar { width: 4px; }
 .gd-memlist::-webkit-scrollbar-thumb { background: var(--border, #8a6a3f); border-radius: 99px; }
-.gd-mrow { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.gd-mrow { display: flex; align-items: center; gap: 11px; padding: 9px 13px; border-radius: 10px; cursor: pointer; }
 .gd-avframe {
-  flex: none; padding: 2px; border-radius: 8px;
+  flex: none; width: 42px; height: 42px; padding: 2px; border-radius: 8px; box-sizing: border-box;
   background: linear-gradient(180deg, #6a4f30, #3b2913);
   border: 1.5px solid var(--border, #8a6a3f); line-height: 0;
 }
-.gd-role { flex: none; font-size: 13px; font-weight: 900; color: #2e8a4a; }
-.gd-main { flex: 1; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; min-width: 0; }
+.gd-mrow .n { font: 800 14px system-ui; }
+.gd-role { flex: none; font-size: 11px; font-weight: 800; color: #2f7a3a; }
+.gd-mact { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+.gd-mact .lbl { color: var(--ink-dim, #7d5c36); font: 600 10px system-ui; }
+.gd-mbar { width: 90px; height: 5px; border-radius: 3px; background: rgba(0, 0, 0, 0.18); overflow: hidden; }
+.gd-mbar i { display: block; height: 100%; background: linear-gradient(90deg, #f2c95c, #c8912f); }
+.gd-mnum { flex: none; color: var(--ink-dim, #7d5c36); font: 700 12px system-ui; font-variant-numeric: tabular-nums; }
 
-/* Boss：深皮革戰報卡 */
+/* ── 右欄：Boss + 留言板 ── */
+.gd-main { width: 270px; flex: none; display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
 .gd-boss {
-  background: linear-gradient(172deg, #56331f, #3a2010 80%);
-  border: 1px solid #8a5a3f; border-radius: 10px;
-  box-shadow: inset 0 1px 0 rgba(255, 220, 180, 0.15), 0 2px 6px rgba(0, 0, 0, 0.45);
-  padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; flex: none;
+  padding: 15px; border-radius: 13px; color: var(--text, #f4e8cd);
+  background: linear-gradient(180deg, #3a1e1a, #241010);
+  border: 2px solid #a5563f;
+  box-shadow: inset 0 1px 0 rgba(255, 180, 150, 0.2), 0 4px 12px rgba(0, 0, 0, 0.5);
+  display: flex; flex-direction: column; flex: none;
 }
-.gd-boss .b1 { font-weight: 800; color: #ffe3c8; }
-.gd-boss .b2 { font-size: 12px; color: #d8b090; }
-.gd-boss .gauge { height: 12px; border-radius: 99px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 200, 150, 0.25); overflow: hidden; }
-.gd-boss .gauge i { display: block; height: 100%; background: linear-gradient(90deg, #ff9a5c, #e04a3a); border-radius: 99px; transition: width 0.3s ease; }
-.gd-bossrow { display: flex; gap: 8px; }
+.gd-boss .b1 { display: flex; justify-content: space-between; align-items: baseline; }
+.gd-boss .bn { font: 900 16px Georgia, serif; color: #ff9a7a; }
+.gd-boss .blv { font: 700 11px system-ui; color: var(--dim, #c9b28a); }
+.gd-boss .gauge { margin: 10px 0 4px; height: 11px; border-radius: 6px; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(0, 0, 0, 0.4); overflow: hidden; }
+.gd-boss .gauge i { display: block; height: 100%; background: linear-gradient(90deg, #ff7a5a, #c8342a); transition: width 0.3s ease; }
+.gd-boss .b2 { text-align: right; font: 700 11px system-ui; color: var(--dim, #c9b28a); }
+.gd-bossrow { display: flex; gap: 8px; margin-top: 11px; }
+.gd-bossrow .gd-actbtn:first-child { flex: 1; }
 
 /* 留言板：羊皮紙 */
-.gd-board { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; flex: none; }
-.gd-board .bt { font-size: 13px; font-weight: 900; color: var(--ink, #4a3018); letter-spacing: 0.2em; }
-.gd-msgs { display: flex; flex-direction: column; gap: 4px; max-height: 170px; overflow-y: auto; }
-.gd-msg { font-size: 13px; display: flex; gap: 8px; color: var(--ink, #4a3018); border-bottom: 1px dashed rgba(122, 90, 50, 0.35); padding: 2px 0 4px; }
-.gd-msg b { color: #8a5a20; flex: none; }
-.gd-postrow { display: flex; gap: 8px; align-items: center; }
-.gd-postrow .pc-input { flex: 1; }
+.gd-board { flex: 1; display: flex; flex-direction: column; padding: 13px; border-radius: 12px; min-height: 0; }
+.gd-board .bt { color: var(--ink, #4a3018); font: 800 13px system-ui; margin-bottom: 8px; }
+.gd-msgs { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 9px; }
+.gd-msgs::-webkit-scrollbar { width: 4px; }
+.gd-msgs::-webkit-scrollbar-thumb { background: var(--paper-line, #9a7a48); border-radius: 99px; }
+.gd-msg { font: 600 12px/1.5 system-ui; color: var(--ink, #4a3018); }
+.gd-msg b { color: #2f7a3a; font-weight: 800; margin-right: 5px; }
+.gd-postrow { display: flex; gap: 7px; margin-top: 9px; }
+.gd-postrow .pc-input { flex: 1; padding: 7px 11px; border-radius: 7px; }
+.gd-sendbtn {
+  cursor: pointer; padding: 7px 14px; border-radius: 7px; flex: none;
+  font: 800 12px system-ui; color: #5a3410; border: 1px solid #8a5e20;
+  background: linear-gradient(180deg, #ffe08a, #f2c95c 45%, #d79a34);
+}
 
 /* ---- SVG 圖示集 ---- */
 .gicon { display: inline-flex; align-items: center; justify-content: center; flex: none; position: relative; }
@@ -244,33 +312,45 @@
 .tw-winrw { display: flex; justify-content: center; gap: 14px; font-size: 16px; font-weight: 800; margin: 10px 0 16px; }
 
 /* ---- 商店頁 ---- */
-.sh-body { position: absolute; inset: 58px 16px 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-.sh-sub { color: var(--gold, #e8c46a); font-size: 13px; font-weight: 700; margin-top: 4px; }
-.sh-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.sh-body { position: absolute; inset: 56px 24px 20px; overflow-y: auto; }
+.sh-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.sh-head .t { color: var(--gold, #f2c95c); font: 800 15px Georgia, "Songti TC", serif; letter-spacing: 0.06em; }
+.sh-head .s { color: var(--dim, #c9b28a); font: 600 11px system-ui; }
+.sh-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.sh-grid.deals { margin-bottom: 24px; }
 .sh-item {
-  position: relative; width: 150px; text-align: center;
-  background: linear-gradient(178deg, var(--paper, #ead5a8) 0%, var(--paper-2, #d6ba8a) 72%, var(--paper-deep, #c8ab7a) 100%);
-  color: var(--ink, #4a3018);
-  border: 1px solid var(--paper-line, #9a7a48);
-  border-radius: 10px; padding: 14px 10px 10px; user-select: none;
-  box-shadow: inset 0 1px 0 rgba(255, 250, 230, 0.55), inset 0 -2px 0 rgba(90, 60, 25, 0.18), 0 2px 5px rgba(20, 10, 0, 0.4);
+  position: relative; overflow: hidden; padding: 14px 12px; border-radius: 12px;
+  background: linear-gradient(180deg, #f4e7c6, #e4cf98);
+  color: var(--ink, #4a3018); border: 1px solid var(--paper-line, #9a7a48);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 3px 8px rgba(0, 0, 0, 0.4);
+  display: flex; flex-direction: column; align-items: center; gap: 9px; user-select: none;
 }
-.sh-item.deal { border-color: #c0503a; box-shadow: inset 0 0 0 1px rgba(192, 80, 58, 0.35), 0 2px 5px rgba(20, 10, 0, 0.4); }
-.sh-item.free { border-color: #4a8a48; box-shadow: inset 0 0 0 1px rgba(74, 138, 72, 0.35), 0 2px 5px rgba(20, 10, 0, 0.4); }
-.sh-item.sold { opacity: 0.55; filter: saturate(0.35) brightness(0.85); }
+.sh-item.sold { opacity: 0.6; filter: saturate(0.4) brightness(0.9); }
+/* 折扣角標（旋轉紅綢帶） */
 .sh-off {
-  position: absolute; top: -8px; right: -6px; background: linear-gradient(160deg, #ff8a6a, #e05a4a);
-  color: #fff; font-size: 11px; font-weight: 800; border-radius: 99px; padding: 3px 9px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); transform: rotate(6deg);
+  position: absolute; top: 9px; right: -26px; transform: rotate(38deg);
+  background: #e0574a; color: #fff; font: 800 11px system-ui; padding: 3px 30px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
-.sh-ic { font-size: 34px; line-height: 1.2; }
-.sh-name { font-weight: 800; font-size: 14px; margin-top: 4px; color: var(--ink, #4a3018); }
-.sh-desc { font-size: 11.5px; color: var(--ink-dim, #7d5c36); margin: 2px 0 8px; }
-.sh-price { display: flex; justify-content: center; align-items: baseline; gap: 8px; font-size: 14px; }
-.sh-price s { color: var(--ink-dim, #7d5c36); font-size: 11.5px; }
-.sh-price b { color: #8a5a10; }
-.sh-item.free .sh-price b { color: #2e7a3c; }
-.sh-limit { font-size: 11px; color: var(--ink-dim, #7d5c36); margin-top: 6px; }
+.sh-name { color: var(--ink, #4a3018); font: 800 14px system-ui; }
+.sh-ic {
+  width: 64px; height: 64px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 34px; line-height: 1;
+  background: rgba(90, 60, 25, 0.1); border: 2px solid #b89a5c;
+  box-shadow: inset 0 1px 3px rgba(90, 60, 25, 0.25);
+}
+.sh-desc { color: var(--ink-dim, #7d5c36); font: 700 12px system-ui; }
+.sh-price { display: flex; align-items: baseline; gap: 7px; }
+.sh-price s { color: var(--ink-dim, #7d5c36); font: 600 11px system-ui; }
+.sh-price b { color: #c8342a; font: 900 16px system-ui; font-variant-numeric: tabular-nums; }
+.sh-buy {
+  width: 100%; box-sizing: border-box; cursor: pointer; padding: 8px; margin-top: 2px;
+  font: 800 13px system-ui; color: #5a3410; border: 1px solid #8a5e20;
+  background: linear-gradient(180deg, #ffe08a, #f2c95c 45%, #d79a34);
+  clip-path: polygon(0 6px, 6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px));
+}
+.sh-buy.blue { color: #0e3550; border-color: #2e6a90; background: linear-gradient(180deg, #a9dcf2, #7fc4e8 45%, #3f8fc0); }
+.sh-buy.sold { filter: grayscale(0.6) brightness(0.9); cursor: default; }
 
 /* ---- 獎勵飛行 ---- */
 .reward-fly {

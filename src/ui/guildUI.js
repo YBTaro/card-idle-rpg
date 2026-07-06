@@ -143,56 +143,72 @@ export class GuildUI {
 
     const body = el('div', { class: 'gd-body' });
 
-    // ── 左欄：公會徽章資訊 + 公告 + 動作 ──
+    // ── 左欄：公會章紋資訊 + 公告 + 動作 ──
     const left = el('div', { class: 'gd-side' });
-    left.appendChild(el('div', { class: 'gd-paper gd-info' }, [
-      el('div', { class: 'gd-shield big', text: '🛡' }),
-      el('div', { class: 'gcol' }, [
-        el('div', { class: 'n', text: g.name }),
-        el('div', { class: 'r', text: `Lv.${g.level} · ${g.members.length}/30 人` }),
-        el('div', { class: 'r', text: `我的公會幣 ${fmt(g.myCoins)}` }),
+    left.appendChild(el('div', { class: 'gd-info' }, [
+      el('div', { class: 'gd-emblem' }, [el('span', { text: '🛡' })]),
+      el('div', { class: 'gd-gname', text: g.name }),
+      el('div', { class: 'gd-gmeta' }, [
+        el('span', { text: `Lv ${g.level}` }),
+        el('span', { class: 'sep', text: '|' }),
+        el('span', { text: `${g.members.length} / 30` }),
+      ]),
+      el('div', { class: 'gd-coinpill' }, [
+        el('span', { class: 'lbl', text: '我的公會幣' }),
+        el('span', { class: 'val', text: fmt(g.myCoins) }),
       ]),
     ]));
     // 公告（羊皮紙告示）
     const noticeBox = el('div', { class: 'gd-paper gd-notice' }, [
+      el('div', { class: 'gd-noticehd' }, [
+        el('b', { text: '公會公告' }),
+        isMgr ? el('span', { class: 'edit pressable', text: '✎', onClick: () => this._editNotice() }) : null,
+      ].filter(Boolean)),
       el('span', { text: g.notice || '（尚無公告）' }),
     ]);
-    if (isMgr) {
-      noticeBox.appendChild(el('button', { class: 'gd-hexbtn mini pressable', text: '✏️', onClick: () => this._editNotice() }));
-    }
     left.appendChild(noticeBox);
-    // 動作鈕（金綢帶直排）
-    left.appendChild(el('button', {
-      class: `gd-hexbtn wide pressable${g.mySignin === day ? ' done' : ''}`,
-      text: g.mySignin === day ? '✓ 今日已簽到' : '公會簽到',
+    // 動作鈕（斜切角直排）
+    const actions = el('div', { class: 'gd-actions' });
+    actions.appendChild(el('button', {
+      class: `gd-actbtn pressable${g.mySignin === day ? ' done' : ''}`,
+      text: g.mySignin === day ? '✓ 今日已簽到' : '每日簽到',
       onClick: () => this._signin(),
     }));
-    left.appendChild(el('button', {
-      class: `gd-hexbtn wide pressable${g.myDonate === day ? ' done' : ''}`,
-      text: g.myDonate === day ? '✓ 今日已捐獻' : '捐獻',
+    actions.appendChild(el('button', {
+      class: `gd-actbtn pressable${g.myDonate === day ? ' done' : ''}`,
+      text: g.myDonate === day ? '✓ 今日已捐獻' : '公會捐獻',
       onClick: () => this._donate(),
     }));
-    left.appendChild(el('button', { class: 'gd-hexbtn wide stone pressable', text: '公會商店', onClick: () => this._shop() }));
+    actions.appendChild(el('button', { class: 'gd-actbtn blue pressable', text: '公會商店', onClick: () => this._shop() }));
     if (isMgr && g.joinRequests.length) {
-      left.appendChild(el('button', { class: 'gd-hexbtn wide pressable', text: `入會申請（${g.joinRequests.length}）`, onClick: () => this._approvals() }));
+      actions.appendChild(el('button', { class: 'gd-actbtn stone pressable', text: `入會申請 · ${g.joinRequests.length}`, onClick: () => this._approvals() }));
     }
-    left.appendChild(el('button', { class: 'gd-hexbtn wide stone pressable', text: '退出公會', onClick: () => this._leave() }));
+    actions.appendChild(el('button', { class: 'gd-actbtn stone pressable', text: '退出公會', onClick: () => this._leave() }));
+    left.appendChild(actions);
     body.appendChild(left);
 
-    // ── 中欄：成員卷軸列表（直接攤在主頁，參考原型） ──
+    // ── 中欄：成員列表（活躍度長條，參考原型） ──
     const mid = el('div', { class: 'gd-mid' });
-    mid.appendChild(el('div', { class: 'gd-subtitle', text: `公會人數：${g.members.length}/30` }));
+    mid.appendChild(el('div', { class: 'gd-memhd', text: `公會成員 · ${g.members.length} / 30` }));
     const memBox = el('div', { class: 'gd-memlist' });
     const order = { leader: 0, officer: 1, member: 2 };
+    const maxActive = Math.max(1, ...g.members.map((m) => m.weeklyActive || 0));
     for (const m of [...g.members].sort((a, b) => order[a.role] - order[b.role])) {
+      const pct = Math.round(((m.weeklyActive || 0) / maxActive) * 100);
       const row = el('div', { class: 'gd-paper gd-mrow pressable' }, [
-        el('div', { class: 'gd-avframe' }, [playerAvatar(m.avatarCardId, { size: 40 })]),
+        el('div', { class: 'gd-avframe' }, [playerAvatar(m.avatarCardId, { size: 38 })]),
         el('div', { class: 'gcol' }, [
-          el('div', { class: 'n', text: m.nickname }),
-          el('div', { class: 'r on', text: `本週活躍 ${m.weeklyActive}` }),
+          el('div', { style: 'display:flex;align-items:center;gap:7px;' }, [
+            el('span', { class: 'n', text: m.nickname }),
+            m.role !== 'member' ? el('span', { class: 'gd-role', text: `[${ROLE_LABEL[m.role]}]` }) : null,
+          ].filter(Boolean)),
+          el('div', { class: 'gd-mact' }, [
+            el('span', { class: 'lbl', text: '本週活躍' }),
+            el('div', { class: 'gd-mbar' }, [el('i', { style: `width:${pct}%` })]),
+          ]),
         ]),
-        m.role !== 'member' ? el('span', { class: 'gd-role', text: `[${ROLE_LABEL[m.role]}]` }) : null,
-      ].filter(Boolean));
+        el('span', { class: 'gd-mnum', text: `${m.weeklyActive}` }),
+      ]);
       row.addEventListener('click', () => openPlayerCard(m));
       // 會長管理：升降職/踢出（列內小鈕）
       if (g.myRole === 'leader' && m.role !== 'leader') {
@@ -228,31 +244,37 @@ export class GuildUI {
     const boss = g.boss;
     const pct = boss.maxHp > 0 ? boss.hp / boss.maxHp : 0;
     right.appendChild(el('div', { class: 'gd-boss' }, [
-      el('div', { class: 'b1', text: `👹 公會 Boss：${boss.name}（Lv${boss.level}）` }),
+      el('div', { class: 'b1' }, [
+        el('span', { class: 'bn', text: boss.name }),
+        el('span', { class: 'blv', text: `Lv ${boss.level}` }),
+      ]),
       el('div', { class: 'gauge' }, [el('i', { style: `width:${Math.max(0, pct * 100)}%` })]),
       el('div', { class: 'b2', text: boss.hp > 0 ? `剩餘 ${fmt(boss.hp)} / ${fmt(boss.maxHp)}` : '本週已討伐！' }),
       el('div', { class: 'gd-bossrow' }, [
-        el('button', { class: 'gd-hexbtn pressable', text: '⚔ 挑戰（每日 2 次）', onClick: () => this._bossFight() }),
-        el('button', { class: 'gd-hexbtn stone pressable', text: '傷害排行', onClick: () => this._bossRank() }),
+        el('button', { class: 'gd-actbtn sm pressable', text: '⚔ 挑戰（每日 2 次）', onClick: () => this._bossFight() }),
+        el('button', { class: 'gd-actbtn stone sm pressable', text: '傷害排行', onClick: () => this._bossRank() }),
       ]),
     ]));
 
     const board = el('div', { class: 'gd-paper gd-board' });
-    board.appendChild(el('div', { class: 'bt', text: '留言板' }));
+    board.appendChild(el('div', { class: 'bt', text: '公會留言板' }));
     const msgs = el('div', { class: 'gd-msgs' });
     if (!g.board.length) msgs.appendChild(el('div', { class: 'gd-empty', text: '還沒有留言' }));
-    for (const m of g.board.slice(0, 20)) {
+    // board 為新→舊；反轉成舊→新，新訊息排在最下方（聊天式）
+    for (const m of g.board.slice(0, 20).reverse()) {
       msgs.appendChild(el('div', { class: 'gd-msg' }, [
         el('b', { text: m.nickname }),
         el('span', { text: m.text }),
       ]));
     }
     board.appendChild(msgs);
-    const postIn = el('input', { class: 'pc-input paper-input', maxlength: '80', placeholder: '說點什麼…' });
+    // 預設捲到最底（看見最新一則）——等版面 append 完成後再定位
+    requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
+    const postIn = el('input', { class: 'pc-input paper-input', maxlength: '80', placeholder: '輸入訊息…' });
     postIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') this._post(postIn); });
     board.appendChild(el('div', { class: 'gd-postrow' }, [
       postIn,
-      el('button', { class: 'gd-hexbtn mini pressable', text: '送出', onClick: () => this._post(postIn) }),
+      el('button', { class: 'gd-sendbtn pressable', text: '送出', onClick: () => this._post(postIn) }),
     ]));
     right.appendChild(board);
     body.appendChild(right);
