@@ -68,6 +68,7 @@ class SummonStage {
     this.cards = [];
     this._rareRays = []; // 稀有卡背後旋轉光芒（render 迴圈轉動）
     this._disposables = new Set();
+    this._playDisposables = new Set(); // 每輪召喚烘的貼圖/材質/幾何（見 _trackPlay / _clearCards）
 
     // ---- three 基礎 ----
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
@@ -128,6 +129,12 @@ class SummonStage {
 
   _track(...objs) {
     for (const o of objs) this._disposables.add(o);
+    return objs[0];
+  }
+
+  // 每輪召喚（play）烘的資源——「再抽一次」時 _clearCards 會逐一 dispose，避免累積到記憶體/GPU 爆掉當機。
+  _trackPlay(...objs) {
+    for (const o of objs) this._playDisposables.add(o);
     return objs[0];
   }
 
@@ -472,7 +479,7 @@ class SummonStage {
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
-    return this._track(tex);
+    return this._trackPlay(tex); // 每輪卡面貼圖
   }
 
   // ---- 英雄登場大轉場：壓暗幕 + 元素色光暈 + 大光芒 + 全圖 + 名字 ----
@@ -527,7 +534,7 @@ class SummonStage {
     rg.addColorStop(1, hexToRgba(hex, 0));
     ctx.fillStyle = rg;
     ctx.fillRect(0, 0, 256, 256);
-    return this._track(new THREE.CanvasTexture(c));
+    return this._trackPlay(new THREE.CanvasTexture(c)); // 每輪元素色光暈
   }
 
   _bakeName(card) {
@@ -554,7 +561,7 @@ class SummonStage {
     ctx.fillText(card.name, 512, 168);
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
-    return this._track(tex);
+    return this._trackPlay(tex); // 每輪名字貼圖
   }
 
   // 稀有卡背後旋轉聖光（12 道放射光，render 迴圈轉動）
@@ -629,7 +636,7 @@ class SummonStage {
           cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
           artTex = new THREE.CanvasTexture(cv);
           artTex.colorSpace = THREE.SRGBColorSpace;
-          this._track(artTex);
+          this._trackPlay(artTex); // 每輪登場全圖貼圖（最大宗，2× 去背）
         } catch {
           artTex = null;
         }
@@ -646,13 +653,13 @@ class SummonStage {
       this.renderer.initTexture(s.nameTex);
       this.renderer.initTexture(s.wash);
     }
-    const geo = this._track(new THREE.PlaneGeometry(CARD_W, CARD_H));
+    const geo = this._trackPlay(new THREE.PlaneGeometry(CARD_W, CARD_H)); // 每輪卡片幾何
 
     batch.forEach((result, i) => {
       const grp = new THREE.Group();
       const rare = result.type === 'card' || result.type === 'duplicate' || result.type === 'starup';
-      const frontMat = this._track(new THREE.MeshBasicMaterial({ map: fronts[i], transparent: true }));
-      const backMat = this._track(new THREE.MeshBasicMaterial({ map: backTex, transparent: true }));
+      const frontMat = this._trackPlay(new THREE.MeshBasicMaterial({ map: fronts[i], transparent: true }));
+      const backMat = this._trackPlay(new THREE.MeshBasicMaterial({ map: backTex, transparent: true }));
       const front = new THREE.Mesh(geo, frontMat);
       const back = new THREE.Mesh(geo, backMat);
       back.rotation.y = Math.PI;
@@ -851,9 +858,9 @@ class SummonStage {
   // 稀有卡背後旋轉聖光（顏色依卡片屬性）
   _attachRays(c) {
     if (this.destroyed || c.rays) return;
-    const mat = this._track(new THREE.MeshBasicMaterial({ map: this._bakeRays(), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const mat = this._trackPlay(new THREE.MeshBasicMaterial({ map: this._bakeRays(), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
     mat.color.set(c.rayHex ?? GOLD);
-    const mesh = new THREE.Mesh(this._track(new THREE.PlaneGeometry(2.6, 2.6)), mat);
+    const mesh = new THREE.Mesh(this._trackPlay(new THREE.PlaneGeometry(2.6, 2.6)), mat);
     mesh.position.copy(c.grp.position);
     mesh.position.z -= 0.08;
     this.scene.add(mesh);
@@ -987,6 +994,9 @@ class SummonStage {
       }
     }
     this.cards = [];
+    // 釋放本輪烘的貼圖/材質/幾何——不釋放的話「再抽一次」會不斷累積直到記憶體/GPU 爆掉（手機直接當機）。
+    for (const d of this._playDisposables) d.dispose?.();
+    this._playDisposables.clear();
   }
 
   destroy() {
