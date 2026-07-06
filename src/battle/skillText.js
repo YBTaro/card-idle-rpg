@@ -243,11 +243,13 @@ const CLASS_LABEL = { dps: '輸出', tank: '坦克', support: '輔助' };
 
 function describeWhere(where) {
   if (!where) return '';
-  if (where.race) return `「${where.race}」`;
-  if (where.series) return `「${where.series}」`;
-  if (where.element) return `「${ELEMENT_LABEL[where.element] ?? where.element}」屬性`;
-  if (where.class) return `「${CLASS_LABEL[where.class] ?? where.class}」`;
-  return '';
+  // 複合條件（如 機械 AND 坦克）逐項串接，才不會漏掉限定（避免「機械單位」誤讀為所有機械）
+  const parts = [];
+  if (where.race) parts.push(`「${where.race}」`);
+  if (where.series) parts.push(`「${where.series}」`);
+  if (where.element) parts.push(`「${ELEMENT_LABEL[where.element] ?? where.element}」屬性`);
+  if (where.class) parts.push(`「${CLASS_LABEL[where.class] ?? where.class}」`);
+  return parts.join('');
 }
 
 // 單條被動 → 描述字串。未知結構回空字串。
