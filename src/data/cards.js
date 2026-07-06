@@ -134,7 +134,7 @@ export const CARDS = {
   /* ================= 機械隊／龍隊補位（4 名）＝種族隊拼圖最後兩塊 ================= */
   ironcannon: { id: 'ironcannon', name: '鐵殼砲台', element: 'fire', class: 'dps', attackStyle: 'ranged', race: '機械', series: ['鐵壁'], base: { hp: 495, atk: 95, def: 38 }, growth: { hp: 54, atk: 11, def: 4 }, passives: [{ when: { alliesAtLeast: { count: 2, where: { race: '機械' } } }, target: 'self', effects: [{ stat: 'atk', op: 'mul', value: 1.25 }] }] }, // 機械編隊：同構火控連線
   gearmedic: { id: 'gearmedic', name: '齒輪醫官', element: 'light', class: 'support', attackStyle: 'ranged', race: '機械', series: ['守護者'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'allAllies', targetWhere: { race: '機械' }, effects: [{ stat: 'def', op: 'mul', value: 1.12 }] }] },
-  drakebastion: { id: 'drakebastion', name: '龍晶壁壘', element: 'water', class: 'tank', attackStyle: 'melee', race: '龍', series: ['潮汐', '守護者'], base: { hp: 730, atk: 55, def: 79 }, growth: { hp: 82, atk: 6, def: 9 }, passives: [{ when: { selfHpBelow: 0.5 }, target: 'self', effects: [{ stat: 'def', op: 'mul', value: 1.3 }] }] },
+  drakebastion: { id: 'drakebastion', name: '龍晶壁壘', element: 'water', class: 'tank', attackStyle: 'melee', race: '龍', series: ['潮汐', '守護者'], base: { hp: 730, atk: 55, def: 79 }, growth: { hp: 82, atk: 6, def: 9 }, triggers: [{ name: '崩壁反噬', on: 'hpBelow', pcts: [0.75, 0.5, 0.25], who: 'self', effects: [{ type: 'damage', mult: 2.0, basis: 'selfDef', ignoreDef: true, noElement: true, lifesteal: 0.3, scope: 'allEnemies' }] }] }, // 血線首次跌破 75/50/25 各一次：以防禦 200% 無視防禦無屬性轟全體、吸血 30%
   dragonoracle: { id: 'dragonoracle', name: '龍語咏者', element: 'wind', class: 'support', attackStyle: 'ranged', race: '龍', series: ['蒼雷', '星詠'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 }, passives: [{ target: 'allAllies', targetWhere: { race: '龍' }, effects: [{ stat: 'atk', op: 'mul', value: 1.08 }] }] },
 
   /* ================= 機制拼圖批次（17 名，2026-07）=================
@@ -149,7 +149,7 @@ export const CARDS = {
        人＝職業純隊核心（全坦/全輔/全 DPS 隊伍技——補足純隊弱項，讓極端隊可玩） */
 
   // ---- 機械 ----
-  bulwarkengine: { id: 'bulwarkengine', name: '堡壘引擎', element: 'water', class: 'tank', attackStyle: 'melee', race: '機械', series: ['守護者', '鐵壁'], base: { hp: 730, atk: 55, def: 79 }, growth: { hp: 82, atk: 6, def: 9 }, passives: [{ target: 'self', effects: [{ stat: 'critRes', op: 'add', value: 0.25 }] }] }, // 裝甲核心：不吃暴擊
+  bulwarkengine: { id: 'bulwarkengine', name: '堡壘引擎', element: 'water', class: 'tank', attackStyle: 'melee', race: '機械', series: ['守護者', '鐵壁'], base: { hp: 730, atk: 55, def: 79 }, growth: { hp: 82, atk: 6, def: 9 }, passives: [{ target: 'allAllies', targetWhere: { element: 'water' }, effects: [{ stat: 'critRes', op: 'add', value: 0.15 }] }] }, // 裝甲核心：我方水屬抗暴 +15%
   insulatower: { id: 'insulatower', name: '絕緣尖塔', element: 'light', class: 'support', attackStyle: 'ranged', race: '機械', series: ['守護者'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 } }, // 全隊格擋護符唯一承載者（技能）
 
   // ---- 妖 ----

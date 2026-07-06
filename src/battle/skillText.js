@@ -99,7 +99,14 @@ function describeEffect(effect, targetLabel, enemySkill = false) {
     case 'damage': {
       const mods = [];
       if (effect.ignoreDef) mods.push('無視防禦');
-      text = `對${who}造成 ${pct(effect.mult)} 攻擊力的傷害${mods.length ? `（${mods.join('、')}）` : ''}`;
+      if (effect.noElement) mods.push('無屬性');
+      const modTxt = mods.length ? `（${mods.join('、')}）` : '';
+      if (effect.basis === 'targetMaxHp') {
+        text = `對${who}造成目標最大生命 ${pct(effect.mult)} 的傷害${modTxt}`;
+      } else {
+        const basisWord = effect.basis === 'selfDef' ? '防禦力' : '攻擊力'; // basis:'selfDef' ＝以防禦計傷
+        text = `對${who}造成 ${pct(effect.mult)} ${basisWord}的傷害${modTxt}`;
+      }
       if (effect.executeBelow != null) {
         // 處決＝出手前判定血線、一擊以放大後倍率直接結算（非事後補乘）——描述直接寫出最終倍率
         const execMult = effect.mult * (effect.executeBonus ?? 1.5);
@@ -153,6 +160,9 @@ function describeEffect(effect, targetLabel, enemySkill = false) {
       break;
     case 'mark':
       text = `對${who}烙上獵印${dur(effect.duration)}（隊友攻擊帶獵印的目標時可觸發連動效果）`;
+      break;
+    case 'atkRider':
+      text = `為${who}附加盾襲（普攻額外造成目標最大生命 ${pct(effect.pctMaxHp ?? 0.1)} 的無視防禦無屬性傷害${dur(effect.duration)}）`;
       break;
     case 'stealBuff':
       text = `偷取${who}的增益效果（最多 ${effect.count ?? 1} 個，轉為己用）`;
@@ -335,7 +345,9 @@ export function describeTrigger(t) {
   if (t.on === 'hit') {
     when = t.via === 'normal' ? '受到普攻時' : t.via === 'skill' ? '受到技能傷害時' : '受到直接傷害時';
   } else if (t.on === 'hpBelow') {
-    when = `生命首次低於 ${pct(t.pct ?? 0.5)} 時`;
+    when = t.pcts
+      ? `生命首次跌破 ${t.pcts.map((p) => pct(p)).join(' / ')} 時（各一次）`
+      : `生命首次低於 ${pct(t.pct ?? 0.5)} 時`;
   } else if (t.on === 'buffGained') {
     when = t.negative == null ? '獲得任何狀態時' : t.negative ? '獲得減益時' : '獲得增益時';
   } else {
@@ -344,7 +356,7 @@ export function describeTrigger(t) {
   if (t.where) when = when.replace('隊友', `${describeWhere(t.where)}隊友`).replace('敵人', `${describeWhere(t.where)}敵人`);
   const chance = t.chance != null ? `有 ${pct(t.chance)} 機率` : '';
   const effs = t.effects.map((e) => describeEffect(e, '觸發對象')).filter(Boolean).join('；');
-  const once = (t.once ?? (t.on === 'hpBelow')) ? '（每場一次）' : '';
+  const once = (!t.pcts && (t.once ?? (t.on === 'hpBelow'))) ? '（每場一次）' : ''; // pcts 已在 when 標「各一次」
   return `${when}${chance ? `，${chance}` : ''}：${effs}${once}`;
 }
 

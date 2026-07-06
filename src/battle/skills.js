@@ -1,7 +1,7 @@
 // src/battle/skills.js
 // 技能即資料：SKILLS registry + castSkill。普攻與傷害共用 effects.dealDamage。
 import { singleEnemyByColumn, lowestHpAlly, SELECTORS } from './targeting.js';
-import { dealDamage, resolveScope, applyEffect, rollHit, healAmount } from './effects.js';
+import { dealDamage, dealDirect, resolveScope, applyEffect, rollHit, healAmount } from './effects.js';
 
 // 技能資料（占位平衡值）。所有 power = % × 施放者 effAtk（見 spec 數值約定）。
 export const SKILLS = {
@@ -170,9 +170,9 @@ export const SKILLS = {
     { type: 'damage', mult: 1.35, scope: 'target' }, // 全場大 AoE
     { type: 'damage', mult: 0.7, scope: 'target', where: { element: 'fire' } }, // 水滅火追打
   ]},
-  pearlBulwark: { name: '貝盾', effects: [ // 定位：群體護盾（機械同構強化）
-    { type: 'shield', power: 1.0, duration: 3, scope: 'allAllies' },
-    { type: 'shield', power: 1.5, duration: 3, scope: 'allAllies', where: { race: '機械' } }, // 機械＝護盾值最高
+  pearlBulwark: { name: '貝盾', effects: [ // 定位：坦克盾襲授予者——普攻附帶 %最大生命打擊
+    { type: 'atkRider', pctMaxHp: 0.10, duration: 2, scope: 'allAllies', where: { class: 'tank' } },
+    { type: 'atkRider', pctMaxHp: 0.20, duration: 2, scope: 'allAllies', where: { class: 'tank', race: '機械' } }, // 機械坦克：同 key 覆蓋為 20%
   ]},
 
   // ---- 光 ----
@@ -325,9 +325,8 @@ export const SKILLS = {
     { type: 'heal', power: 1.2, scope: 'allAllies' },
     { type: 'shield', power: 1.0, duration: 2, scope: 'allAllies', where: { race: '機械' } },
   ]},
-  wyrmBulwark: { name: '龍鱗壁', effects: [ // 定位：龍坦——自身要塞（跟全隊減傷型的守護/龍護區隔）
-    { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.7, duration: 2, scope: 'self' },
+  wyrmBulwark: { name: '龍鱗壁', target: 'enemyFrontRow', effects: [ // 定位：龍坦——按敵方最大生命%打擊前排
+    { type: 'damage', mult: 0.2, basis: 'targetMaxHp', scope: 'target' }, // 目標最大生命 20% 定額直傷
   ]},
   drakeInfusion: { name: '龍魂灌注', target: 'highestAtkAlly', effects: [ // 定位：龍輔——單體超級增益灌主C（單體值＞全隊值）
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.25, duration: 2, scope: 'target' },
@@ -337,9 +336,9 @@ export const SKILLS = {
   /* ================= 機制拼圖批次（17 招，對應 cards.js 同名段落）=================
      每招把一個「引擎已支援、內容未用」的機制軸做成招牌；仍守單一定位原則。 */
   // 機械：格擋工程
-  aegisProtocol: { name: '壁壘協定', effects: [ // 定位：前排工事——盾+自身絕緣
+  aegisProtocol: { name: '壁壘協定', effects: [ // 定位：前排工事——前排厚盾＋全體格擋
     { type: 'shield', power: 1.8, duration: 3, scope: 'frontAllies' },
-    { type: 'debuffBlock', charges: 1, scope: 'self' },
+    { type: 'debuffBlock', charges: 1, duration: 3, scope: 'allAllies' },
   ]},
   nullField: { name: '絕緣力場', effects: [ // 定位：全隊格擋護符唯一承載者（下一個負面狀態直接彈開）
     { type: 'debuffBlock', charges: 1, scope: 'allAllies' },
@@ -569,13 +568,21 @@ export function normalAttack(caster, ctx) {
   if (ba?.hits) { hits = ba.hits; mult = ba.mult ?? 1 / ba.hits; }
   if (ba?.everyN && caster._basicCount % ba.everyN === 0) mult = ba.mult ?? 2.0;
 
+  let landed = false;
   for (let i = 0; i < hits; i += 1) {
     if (!target.alive) break;
     if (rollHit(caster, target, ctx)) {
       dealDamage(caster, target, mult, ctx, 'normal');
+      landed = true;
     } else {
       ctx.emit('miss', { source: caster, target, skill: 'normal' }); // 迴避：該段無效（仍照常回能）
     }
+  }
+  // 盾襲（atkRider）：普攻命中後，額外對目標造成「最大生命×pctMaxHp」無視防禦無屬性直傷（取最高一層）
+  if (landed && target.alive) {
+    const pct = (caster.buffs ?? []).filter((b) => b.kind === 'atkRider')
+      .reduce((m, b) => Math.max(m, b.pctMaxHp ?? 0), 0);
+    if (pct > 0) dealDirect(target, target.maxHp * pct, ctx, { skill: 'atkRider', source: caster });
   }
   // 濺射：對位目標同排、相鄰直行的敵人
   if (ba?.splash) {

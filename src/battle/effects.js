@@ -275,6 +275,15 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill', opts 
     switch (effect.type) {
       case 'damage': {
         if (opts.recordHits && hostile) opts.recordHits.add(u); // 命中集合：本段未被閃 → 記錄（供後續段門檻放行）
+        // 最大生命%傷害（basis:'targetMaxHp'）：定額直傷＝目標最大生命×mult，繞防禦/屬性/超充/處決/暴擊
+        if (effect.basis === 'targetMaxHp') {
+          const dealt = dealDirect(u, u.maxHp * effect.mult, ctx, { skill: skillId, source: caster });
+          if (effect.lifesteal && dealt > 0 && caster.alive) {
+            const healed = caster.heal(healAmount(ctx, dealt * effect.lifesteal));
+            if (healed > 0) ctx.emit('heal', { source: caster, target: caster, amount: healed, kind: 'lifesteal' });
+          }
+          break;
+        }
         // 超充：施放瞬間溢出的能量（energy/100）放大直傷與直接治療，DoT/HoT/護盾/狀態不吃
         let mult = effect.mult * (ctx.overcharge ?? 1);
         // 處決：目標血量比例低於 executeBelow → 倍率乘 executeBonus
@@ -283,7 +292,9 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill', opts 
           mult *= effect.executeBonus ?? 1.5;
           executed = true;
         }
-        const dealt = dealDamage(caster, u, mult, ctx, skillId, { ignoreDef: effect.ignoreDef, execute: executed });
+        const dealt = dealDamage(caster, u, mult, ctx, skillId, {
+          ignoreDef: effect.ignoreDef, execute: executed, basis: effect.basis, noElement: effect.noElement,
+        });
         // 吸血：實際傷害的一定比例回復施放者
         if (effect.lifesteal && dealt > 0 && caster.alive) {
           const healed = caster.heal(healAmount(ctx, dealt * effect.lifesteal));
@@ -462,6 +473,13 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill', opts 
         break;
       case 'mark': // 印記：本身無效果的連動旗標——隊友打到帶印記目標時觸發 markedHit（見引擎）
         applyBuffN(u, { kind: 'mark', duration: effect.duration, key: defaultKey('mark') });
+        emitBuffs(u);
+        break;
+      case 'atkRider': // 盾襲：持有者普攻命中後額外造成「目標最大生命×pctMaxHp」無視防禦無屬性傷害（結算見 normalAttack）
+        applyBuffN(u, {
+          kind: 'atkRider', pctMaxHp: effect.pctMaxHp ?? 0.1,
+          duration: effect.duration, key: defaultKey('atkRider'), stackable: effect.stackable,
+        });
         emitBuffs(u);
         break;
       case 'stealBuff': {

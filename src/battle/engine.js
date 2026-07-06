@@ -141,27 +141,44 @@ export class BattleEngine {
       for (let i = 0; i < owner.triggers.length; i += 1) {
         const trig = owner.triggers[i];
         if (!triggerMatches(trig, owner, { on, subject, ...extra })) continue;
+        // 多門檻血線觸發（pcts）：每個「本次跨越且尚未觸發過」的門檻各觸發一次
+        if (on === 'hpBelow' && trig.pcts) {
+          for (const p of trig.pcts) {
+            if (!(extra.after < p && extra.before >= p)) continue;
+            const key = `${i}:${p}`;
+            if (owner._trigThreshFired?.has(key)) continue;
+            (owner._trigThreshFired ??= new Set()).add(key);
+            if (trig.chance != null && this.rng.next() >= trig.chance) continue;
+            this._runTrigger(owner, trig, on, subject, extra);
+          }
+          continue;
+        }
         const once = trig.once ?? (on === 'hpBelow'); // 血線觸發預設每場一次
         if (once && owner._trigOnce?.has(i)) continue;
         if (trig.chance != null && this.rng.next() >= trig.chance) continue;
         if (once) (owner._trigOnce ??= new Set()).add(i);
-        this.emit('trigger', { unit: owner, on, name: trig.name ?? null });
-        this._trigDepth += 1;
-        try {
-          const ctx = this._ctxFor(owner);
-          for (const effect of trig.effects) {
-            // scope:'attacker' ＝事件攻擊者（hit/markedHit 專用）——「被打就反打」「印記追打」
-            const prim = effect.scope === 'attacker' ? [extra.source].filter(Boolean) : [subject];
-            const scope = effect.scope === 'attacker' ? 'target' : effect.scope;
-            const units = resolveScope(scope, owner, prim, ctx);
-            applyEffect(effect, owner, units, ctx, `trigger:${on}`);
-          }
-          // 不在此呼叫 _checkEnd：觸發可能在技能結算中途發生，
-          // battleEnd 必須等該次行動完整結算後（step 層）才發，否則 log 會有事件排在勝負宣告之後。
-        } finally {
-          this._trigDepth -= 1;
-        }
+        this._runTrigger(owner, trig, on, subject, extra);
       }
+    }
+  }
+
+  // 施放單條 trigger 的效果（emit + 逐效果套用）；深度守衛在 _fireTriggers 入口。
+  _runTrigger(owner, trig, on, subject, extra) {
+    this.emit('trigger', { unit: owner, on, name: trig.name ?? null });
+    this._trigDepth += 1;
+    try {
+      const ctx = this._ctxFor(owner);
+      for (const effect of trig.effects) {
+        // scope:'attacker' ＝事件攻擊者（hit/markedHit 專用）——「被打就反打」「印記追打」
+        const prim = effect.scope === 'attacker' ? [extra.source].filter(Boolean) : [subject];
+        const scope = effect.scope === 'attacker' ? 'target' : effect.scope;
+        const units = resolveScope(scope, owner, prim, ctx);
+        applyEffect(effect, owner, units, ctx, `trigger:${on}`);
+      }
+      // 不在此呼叫 _checkEnd：觸發可能在技能結算中途發生，
+      // battleEnd 必須等該次行動完整結算後（step 層）才發，否則 log 會有事件排在勝負宣告之後。
+    } finally {
+      this._trigDepth -= 1;
     }
   }
 

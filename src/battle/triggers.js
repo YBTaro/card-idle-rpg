@@ -9,6 +9,7 @@
 //   via:   hit 限定：'normal'（普攻）| 'skill'（技能直傷）| 'any'（預設）
 //   negative: buffGained 限定：true＝減益、false＝增益（不填＝都觸發）
 //   pct:   hpBelow 限定：跌破的血線比例（事件帶 before/after，跨線才觸發）
+//   pcts:  hpBelow 多門檻：[0.75,0.5,0.25] 各門檻首次跨越各觸發一次（派發層 _trigThreshFired 管）
 //   chance / once / name：機率、每場一次（hpBelow 預設 once）、顯示名
 //   effects: applyEffect 格式陣列；scope 相對持有者；scope:'target' ＝事件主體
 import { matchesWhere } from './effects.js';
@@ -38,8 +39,13 @@ export function triggerMatches(trig, owner, event) {
   if (event.on === 'hit' && trig.via && trig.via !== 'any' && trig.via !== event.via) return false;
   if (event.on === 'buffGained' && trig.negative != null && event.negative !== trig.negative) return false;
   if (event.on === 'hpBelow') {
-    const pct = trig.pct ?? 0.5;
-    if (!(event.after < pct && event.before >= pct)) return false;
+    if (trig.pcts) {
+      // 多門檻：本次跨越任一門檻即成立（各門檻的「首次」由派發層 _trigThreshFired 管）
+      if (!trig.pcts.some((p) => event.after < p && event.before >= p)) return false;
+    } else {
+      const pct = trig.pct ?? 0.5;
+      if (!(event.after < pct && event.before >= pct)) return false;
+    }
   }
   if (trig.where && !matchesWhere(event.subject, trig.where)) return false;
   return true;

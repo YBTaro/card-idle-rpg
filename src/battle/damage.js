@@ -14,8 +14,11 @@ export const DEF_SOFTCAP = 120; // 防禦軟上限 K：承傷比例 = K / (K + d
 // 抗暴（critRes）：實際被暴率＝攻方暴擊率−守方抗暴（下限 0）；只影響機率不影響倍率。
 // 元素抗性（res_火/水/風/光/暗）：剋制倍率之後再乘「守方對該屬性的承傷率」（預設 1）。
 export function computeDamage(attacker, defender, mult, rng, opts = {}) {
-  const elemMult = elementMultiplier(attacker.element, defender.element);
-  const base = attacker.effAtk * mult;
+  // 無屬性（noElement）：跳過屬性相剋與屬性抗性。
+  const elemMult = opts.noElement ? 1 : elementMultiplier(attacker.element, defender.element);
+  // 傷害基準：預設攻擊力；basis:'selfDef' 改以施放者防禦力計算。
+  const src = opts.basis === 'selfDef' ? attacker.effDef : attacker.effAtk;
+  const base = src * mult;
   // 防禦採比值衰減（寶可夢式 A/D 精神）：K/(K+def) 平滑遞減、
   // 防禦再高也不會把傷害壓到 0，且高防有遞減報酬。
   const def = opts.ignoreDef ? 0 : Math.max(0, defender.effDef);
@@ -24,7 +27,7 @@ export function computeDamage(attacker, defender, mult, rng, opts = {}) {
   const critChance = Math.max(0, attacker.critChance - defender.critRes);
   const isCrit = rng ? rng.next() < critChance : false;
   const critMult = isCrit ? attacker.critMult : 1;
-  const elemRes = defender.elementRes(attacker.element);
+  const elemRes = opts.noElement ? 1 : defender.elementRes(attacker.element);
   const raw =
     afterDef * elemMult * elemRes * defender.dmgTakenMult * attacker.dmgDealtMult * variance * critMult * DAMAGE_GLOBAL;
   return {
