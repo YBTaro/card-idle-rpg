@@ -63,6 +63,16 @@ describe('describeSkill（描述自動生成）', () => {
     expect(describeSkill('flameShift')).toContain('轉化為自身剋制的屬性');
   });
 
+  it('附加對敵效果描述為「命中的目標」，傷害段仍寫範圍', () => {
+    const d = describeSkill('thunderMark');
+    expect(d).toContain('敵方全體');   // 傷害段：範圍
+    expect(d).toContain('命中的目標'); // 減益段：命中的目標
+  });
+
+  it('對我方/單體治療的可門檻效果不套用「命中的目標」', () => {
+    expect(describeSkill('tideHymn')).not.toContain('命中的目標'); // 淨化我方，不改述
+  });
+
   it('where 條件效果：種族/屬性/系列限定要寫進描述', () => {
     expect(describeSkill('holyVerdict')).toContain('「不死」'); // 剋不死追打
     expect(describeSkill('tsunami')).toContain('「火」屬性'); // 水滅火（element 轉中文）

@@ -74,9 +74,23 @@ function buffDelta(op, value) {
 
 const dur = (d) => (d ? `，持續 ${d} 次行動` : '');
 
-function describeEffect(effect, targetLabel) {
+// 傷害門檻：對敵的可門檻後續效果，描述其對象時改述「命中的目標」（實際落點依傷害命中）。
+const GATED_DESC = new Set([
+  'dot', 'control', 'buff', 'transmute', 'nightmare', 'mark',
+  'dispel', 'extend', 'detonateDot', 'energySteal', 'stealBuff', 'transferDebuff',
+]);
+const ENEMY_SCOPES = new Set(['allEnemies', 'frontEnemies', 'backEnemies', 'targetAndAdjacent', 'adjacentExcludingTarget']);
+const ENEMY_TARGETS = new Set([
+  'singleEnemyByColumn', 'allEnemies', 'enemyColumn', 'enemyFrontRow', 'enemyBackRow',
+  'randomEnemy', 'lowestHpEnemy', 'highestEnergyEnemy',
+]);
+
+function describeEffect(effect, targetLabel, enemySkill = false) {
   let who = SCOPE_LABEL[effect.scope] ?? targetLabel ?? '目標';
   if (effect.scope === 'lowestHpAllies') who = `血量最低的 ${effect.count ?? 1} 名隊友`;
+  // ④ 傷害門檻：對敵的可門檻後續效果，對象改述「命中的目標」（傷害段仍寫實際範圍）
+  const enemyDirected = ENEMY_SCOPES.has(effect.scope) || (effect.scope === 'target' && enemySkill);
+  if (GATED_DESC.has(effect.type) && enemyDirected) who = '命中的目標';
   // where 條件：作用對象限定（種族/屬性/系列主題技能）
   if (effect.where) who = `${who}中的${describeWhere(effect.where)}單位`;
   const chance = effect.chance != null ? `${pct(effect.chance)} 機率` : '';
@@ -196,8 +210,9 @@ export function describeSkill(skillId) {
   const def = SKILLS[skillId];
   if (!def) return '';
   const targetLabel = def.target ? TARGET_LABEL[def.target] : null;
+  const enemySkill = def.target ? ENEMY_TARGETS.has(def.target) : false;
   return def.effects
-    .map((e) => describeEffect(e, targetLabel))
+    .map((e) => describeEffect(e, targetLabel, enemySkill))
     .filter(Boolean)
     .join('；');
 }
