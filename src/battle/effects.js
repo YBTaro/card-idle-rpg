@@ -53,6 +53,23 @@ export function resolveScope(scope, caster, primary, ctx, effect = null) {
       const back = alive(ctx.enemies).filter((u) => u.row === 'back');
       return back.length ? back : alive(ctx.enemies).filter((u) => u.row === 'front');
     }
+    case 'targetAndAdjacent': // 目標 + 其上下左右相鄰格（同隊）——十字範圍
+    case 'adjacentExcludingTarget': { // 僅上下左右相鄰格（不含主目標）——濺射打折用
+      const prim = primary.filter((u) => u.alive);
+      if (!prim.length) return [];
+      const enemies = alive(ctx.enemies);
+      const pool = enemies.includes(prim[0]) ? enemies : alive(ctx.allies);
+      const out = new Set(scope === 'targetAndAdjacent' ? prim : []);
+      for (const t of prim) {
+        for (const u of pool) {
+          if (prim.includes(u)) continue; // 主目標另計，避免濺射重複疊在主目標
+          const adjacent = (u.row === t.row && Math.abs(u.column - t.column) === 1)
+            || (u.column === t.column && u.row !== t.row);
+          if (adjacent) out.add(u);
+        }
+      }
+      return [...out];
+    }
     case 'targetIncludingDead': // 復活用：不過濾存活
       return primary;
     default:

@@ -42,7 +42,7 @@ export const SKILLS = {
   ]},
   tidalPrison: { name: '潮牢', target: 'enemyColumn', effects: [
     { type: 'damage', mult: 1.6, scope: 'target' },
-    { type: 'control', control: 'freeze', duration: 1, scope: 'target' }, // 困於潮牢：凍結（沉默是光屬專屬，水用凍結）
+    { type: 'control', control: 'freeze', duration: 2, scope: 'target' }, // 困於潮牢：凍結（沉默是光屬專屬，水用凍結）
   ]},
   dragonGuard: { name: '龍護', effects: [
     { type: 'buff', stat: 'dmgTaken', op: 'mul', value: 0.7, duration: 2, key: 'guard', scope: 'allAllies' },
@@ -128,7 +128,7 @@ export const SKILLS = {
     { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.25, duration: 2, scope: 'allAllies', where: { element: 'wind' } }, // 條件型＞全隊型
   ]},
   forestWard: { name: '林護', effects: [ // 定位：再生守護（不搶仇恨）——前排持續回復＋淨化（全隊 HoT 歸湧泉；窄範圍值更高）
-    { type: 'hot', power: 0.55, duration: 2, scope: 'frontAllies' },
+    { type: 'hot', power: 2.0, duration: 2, scope: 'frontAllies' },
     { type: 'dispel', what: 'debuff', count: 1, scope: 'frontAllies' }, // 森林淨化：拔掉前排一個負面
   ]},
   galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [ // 亂舞三連腿＋回氣
@@ -209,7 +209,7 @@ export const SKILLS = {
   // ---- 暗 ----
   plagueSpread: { name: '瘟疫', target: 'allEnemies', effects: [ // 定位：全體中毒散布者
     { type: 'damage', mult: 0.8, scope: 'target' },
-    { type: 'dot', power: 0.1, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 全體散布：每跳低（毒係數依角色差異化——面寬毒淺）
+    { type: 'dot', power: 0.15, basis: 'targetMaxHp', duration: 3, scope: 'target' }, // 全體散布：每跳低（毒係數依角色差異化——面寬毒淺）
   ]},
   mindGnaw: { name: '蝕心', effects: [ // 定位：靈壓領域——戰略級效果獨立承載（同環境技原則）
     { type: 'castDrain', amount: 20, duration: 2, scope: 'self', stackable: true }, // 敵方施法→其餘敵人 -20 能量
@@ -357,7 +357,8 @@ export const SKILLS = {
   // 精靈：獵印
   huntDecree: { name: '獵殺令', target: 'singleEnemyByColumn', effects: [ // 定位：獵印——隊友打標記目標會回能（見觸發「獵印連動」）
     { type: 'damage', mult: 1.8, scope: 'target' },
-    { type: 'mark', duration: 3, scope: 'target' },
+    { type: 'damage', mult: 0.9, scope: 'adjacentExcludingTarget' }, // 十字濺射：周圍相鄰敵人吃半傷
+    { type: 'mark', duration: 3, scope: 'targetAndAdjacent' }, // 十字擴散：命中目標與其上下左右相鄰敵人一起烙印
   ]},
   mistHeal: { name: '霧癒', effects: [ // 定位：前排再生+淨化（精靈霧的治療面）
     { type: 'hot', power: 1.2, duration: 2, scope: 'frontAllies' },

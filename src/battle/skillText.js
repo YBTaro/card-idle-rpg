@@ -32,7 +32,9 @@ const SCOPE_LABEL = {
   columnAllies: '同直排的隊友',
   frontEnemies: '敵方前排',
   backEnemies: '敵方後排',
-  attacker: '出手的隊友', // 觸發限定（獵印連動：效果指向攻擊者）
+  targetAndAdjacent: '目標及其周圍單位',
+  adjacentExcludingTarget: '目標周圍的單位',
+  attacker: '該名出手的隊友', // 觸發限定（獵印連動：效果指向攻擊者）
 };
 
 const STAT_LABEL = {
@@ -313,7 +315,7 @@ const TRIGGER_WHEN = {
 // 單條觸發 → 描述字串。
 export function describeTrigger(t) {
   if (!t || !t.effects?.length) return '';
-  const who = t.who ?? { death: 'ally', cast: 'self', normal: 'self', hit: 'self', hpBelow: 'self', buffGained: 'self' }[t.on];
+  const who = t.who ?? { death: 'ally', cast: 'self', normal: 'self', hit: 'self', hpBelow: 'self', buffGained: 'self', markedHit: 'enemy' }[t.on];
   let when;
   if (t.on === 'hit') {
     when = t.via === 'normal' ? '受到普攻時' : t.via === 'skill' ? '受到技能傷害時' : '受到直接傷害時';
