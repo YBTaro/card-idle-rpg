@@ -783,6 +783,14 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .hs-btn small { display: block; font-size: .76rem; font-weight: 800; color: #7a5a10; }
 .hs-btn.disabled { opacity: .5; cursor: not-allowed; }
 .hs-btn .dot { top: -.2rem; right: .6rem; }
+/* 手機橫持（矮視窗，root 觸底 13px）：英雄詳情的星級行與技能列字級偏小 → 放大以利閱讀 */
+@media (max-height: 520px) {
+  .hs-starline .st-note { font-size: .86rem; }
+  .hs-starline .st-mile { font-size: .84rem; }
+  .hs-sk .t { font-size: .92rem; }
+  .hs-skdesc { font-size: .92rem; }
+  .hs-skdesc b { font-size: 1rem; }
+}
 /* 次要動作（升到頂）：暗金空心，不與主鈕搶眼 */
 .hs-btn.sub {
   flex: .8; background: rgba(232, 196, 106, .1); color: #ffe9b0;
