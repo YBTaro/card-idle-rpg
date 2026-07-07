@@ -135,11 +135,8 @@ export const SKILLS = {
     { type: 'hot', power: 2.0, duration: 2, scope: 'frontAllies' },
     { type: 'dispel', what: 'debuff', count: 1, scope: 'frontAllies' }, // 森林淨化：拔掉前排一個負面
   ]},
-  galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [ // 亂舞三連腿＋回氣
-    { type: 'damage', mult: 0.9, scope: 'target' },
-    { type: 'damage', mult: 0.9, scope: 'target' },
-    { type: 'damage', mult: 0.9, scope: 'target' },
-    { type: 'energy', amount: 20, scope: 'self' },
+  galeKicks: { name: '亂風破', target: 'allEnemies', effects: [ // 全體橫掃，專破坦克
+    { type: 'damage', mult: 1.5, byClass: { tank: 3.5 }, scope: 'target' }, // 一般 150%、坦克 350%
   ]},
 
   // ---- 水 ----
@@ -155,8 +152,9 @@ export const SKILLS = {
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'shield', power: 2.8, duration: 3, scope: 'self' },
   ]},
-  abyssBite: { name: '淵噬', target: 'singleEnemyByColumn', effects: [ // 定位：吸血獠牙
-    { type: 'damage', mult: 2.2, scope: 'target', lifesteal: 0.5 }, // 妖＝汲取值最高
+  abyssBite: { name: '淵噬', target: 'allEnemies', effects: [ // 定位：全體突襲＋妖族暴擊開團
+    { type: 'damage', mult: 1.2, scope: 'target' }, // 對敵方全體 120%
+    { type: 'buff', stat: 'critChance', op: 'add', value: 0.3, duration: 2, scope: 'allAllies', where: { race: '妖' } }, // 我方妖族暴擊率 +30%（2 回合）
   ]},
   mistShift: { name: '霧化', target: 'enemyColumn', effects: [ // 屬性轉化：敵直排變火屬 → 水隊穩吃剋制（暴雨下再 -20%）
     { type: 'damage', mult: 1.3, scope: 'target' },
@@ -227,9 +225,9 @@ export const SKILLS = {
     { type: 'damage', mult: 2.1, scope: 'target', lifesteal: 0.4 }, // 妖＝汲取值最高
     { type: 'energy', amount: 15, scope: 'self' },
   ]},
-  voidBurst: { name: '虛爆', target: 'enemyColumn', effects: [
-    { type: 'damage', mult: 1.6, scope: 'target' },
-    { type: 'dot', power: 0.14, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 直排中毒：每跳 14% 最大生命
+  voidBurst: { name: '虛爆', target: 'enemyBackRow', effects: [ // 定位：後排斬殺＋虛空烙印（暴擊回能）
+    { type: 'damage', mult: 1.2, critBonus: 0.15, scope: 'target' }, // 對後排 120%，此擊暴擊率 +15%
+    { type: 'mark', duration: 3, scope: 'target' }, // 虛空烙印：帶印者被暴擊 → 自身 +20 能量（見 triggers）
   ]},
   webBind: { name: '縛絲', target: 'lowestHpEnemy', effects: [ // 補刀型選目標
     { type: 'damage', mult: 1.8, scope: 'target' },
@@ -284,9 +282,9 @@ export const SKILLS = {
     { type: 'damage', mult: 1.5, scope: 'target' },
     { type: 'nightmare', pct: 0.05, scope: 'target' }, // 受普攻/技能直傷時額外損失 5% 最大生命
   ]},
-  energyLeech: { name: '奪流', target: 'highestEnergyEnemy', effects: [ // 定位：竊能——專打快放大招的人
-    { type: 'damage', mult: 1.6, scope: 'target' },
-    { type: 'energySteal', scope: 'target' }, // 奪走全部能量 → 轉給我方能量最低者（可疊出超充）
+  energyLeech: { name: '奪流', target: 'enemyColumn', effects: [ // 定位：直排突襲＋隨機奪增益
+    { type: 'damage', mult: 1.8, scope: 'target' }, // 對敵方直排 180%
+    { type: 'stealBuff', count: 1, random: true, scope: 'target' }, // 隨機偷 1 個增益轉為己用
   ]},
 
   /* ================= 種族號令與種族補位（種族隊特色承載）=================
@@ -376,14 +374,13 @@ export const SKILLS = {
     { type: 'damage', mult: 1.5, scope: 'target' },
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
   ]},
-  lunarHowl: { name: '月吼', target: 'allEnemies', effects: [ // 定位：全體壓制+疊怒（每吼一次更兇）
-    { type: 'damage', mult: 1.1, scope: 'target' },
-    { type: 'buff', stat: 'atk', op: 'mul', value: 1.1, duration: 99, scope: 'self', stackable: true },
+  lunarHowl: { name: '月吼', target: 'allEnemies', effects: [ // 定位：全體壓制＋削弱敵方輸出
+    { type: 'damage', mult: 1.1, scope: 'target' }, // 對敵方全體 110%
+    { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 0.8, duration: 2, scope: 'target' }, // 命中者造成傷害 -20%（2 回合）
   ]},
   // 龍：龍息與超充推手
-  dragonflare: { name: '龍炎滅陣', target: 'allEnemies', effects: [ // 定位：全體吐息+回能（配蓄力普攻＝輸出循環）
-    { type: 'damage', mult: 1.4, scope: 'target' },
-    { type: 'energy', amount: 15, scope: 'self' },
+  dragonflare: { name: '龍炎滅陣', target: 'allEnemies', effects: [ // 定位：全體吐息，剋中毒目標（配進場毒霧）
+    { type: 'damage', mult: 1.2, vsDot: 2.4, scope: 'target' }, // 全體 120%；中毒（帶 dot）目標改吃 240%
   ]},
   dragonSurge: { name: '龍血沸騰', target: 'highestAtkAlly', effects: [ // 定位：超充推手——灌爆主 C 的能量條（溢出＝超充傷害）
     { type: 'energy', amount: 40, scope: 'target' },
@@ -401,7 +398,7 @@ export const SKILLS = {
   smite: { name: '天罰之鋒', target: 'enemyColumn', effects: [ // 定位：神輸出——裁決直排＋吸能壓制
     { type: 'damage', mult: 1.9, scope: 'target' },
     { type: 'buff', stat: 'energyGain', op: 'mul', value: 0.85, duration: 2, scope: 'target' }, // 集氣速度 -15%
-    { type: 'energyLink', amount: 5, duration: 2, scope: 'target' }, // 吸能印：目標每次獲得能量，施放者也 +5
+    { type: 'energyLink', amount: 3, duration: 2, scope: 'target' }, // 吸能印：目標每次獲得能量，施放者也 +3
   ]},
   // 人：職業純隊核心的主動軸
   siegeHorn: { name: '攻城號角', target: 'enemyFrontRow', effects: [ // 定位：坦隊隊長——破陣+築牆
@@ -412,8 +409,8 @@ export const SKILLS = {
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'backAllies' },
     { type: 'hot', power: 0.8, duration: 2, scope: 'backAllies' },
   ]},
-  oathBlade: { name: '誓刃', target: 'singleEnemyByColumn', effects: [ // 定位：殺陣盟主的主動軸——乾淨的高倍率單體
-    { type: 'damage', mult: 2.4, scope: 'target' },
+  oathBlade: { name: '誓刃', target: 'lowestHpEnemy', effects: [ // 定位：殺陣盟主的主動軸——收割殘血
+    { type: 'damage', mult: 2.4, scope: 'target' }, // 對血量最低的敵人 240%
   ]},
 };
 
