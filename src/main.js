@@ -3,8 +3,9 @@
 import './style.css';
 import './social.css';
 import './redesign.css';
-import { loadGame } from './core/save.js';
-import { store } from './core/state.js';
+import { loadGame, saveGame } from './core/save.js';
+import { store, addCardInstance } from './core/state.js';
+import { CARDS } from './data/cards.js';
 import { createPixiApp } from './render/pixiApp.js';
 import { BattleController } from './render/battleController.js';
 import { nav } from './ui/router.js';
@@ -37,6 +38,15 @@ async function main() {
     window.__battle = battle; // 開發鉤子：console/截圖腳本直接操作戰鬥（prod 不暴露）
     const { gsap } = await import('gsap');
     window.__gsap = gsap; // 診斷用（判斷 sprite 是否有進行中補間）
+    // 測試用：一鍵獲得所有卡片。__grantAll() 每種 1 張；__grantAll(5) 每種 5 張（湊重複可升星、塞多卡測效能）。
+    window.__grantAll = (copies = 1) => {
+      const s = store.state;
+      const ids = Object.keys(CARDS);
+      for (const cardId of ids) for (let i = 0; i < copies; i += 1) addCardInstance(s, cardId);
+      saveGame();
+      store.set(s); // 觸發 UI 重繪
+      console.log(`已加入 ${ids.length * copies} 張卡（每種 ${copies} 張）。切到英雄頁即可看到。`);
+    };
     // 匯出戰鬥事件 log（可貼給我定位「哪一步」出問題）。
     // __dumpBattle() 當前戰鬥；__dumpBattle('last') 上一場（已結束的也留著，方便回報）。
     window.__dumpBattle = (which = 'current') => {
