@@ -102,6 +102,7 @@ export function isNegative(b) {
   if (b.kind === 'element') return true; // 被轉化屬性＝減益（可被淨化解除）
   if (b.kind === 'nightmare') return true; // 惡夢印記：永久但可被淨化
   if (b.kind === 'mark') return true; // 連動印記：可被淨化
+  if (b.kind === 'energyLink') return true; // 吸能印：敵對減益，可被淨化
   if (b.kind === 'shield') return false;
   if (b.kind === 'control') return b.control !== 'taunt'; // 嘲諷是自己開的戰術狀態
   if (b.kind === 'stat') {

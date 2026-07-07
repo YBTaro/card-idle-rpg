@@ -90,6 +90,17 @@ export class BattleEngine {
     this.on('attack', ({ attacker }) => this._fireTriggers('normal', attacker));
     this.on('ultimate', ({ caster }) => this._fireTriggers('cast', caster));
     this.on('buffApplied', ({ unit, negative }) => this._fireTriggers('buffGained', unit, { negative }));
+    // 吸能印（energyLink）：被印目標的能量「增加」時，把 amount 點能量灌給印記來源（施放者）。
+    // 只在增加時觸發（施放歸零/被竊能＝減少，不算）；灌給來源後其自身無印記→不遞迴。
+    this.on('energy', ({ unit, value }) => {
+      const prev = unit._prevEnergy ?? 0;
+      unit._prevEnergy = value;
+      if (value <= prev) return;
+      const link = (unit.buffs || []).find((b) => b.kind === 'energyLink');
+      if (!link || link.src === unit || !link.src?.alive) return;
+      link.src.gainEnergy(link.amount);
+      this.emit('energy', { unit: link.src, value: link.src.energy });
+    });
     this.on('damage', (p) => {
       if (!p.target) return;
       // 受擊觸發：普攻 vs 技能直傷（DoT/荊棘/反擊/惡夢/環境/觸發傷害不算「受擊」）

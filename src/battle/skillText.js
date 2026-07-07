@@ -76,7 +76,7 @@ const dur = (d) => (d ? `，持續 ${d} 次行動` : '');
 
 // 傷害門檻：對敵的可門檻後續效果，描述其對象時改述「命中的目標」（實際落點依傷害命中）。
 const GATED_DESC = new Set([
-  'dot', 'control', 'buff', 'transmute', 'nightmare', 'mark',
+  'dot', 'control', 'buff', 'transmute', 'nightmare', 'mark', 'energyLink',
   'dispel', 'extend', 'detonateDot', 'energySteal', 'stealBuff', 'transferDebuff',
 ]);
 const ENEMY_SCOPES = new Set(['allEnemies', 'frontEnemies', 'backEnemies', 'targetAndAdjacent', 'adjacentExcludingTarget']);
@@ -163,6 +163,9 @@ function describeEffect(effect, targetLabel, enemySkill = false) {
       break;
     case 'atkRider':
       text = `為${who}附加盾襲（普攻額外造成目標最大生命 ${pct(effect.pctMaxHp ?? 0.1)} 的無視防禦無屬性傷害${dur(effect.duration)}）`;
+      break;
+    case 'energyLink':
+      text = `對${who}烙上吸能印（其每次獲得能量時，施放者也獲得 ${effect.amount ?? 5} 點能量${dur(effect.duration)}）`;
       break;
     case 'stealBuff':
       text = `偷取${who}的增益效果（最多 ${effect.count ?? 1} 個，轉為己用）`;
@@ -399,6 +402,7 @@ export function buffLabel(b) {
     case 'debuffBlock': return `格擋護符（可再彈開 ${b.charges ?? 1} 個負面狀態）`;
     case 'healOnHit': return `受擊回癒（被打時回血，剩 ${b.charges ?? 1} 層）`;
     case 'mark': return '獵印（被攻擊時可能觸發敵方連動）';
+    case 'energyLink': return '吸能印（每次回能時，施放者也獲得能量）';
     case 'cheatDeath': return '不滅意志（致死傷害改留 1 點生命）';
     case 'stat': {
       const base = STAT_LABEL[b.stat] ?? b.stat;

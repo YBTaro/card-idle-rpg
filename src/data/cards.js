@@ -175,7 +175,7 @@ export const CARDS = {
   // ---- 神 ----
   miraclenun: { id: 'miraclenun', name: '奇蹟聖女', element: 'light', class: 'support', attackStyle: 'ranged', race: '神', series: ['光輝', '聖歌隊'], base: { hp: 510, atk: 72, def: 44 }, growth: { hp: 56, atk: 8, def: 4 } }, // 免死護符（隊友版）唯一承載者
   sanctumjudge: { id: 'sanctumjudge', name: '聖域裁定者', element: 'light', class: 'tank', attackStyle: 'melee', race: '神', series: ['光輝', '守護者'], base: { hp: 730, atk: 58, def: 73 }, growth: { hp: 82, atk: 6, def: 8 }, passives: [{ target: 'allAllies', effects: [{ stat: 'res_dark', op: 'add', value: 0.15 }] }] }, // 聖域帷幕：全隊抗暗唯一承載者
-  godblade: { id: 'godblade', name: '神鋒審判者', element: 'light', class: 'dps', attackStyle: 'melee', race: '神', series: ['光輝'], base: { hp: 495, atk: 95, def: 38 }, growth: { hp: 54, atk: 11, def: 4 } }, // 神族輸出補位（神隊坦/輸出/輔助齊全）
+  godblade: { id: 'godblade', name: '神鋒審判者', element: 'light', class: 'dps', attackStyle: 'melee', race: '神', series: ['光輝'], base: { hp: 495, atk: 95, def: 38 }, growth: { hp: 54, atk: 11, def: 4 }, passives: [{ when: { alliesAtLeast: { count: 3, where: { race: '神' } } }, target: 'allAllies', targetWhere: { race: '神' }, effects: [{ stat: 'dmgTaken', op: 'mul', value: 0.8 }] }] }, // 神族輸出補位＋隊伍技：神族 ≥3 → 神族減傷 20%
 
   // ---- 人（職業純隊核心）----
   siegemarshal: { id: 'siegemarshal', name: '攻城軍長', element: 'fire', class: 'tank', attackStyle: 'melee', race: '人', series: ['鐵壁'], base: { hp: 730, atk: 58, def: 73 }, growth: { hp: 82, atk: 6, def: 8 }, passives: [{ when: { alliesAtLeast: { count: 4, where: { class: 'tank' } } }, target: 'allAllies', effects: [{ stat: 'atk', op: 'mul', value: 2.05 }] }] }, // 堅城怒吼：全坦隊的輸出來源。倍率大是因為坦攻基值低；且「磨得贏奶」有懸崖（2.0→28%、2.05→58%、2.1→81%），改平衡時務必重跑 pure-team 模擬

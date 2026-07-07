@@ -398,9 +398,10 @@ export const SKILLS = {
     { type: 'debuffBlock', charges: 1, duration: 3, scope: 'frontAllies' }, // 聖域帷幕：前排各彈開一個負面狀態
     { type: 'shield', power: 1.6, duration: 2, scope: 'self' },
   ]},
-  smite: { name: '天罰之鋒', target: 'enemyColumn', effects: [ // 定位：神輸出——裁決直排、以聖光自癒
+  smite: { name: '天罰之鋒', target: 'enemyColumn', effects: [ // 定位：神輸出——裁決直排＋吸能壓制
     { type: 'damage', mult: 1.9, scope: 'target' },
-    { type: 'heal', power: 0.6, scope: 'self' },
+    { type: 'buff', stat: 'energyGain', op: 'mul', value: 0.85, duration: 2, scope: 'target' }, // 集氣速度 -15%
+    { type: 'energyLink', amount: 5, duration: 2, scope: 'target' }, // 吸能印：目標每次獲得能量，施放者也 +5
   ]},
   // 人：職業純隊核心的主動軸
   siegeHorn: { name: '攻城號角', target: 'enemyFrontRow', effects: [ // 定位：坦隊隊長——破陣+築牆

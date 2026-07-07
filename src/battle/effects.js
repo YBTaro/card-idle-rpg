@@ -91,11 +91,11 @@ export function rollHit(caster, target, ctx) {
 // 可被迴避的效果型別：攻擊與「上狀態」；瞬發操作類（dispel/extend/detonateDot/energy）不判定。
 const DODGEABLE = new Set(['damage', 'dot', 'control', 'buff', 'transmute', 'nightmare']);
 // 敵對「狀態」型別（不含傷害）：效果抗性與格擋 buff 只擋這些——傷害照常命中，狀態可被抵抗/彈開。
-const HOSTILE_STATUS = new Set(['dot', 'control', 'buff', 'transmute', 'nightmare', 'mark']);
+const HOSTILE_STATUS = new Set(['dot', 'control', 'buff', 'transmute', 'nightmare', 'mark', 'energyLink']);
 // 傷害門檻（castSkill 兩段式）放行的對敵後續效果：敵對狀態 + 操作類。
 // 傷害命中的敵人才吃這些——取代其自身閃避判定（命中後仍照跑 chance/抗性/格擋）。
 const GATED_FOLLOWUP = new Set([
-  'dot', 'control', 'buff', 'transmute', 'nightmare', 'mark',
+  'dot', 'control', 'buff', 'transmute', 'nightmare', 'mark', 'energyLink',
   'dispel', 'extend', 'detonateDot', 'energySteal', 'stealBuff', 'transferDebuff',
 ]);
 
@@ -473,6 +473,13 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill', opts 
         break;
       case 'mark': // 印記：本身無效果的連動旗標——隊友打到帶印記目標時觸發 markedHit（見引擎）
         applyBuffN(u, { kind: 'mark', duration: effect.duration, key: defaultKey('mark') });
+        emitBuffs(u);
+        break;
+      case 'energyLink': // 吸能印：期間目標每次獲得能量，施放者也 +amount（結算見 engine 'energy' 監聽）
+        applyBuffN(u, {
+          kind: 'energyLink', amount: effect.amount ?? 5,
+          duration: effect.duration, key: defaultKey('energyLink'), src: caster,
+        });
         emitBuffs(u);
         break;
       case 'atkRider': // 盾襲：持有者普攻命中後額外造成「目標最大生命×pctMaxHp」無視防禦無屬性傷害（結算見 normalAttack）
