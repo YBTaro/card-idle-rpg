@@ -20,6 +20,11 @@ function conditionHolds(when, owner, teams) {
     const c = countMatching(teams[owner.team], when.alliesAtLeast.where);
     if (c < when.alliesAtLeast.count) return false;
   }
+  if (when.alliesOnly) {
+    // 隊伍「只有」符合條件的成員（不論人數）：全部存活隊友都須命中 where，且至少 1 人
+    const allies = teams[owner.team].filter((u) => u.alive);
+    if (!allies.length || !allies.every((u) => matchesWhere(u, when.alliesOnly))) return false;
+  }
   return true;
 }
 
@@ -30,6 +35,12 @@ function passiveScope(target, owner, teams) {
     case 'self': return owner.alive ? [owner] : [];
     case 'allAllies': return allies.filter((u) => u.alive);
     case 'allEnemies': return enemies.filter((u) => u.alive);
+    case 'columnAllies': // 與持有者同直排的存活隊友（含自己）
+      return allies.filter((u) => u.alive && u.column === owner.column);
+    case 'adjacentAllies': // 自身 + 上下左右相鄰存活隊友（沿用 effects 相鄰判定）
+      return allies.filter((u) => u.alive && (u === owner
+        || (u.row === owner.row && Math.abs(u.column - owner.column) === 1)
+        || (u.column === owner.column && u.row !== owner.row)));
     default: return [];
   }
 }
@@ -61,7 +72,7 @@ export function applyEnvAuras(teams, auraSpecs) {
 }
 
 // 進場鎖定類：星級里程碑（star:true）或隊伍技（when.alliesAtLeast）。
-const isLocked = (p) => p.star === true || p.when?.alliesAtLeast != null;
+const isLocked = (p) => p.star === true || p.when?.alliesAtLeast != null || p.when?.alliesOnly != null;
 
 export function recomputePassives(teams) {
   const all = [...teams[0], ...teams[1]];
@@ -86,7 +97,21 @@ export function recomputePassives(teams) {
       if (p.targetWhere) targets = targets.filter((t) => matchesWhere(t, p.targetWhere));
       for (const t of targets) {
         for (const e of p.effects) {
-          applyBuff(t, { kind: 'stat', stat: e.stat, op: e.op, value: auraValue(e, owner, teams), duration: null, aura: true });
+          // 一次性授予的持續 buff（e.grant，非光環）：如隊伍技的免死——只在首次符合時發一次，
+          // 之後每步重算不重發（用完＝消耗後不再補），故「首次…」語義成立。
+          if (e.grant) {
+            const key = `grant:${owner.uid}:${i}:${e.grant}`;
+            const seen = (t._passiveGranted ??= new Set());
+            if (!seen.has(key)) {
+              applyBuff(t, { kind: e.grant, healPct: e.healPct, duration: null, key });
+              seen.add(key);
+            }
+          } else if (e.element) {
+            // 屬性覆寫光環：套 element 光環，沿用 Unit.element getter 覆寫語義
+            applyBuff(t, { kind: 'element', element: e.element, duration: null, aura: true });
+          } else {
+            applyBuff(t, { kind: 'stat', stat: e.stat, op: e.op, value: auraValue(e, owner, teams), duration: null, aura: true });
+          }
         }
       }
     }

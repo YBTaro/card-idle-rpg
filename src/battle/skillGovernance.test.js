@@ -9,7 +9,7 @@ import { SKILLS } from './skills.js';
 import { CARDS } from '../data/cards.js';
 
 // 會掛在單位身上、持續存在的效果型別（傷害/治療/能量等瞬發不計）
-const STATUS_TYPES = new Set(['buff', 'dot', 'hot', 'shield', 'control', 'thorns', 'counter', 'castDrain', 'transmute', 'nightmare', 'debuffBlock', 'mark', 'cheatDeath', 'healOnHit', 'energyLink', 'atkRider']);
+const STATUS_TYPES = new Set(['buff', 'dot', 'hot', 'shield', 'control', 'thorns', 'counter', 'castDrain', 'transmute', 'nightmare', 'debuffBlock', 'mark', 'cheatDeath', 'undying', 'healOnHit', 'energyLink', 'atkRider']);
 
 describe('技能治理', () => {
   it('環境技專職：開天氣/場地的技能，副效果最多 1 條', () => {
@@ -56,10 +56,12 @@ describe('技能治理', () => {
   it('被動軸互斥：每卡至多一個被動軸（光環/隊伍技/觸發/進場擇一；普攻＋絕技才是必備）', () => {
     for (const card of Object.values(CARDS)) {
       const axes = [];
-      if ((card.passives ?? []).some((p) => !p.when?.alliesAtLeast)) axes.push('aura');
-      if ((card.passives ?? []).some((p) => p.when?.alliesAtLeast)) axes.push('team');
+      const teamCond = (p) => p.when?.alliesAtLeast || p.when?.alliesOnly;
+      if ((card.passives ?? []).some((p) => !teamCond(p))) axes.push('aura');
+      if ((card.passives ?? []).some((p) => teamCond(p))) axes.push('team');
       if (card.triggers?.length) axes.push('trigger');
       if (card.onEnter) axes.push('enter');
+      if (card.guardKit) axes.push('guard'); // 反應式護體 kit 也算一個被動軸
       expect({ id: card.id, axes: axes.length <= 1 ? 'ok' : axes.join('+') }).toEqual({ id: card.id, axes: 'ok' });
     }
   });

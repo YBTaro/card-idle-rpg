@@ -42,17 +42,20 @@ describe('機制拼圖批次：內容接線', () => {
     expect(caster.buffs.some((b) => b.kind === 'stat' && b.stat === 'atk')).toBe(true);
   });
 
-  it('神蹟：最低血隊友獲得免死＋治療', () => {
+  it('神蹟：最低血隊友獲得免死護符（致死→免死＋立即大治療）', () => {
     const caster = makeUnit({ team: 0, pos: 4, atk: 100 });
     const weak = makeUnit({ team: 0, pos: 1, hp: 1000 });
     weak.hp = 100;
     castSkill(caster, 'miracleWard', ctxFor(caster, [caster, weak], [makeUnit({ team: 1, pos: 1 })]));
-    expect(weak.buffs.some((b) => b.kind === 'cheatDeath')).toBe(true);
-    expect(weak.hp).toBeGreaterThan(100);
-    // 致死傷害 → 留 1 血
-    weak.takeDamage(99999);
-    expect(weak.hp).toBe(1);
+    const cd = weak.buffs.find((b) => b.kind === 'cheatDeath');
+    expect(cd).toBeTruthy();
+    expect(cd.healOnSave).toBe(220); // 攻擊力 100 × 2.2（觸發免死時治療）
+    expect(weak.hp).toBe(100); // 施放當下不立即治療（改為觸發或到期才治療）
+    // 致死傷害 → 免死留 1 血 + 立即大治療 220
+    const atk = makeUnit({ team: 1, pos: 1, atk: 100000 });
+    dealDamage(atk, weak, 1.0, ctxFor(atk, [atk], [weak]), 'skill');
     expect(weak.alive).toBe(true);
+    expect(weak.hp).toBe(1 + 220);
   });
 
   it('職業隊伍技：全坦隊湊 4 坦 → 堅城怒吼全隊攻擊 ×2.05（進場鎖定）', () => {

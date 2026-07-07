@@ -37,6 +37,7 @@ export function triggerMatches(trig, owner, event) {
   const rel = relationOf(owner, event.subject);
   if (who !== 'any' && rel !== who) return false;
   if (event.on === 'hit' && trig.via && trig.via !== 'any' && trig.via !== event.via) return false;
+  if (event.on === 'markedHit' && trig.crit && !event.isCrit) return false; // 烙印暴擊限定（虛空烙印回能）
   if (event.on === 'buffGained' && trig.negative != null && event.negative !== trig.negative) return false;
   if (event.on === 'hpBelow') {
     if (trig.pcts) {

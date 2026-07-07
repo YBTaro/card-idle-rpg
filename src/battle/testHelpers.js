@@ -20,6 +20,7 @@ export function makeUnit(opts = {}) {
     skillLv: opts.skillLv ?? 1,
     bossTag: opts.bossTag ?? false,
     bossKit: opts.bossKit ?? null,
+    guardKit: opts.guardKit ?? null,
     onEnter: opts.onEnter ?? null,
   };
   const u = new Unit(stats, { team: opts.team ?? 0, pos: opts.pos ?? 1 });

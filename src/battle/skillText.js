@@ -85,12 +85,14 @@ const ENEMY_TARGETS = new Set([
   'randomEnemy', 'lowestHpEnemy', 'highestEnergyEnemy',
 ]);
 
-function describeEffect(effect, targetLabel, enemySkill = false) {
+// gated＝技能兩段式（先傷害後門檻）語境，才會把對敵狀態改述「命中的目標」。
+// 進場技/觸發是直接施放（各自判定命中，非門檻）→ gated:false，照實際範圍描述。
+function describeEffect(effect, targetLabel, enemySkill = false, gated = true) {
   let who = SCOPE_LABEL[effect.scope] ?? targetLabel ?? '目標';
   if (effect.scope === 'lowestHpAllies') who = `血量最低的 ${effect.count ?? 1} 名隊友`;
   // ④ 傷害門檻：對敵的可門檻後續效果，對象改述「命中的目標」（傷害段仍寫實際範圍）
   const enemyDirected = ENEMY_SCOPES.has(effect.scope) || (effect.scope === 'target' && enemySkill);
-  if (GATED_DESC.has(effect.type) && enemyDirected) who = '命中的目標';
+  if (gated && GATED_DESC.has(effect.type) && enemyDirected) who = '命中的目標';
   // where 條件：作用對象限定（種族/屬性/系列主題技能）
   if (effect.where) who = `${who}中的${describeWhere(effect.where)}單位`;
   const chance = effect.chance != null ? `${pct(effect.chance)} 機率` : '';
@@ -107,6 +109,12 @@ function describeEffect(effect, targetLabel, enemySkill = false) {
         const basisWord = effect.basis === 'selfDef' ? '防禦力' : '攻擊力'; // basis:'selfDef' ＝以防禦計傷
         text = `對${who}造成 ${pct(effect.mult)} ${basisWord}的傷害${modTxt}`;
       }
+      if (effect.byClass) {
+        const parts = Object.entries(effect.byClass).map(([cls, m]) => `對${CLASS_LABEL[cls] ?? cls}改為 ${pct(m)}`);
+        text += `（${parts.join('、')}）`;
+      }
+      if (effect.vsDot != null) text += `（對中毒或灼燒目標改為 ${pct(effect.vsDot)}）`;
+      if (effect.critBonus) text += `（此擊暴擊率 +${pct(effect.critBonus)}）`;
       if (effect.executeBelow != null) {
         // 處決＝出手前判定血線、一擊以放大後倍率直接結算（非事後補乘）——描述直接寫出最終倍率
         const execMult = effect.mult * (effect.executeBonus ?? 1.5);
@@ -168,13 +176,23 @@ function describeEffect(effect, targetLabel, enemySkill = false) {
       text = `對${who}烙上吸能印（其每次獲得能量時，施放者也獲得 ${effect.amount ?? 5} 點能量${dur(effect.duration)}）`;
       break;
     case 'stealBuff':
-      text = `偷取${who}的增益效果（最多 ${effect.count ?? 1} 個，轉為己用）`;
+      text = `偷取${who}的增益效果（${effect.random ? '隨機' : ''}最多 ${effect.count ?? 1} 個，轉為己用）`;
       break;
     case 'transferDebuff':
       text = `將自身的減益效果轉移給${who}（最多 ${effect.count ?? 1} 個）`;
       break;
     case 'cheatDeath':
-      text = `為${who}套上不滅意志（致死傷害改為保留 1 點生命，觸發後消失${dur(effect.duration)}）`;
+      if (effect.healPower != null) {
+        const half = effect.expireHealPower ?? effect.healPower / 2;
+        text = `為${who}套上神蹟護符${dur(effect.duration)}：期間內受致死傷害則免死並立即治療 ${pct(effect.healPower)} 攻擊力的生命；若未觸發，到期時治療 ${pct(half)} 攻擊力的生命`;
+      } else if (effect.healPct) {
+        text = `為${who}套上不滅意志（致死傷害改為免死並回復 ${pct(effect.healPct)} 最大生命，觸發後消失${dur(effect.duration)}）`;
+      } else {
+        text = `為${who}套上不滅意志（致死傷害改為保留 1 點生命，觸發後消失${dur(effect.duration)}）`;
+      }
+      break;
+    case 'undying':
+      text = `為${who}套上無敵護體（受到致死傷害時保留 1 點生命，可連續生效${dur(effect.duration)}）`;
       break;
     case 'nightmare':
       text = `對${who}烙上惡夢印記（受到普攻或技能直接傷害時，額外損失 ${pct(effect.pct ?? 0.05)} 最大生命；永久，可被淨化）`;
@@ -240,7 +258,7 @@ export function skillInfoForCard(cardId, cls) {
 
 // ---- 被動描述（passives 資料 → 人話），同 describeSkill 的資料驅動原則 ----
 
-const PASSIVE_TARGET_LABEL = { self: '自身', allAllies: '我方全體', allEnemies: '敵方全體' };
+const PASSIVE_TARGET_LABEL = { self: '自身', allAllies: '我方全體', allEnemies: '敵方全體', columnAllies: '同直排的隊友', adjacentAllies: '自身與相鄰隊友' };
 
 const CLASS_LABEL = { dps: '輸出', tank: '坦克', support: '輔助' };
 
@@ -251,7 +269,10 @@ function describeWhere(where) {
   if (where.race) parts.push(`「${where.race}」`);
   if (where.series) parts.push(`「${where.series}」`);
   if (where.element) parts.push(`「${ELEMENT_LABEL[where.element] ?? where.element}」屬性`);
-  if (where.class) parts.push(`「${CLASS_LABEL[where.class] ?? where.class}」`);
+  if (where.class) {
+    const classes = Array.isArray(where.class) ? where.class : [where.class];
+    parts.push(classes.map((c) => `「${CLASS_LABEL[c] ?? c}」`).join('與'));
+  }
   return parts.join('');
 }
 
@@ -265,9 +286,18 @@ export function describePassive(p) {
   if (p.when?.selfHpBelow != null) cond = `生命低於 ${pct(p.when.selfHpBelow)} 時，`;
   else if (p.when?.alliesAtLeast) {
     cond = `我方${describeWhere(p.when.alliesAtLeast.where)}隊友達 ${p.when.alliesAtLeast.count} 名時，`;
+  } else if (p.when?.alliesOnly) {
+    cond = `我方隊伍全為${describeWhere(p.when.alliesOnly)}時，`;
   }
   const effs = p.effects
     .map((e) => {
+      // 一次性授予的持續能力（如免死）
+      if (e.grant === 'cheatDeath') {
+        const heal = e.healPct ? `並回復 ${pct(e.healPct)} 最大生命` : '（保留 1 點生命）';
+        return `${who}首次受到致命傷害時不會死亡${heal}`;
+      }
+      // 屬性覆寫光環：把對象整體轉成指定屬性
+      if (e.element) return `${who}轉化為${ELEMENT_LABEL[e.element] ?? e.element}屬性`;
       const statLabel = STAT_LABEL[e.stat] ?? e.stat;
       if (e.perCountOf) {
         const side = e.perCountOf.side === 'enemies' ? '敵方' : '我方';
@@ -292,15 +322,18 @@ export function describePassive(p) {
 export function passiveInfoForCard(cardId) {
   const card = CARDS[cardId];
   if (!card || !card.passives) return [];
-  return card.passives.filter((p) => !p.when?.alliesAtLeast).map(describePassive).filter(Boolean);
+  return card.passives.filter((p) => !isTeamCond(p)).map(describePassive).filter(Boolean);
 }
+
+// 隊伍技條件：組隊人數（alliesAtLeast）或「隊伍只有…」（alliesOnly）——皆進場鎖定。
+const isTeamCond = (p) => p.when?.alliesAtLeast != null || p.when?.alliesOnly != null;
 
 // cardId → 隊伍技描述陣列（組隊條件被動；進場鎖定、整場有效）。
 export function teamSkillInfoForCard(cardId) {
   const card = CARDS[cardId];
   if (!card || !card.passives) return [];
   return card.passives
-    .filter((p) => p.when?.alliesAtLeast)
+    .filter((p) => isTeamCond(p))
     .map((p) => {
       const d = describePassive(p);
       return d ? `${d}（進場判定，整場有效）` : '';
@@ -322,12 +355,21 @@ export function onEnterInfoForCard(cardId) {
   }
   // 通用進場效果：走跟技能同一套 describeEffect（buff/debuff/盾/毒/能量…）
   for (const e of card.onEnter.effects ?? []) {
-    const d = describeEffect(e, '目標');
+    const d = describeEffect(e, '目標', false, false); // 進場技：直接施放，非門檻
     if (d) parts.push(d);
   }
   if (!parts.length) return null;
   const named = card.onEnter.name ? `「${card.onEnter.name}」——` : '';
   return `進場時${named}${parts.join('；')}（開場一次性結算）`;
+}
+
+// cardId → 護體 kit 描述（guardKit：單次直傷上限＋大傷全體反擊；無則 null）。
+export function guardKitInfoForCard(cardId) {
+  const gk = CARDS[cardId]?.guardKit;
+  if (!gk) return null;
+  return `護體：單次受到的直接攻擊傷害不超過自身最大生命的 ${pct(gk.capPct)}；每當一次攻擊超過此上限被夾住，`
+    + `立即對敵方全體造成 ${pct(gk.counterMult)} 攻擊力的反擊，並回復反擊總傷害的 ${pct(gk.lifesteal)}`
+    + `（整場最多 ${gk.maxUses} 次）`;
 }
 
 // ---- 觸發描述（triggers 資料 → 人話）----
@@ -355,12 +397,14 @@ export function describeTrigger(t) {
       : `生命首次低於 ${pct(t.pct ?? 0.5)} 時`;
   } else if (t.on === 'buffGained') {
     when = t.negative == null ? '獲得任何狀態時' : t.negative ? '獲得減益時' : '獲得增益時';
+  } else if (t.on === 'markedHit' && t.crit) {
+    when = '隊友暴擊帶獵印的敵人時';
   } else {
     when = TRIGGER_WHEN[t.on]?.[who] ?? t.on;
   }
   if (t.where) when = when.replace('隊友', `${describeWhere(t.where)}隊友`).replace('敵人', `${describeWhere(t.where)}敵人`);
   const chance = t.chance != null ? `有 ${pct(t.chance)} 機率` : '';
-  const effs = t.effects.map((e) => describeEffect(e, '觸發對象')).filter(Boolean).join('；');
+  const effs = t.effects.map((e) => describeEffect(e, '觸發對象', false, false)).filter(Boolean).join('；'); // 觸發：直接施放，非門檻
   const once = (!t.pcts && (t.once ?? (t.on === 'hpBelow'))) ? '（每場一次）' : ''; // pcts 已在 when 標「各一次」
   return `${when}${chance ? `，${chance}` : ''}：${effs}${once}`;
 }
@@ -404,6 +448,7 @@ export function buffLabel(b) {
     case 'mark': return '獵印（被攻擊時可能觸發敵方連動）';
     case 'energyLink': return '吸能印（每次回能時，施放者也獲得能量）';
     case 'cheatDeath': return '不滅意志（致死傷害改留 1 點生命）';
+    case 'undying': return '無敵（致死傷害留 1 點生命，可連續）';
     case 'stat': {
       const base = STAT_LABEL[b.stat] ?? b.stat;
       // 依屬性實際升降方向（up），不是好壞（neg）——dotTaken 上升是壞事但方向是「提升」

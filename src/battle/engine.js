@@ -111,7 +111,7 @@ export class BattleEngine {
       // 印記連動：隊友直接命中帶印記的敵人 → markedHit（觸發者通常是上印記的獵人）
       if (!passive && p.source && p.source.team !== p.target.team
         && (p.target.buffs ?? []).some((b) => b.kind === 'mark')) {
-        this._fireTriggers('markedHit', p.target, { source: p.source });
+        this._fireTriggers('markedHit', p.target, { source: p.source, isCrit: p.isCrit });
       }
       // 血線跌破（damage 事件在扣血後發出 → 用 amount 還原扣血前比例）
       if (p.amount > 0) {
@@ -428,7 +428,13 @@ export class BattleEngine {
     }
     // 有掛任何狀態就同步（不只到期移除）——前端剩餘回合數字要跟著遞減
     const hadBuffs = (u.buffs?.length ?? 0) > 0;
+    // 神蹟到期補救：未觸發免死的 cheatDeath 於本次 tick 到期 → 補一次減半治療（healOnExpire）
+    const expireHeals = (u.buffs ?? []).filter((b) => b.kind === 'cheatDeath' && b.duration === 1 && b.healOnExpire);
     tickBuffs(u);
+    for (const b of expireHeals) {
+      const healed = u.heal(b.healOnExpire);
+      if (healed > 0) this.emit('heal', { source: u, target: u, amount: healed, kind: 'miracle' });
+    }
     if (hadBuffs || (u.buffs?.length ?? 0) > 0) this.emit('buffchange', { unit: u, buffs: summarizeBuffs(u) });
   }
 

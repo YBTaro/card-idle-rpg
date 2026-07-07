@@ -7,6 +7,14 @@ import { applyBuff, summarizeBuffs, dispelBuffs, isNegative, resolve } from './b
 // 狀態變更通知：任何在傷害路徑上被消耗/移除的 buff（盾/免死…）都要發，前端圖示才即時清。
 const notifyBuffs = (ctx, u) => ctx.emit('buffchange', { unit: u, buffs: summarizeBuffs(u) });
 
+// 免死回血：cheatDeath 帶 healPct 時，免死當下回復對應最大生命（消耗一次性標記 _cheatHealPct）。
+function applyCheatHeal(u, ctx) {
+  if (!u._cheatHeal) return;
+  const healed = u.heal(u._cheatHeal);
+  u._cheatHeal = 0;
+  if (healed > 0) ctx.emit('heal', { source: u, target: u, amount: healed, kind: 'cheatDeath' });
+}
+
 // power 的基準：預設 caster.effAtk（含 buff 加成）；basis:'targetMaxHp' 用目標 maxHp。
 // Boss 保護：bossTag 單位不吃 %最大生命（否則巨型血條被毒隊融化）——改按施放者攻擊 ×3 結算。
 export function resolvePower(effect, caster, target) {
@@ -103,6 +111,13 @@ const GATED_FOLLOWUP = new Set([
 // opts.ignoreDef＝無視防禦；opts.noRetaliate＝不觸發荊棘/反擊（避免連鎖遞迴）。
 export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}) {
   const res = computeDamage(caster, target, mult, ctx.rng, opts);
+  // 護體上限（guardKit）：單次直接攻擊掉血夾在自身最大生命 capPct 內；
+  // 夾之前原始傷害若超過門檻 → 記 guardCapped（觸發大傷全體反擊，見函式尾）。
+  let guardCapped = false;
+  if (target.guardKit) {
+    const cap = Math.round(target.maxHp * target.guardKit.capPct);
+    if (res.amount > cap) { guardCapped = true; res.amount = cap; }
+  }
   const dealt = target.takeDamage(res.amount);
   const absorbed = target._absorbed ?? 0; // 護盾吸收量（統計計入攻擊者輸出；amount 仍＝實際扣血）
   target._absorbed = 0;
@@ -116,7 +131,7 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
     trueDmg: !!opts.ignoreDef, execute: !!opts.execute, // 演出用旗標（真傷/處決）
     element: caster?.element ?? null, // 傷害字色＝攻擊者屬性（演出用）
   });
-  if (target._cheated) { target._cheated = false; ctx.emit('cheated', { unit: target }); notifyBuffs(ctx, target); } // 免死消耗→刷圖示
+  if (target._cheated) { target._cheated = false; ctx.emit('cheated', { unit: target }); applyCheatHeal(target, ctx); notifyBuffs(ctx, target); } // 免死消耗→回血→刷圖示
   if (!target.alive) ctx.emit('death', { unit: target });
 
   // 惡夢印記：受普攻/技能直接傷害後額外損失 pct 最大生命（DoT/引爆/侵蝕不觸發）
@@ -158,7 +173,25 @@ export function dealDamage(caster, target, mult, ctx, skill = 'skill', opts = {}
       const counter = (target.buffs || []).find((b) => b.kind === 'counter');
       if (counter) dealDamage(target, caster, counter.mult, ctx, 'counter', { noRetaliate: true });
     }
-    if (caster._cheated) { caster._cheated = false; ctx.emit('cheated', { unit: caster }); notifyBuffs(ctx, caster); } // 荊棘反殺被免死→刷圖示
+    if (caster._cheated) { caster._cheated = false; ctx.emit('cheated', { unit: caster }); applyCheatHeal(caster, ctx); notifyBuffs(ctx, caster); } // 荊棘反殺被免死→回血→刷圖示
+  }
+
+  // 護體反擊（guardKit）：本次直接攻擊超過上限被夾 → 對全體敵人各發動一擊反擊 + 回血。整場限 maxUses 次。
+  // 敵人＝行動者（攻擊方）同隊：ctx 以行動者視角建立，故 ctx.allies 即攻擊方全隊（＝持有者的敵人）。
+  // 反擊走 noRetaliate（不連鎖荊棘/反擊），並沿用 'counter' 標籤（引擎視為被動傷害，不再觸發受擊連動）。
+  if (!opts.noRetaliate && guardCapped && target.guardKit) {
+    const gk = target.guardKit;
+    const uses = target._guardUses ?? 0;
+    if (uses < (gk.maxUses ?? Infinity)) {
+      target._guardUses = uses + 1;
+      const foes = (ctx.allies ?? []).filter((f) => f.alive);
+      let total = 0;
+      for (const foe of foes) total += dealDamage(target, foe, gk.counterMult, ctx, 'counter', { noRetaliate: true });
+      if (total > 0 && target.alive && gk.lifesteal) {
+        const healed = target.heal(healAmount(ctx, total * gk.lifesteal));
+        if (healed > 0) ctx.emit('heal', { source: target, target, amount: healed, kind: 'guardCounter' });
+      }
+    }
   }
   return dealt;
 }
@@ -171,10 +204,16 @@ export function dealDirect(target, amount, ctx, { skill = 'dot', source = null, 
   let dealt = Math.min(target.hp, Math.round(amount));
   // 免死標記：繞盾直傷（DoT/引爆/侵蝕/惡夢）也吃同一條規則
   if (dealt >= target.hp) {
+    const undying = target.buffs?.find((b) => b.kind === 'undying');
     const cd = target.buffs?.find((b) => b.kind === 'cheatDeath');
-    if (cd) {
+    if (undying) {
+      dealt = target.hp - 1; // 無敵：留 1 血、不消耗
+      ctx.emit('cheated', { unit: target });
+      notifyBuffs(ctx, target);
+    } else if (cd) {
       target.buffs = target.buffs.filter((b) => b !== cd);
       dealt = target.hp - 1;
+      target._cheatHeal = (cd.healPct ? Math.round(target.maxHp * cd.healPct) : 0) + (cd.healOnSave ?? 0); // 免死回血（扣血後補，見下）
       ctx.emit('cheated', { unit: target });
       notifyBuffs(ctx, target); // 免死消耗→刷圖示
     }
@@ -184,6 +223,7 @@ export function dealDirect(target, amount, ctx, { skill = 'dot', source = null, 
     source, target, amount: dealt, skill,
     isAdvantage: false, isDisadvantage: false, isCrit: false, ...flags,
   });
+  applyCheatHeal(target, ctx); // 免死帶 healPct → 扣到 1 血後回復對應最大生命
   if (!target.alive) ctx.emit('death', { unit: target });
   return dealt;
 }
@@ -208,7 +248,12 @@ export function matchesWhere(unit, where) {
   if (!where) return true;
   for (const [key, val] of Object.entries(where)) {
     if (key === 'series') {
-      if (!unit.series || !unit.series.includes(val)) return false;
+      // 陣列＝任一系列成員命中；純量＝該系列成員（向後相容）
+      const arr = Array.isArray(val) ? val : [val];
+      if (!unit.series || !arr.some((s) => unit.series.includes(s))) return false;
+    } else if (Array.isArray(val)) {
+      // 陣列值＝「在清單內」（如 class:['support','dps']）
+      if (!val.includes(unit[key])) return false;
     } else if (unit[key] !== val) {
       return false;
     }
@@ -284,8 +329,12 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill', opts 
           }
           break;
         }
+        // 條件倍率覆寫：byClass（依目標職業）＞ vsDot（目標帶持續傷害＝中毒/灼燒）＞ 基礎 mult。
+        let baseMult = effect.mult;
+        if (effect.byClass && effect.byClass[u.class] != null) baseMult = effect.byClass[u.class];
+        else if (effect.vsDot != null && (u.buffs ?? []).some((b) => b.kind === 'dot')) baseMult = effect.vsDot;
         // 超充：施放瞬間溢出的能量（energy/100）放大直傷與直接治療，DoT/HoT/護盾/狀態不吃
-        let mult = effect.mult * (ctx.overcharge ?? 1);
+        let mult = baseMult * (ctx.overcharge ?? 1);
         // 處決：目標血量比例低於 executeBelow → 倍率乘 executeBonus
         let executed = false;
         if (effect.executeBelow != null && u.hpRatio < effect.executeBelow) {
@@ -294,6 +343,7 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill', opts 
         }
         const dealt = dealDamage(caster, u, mult, ctx, skillId, {
           ignoreDef: effect.ignoreDef, execute: executed, basis: effect.basis, noElement: effect.noElement,
+          critBonus: effect.critBonus, // 此擊額外暴擊率（加在攻方，仍受守方抗暴抵扣）
         });
         // 吸血：實際傷害的一定比例回復施放者
         if (effect.lifesteal && dealt > 0 && caster.alive) {
@@ -491,8 +541,20 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill', opts 
         break;
       case 'stealBuff': {
         // 偷取增益：把目標最多 count 個增益（非光環、非 sticky）搬到施放者身上
+        // random:true → 用 rng 隨機挑 count 個（決定性回放照 rng 序）；否則取前 count 個。
         const takeable = (u.buffs ?? []).filter((b) => !b.aura && !b.sticky && !isNegative(b));
-        const taken = takeable.slice(0, effect.count ?? 1);
+        let taken;
+        if (effect.random) {
+          const pool = [...takeable];
+          taken = [];
+          const n = Math.min(effect.count ?? 1, pool.length);
+          for (let k = 0; k < n; k += 1) {
+            const idx = Math.floor((ctx.rng ? ctx.rng.next() : Math.random()) * pool.length);
+            taken.push(pool.splice(idx, 1)[0]);
+          }
+        } else {
+          taken = takeable.slice(0, effect.count ?? 1);
+        }
         if (!taken.length) break;
         u.buffs = u.buffs.filter((b) => !taken.includes(b));
         for (const b of taken) applyBuff(caster, b);
@@ -514,10 +576,19 @@ export function applyEffect(effect, caster, units, ctx, skillId = 'skill', opts 
         break;
       }
       case 'cheatDeath': // 免死標記：致死傷害改留 1 血、消耗標記（結算見 Unit.takeDamage/dealDirect）
+        // 可選回血：healPower＝觸發免死時回復（攻擊力×power，存 healOnSave）；
+        //           expireHealPower＝未觸發、到期時回復（見 engine tickBuffs 出口，存 healOnExpire）。
         applyBuffN(u, {
           kind: 'cheatDeath',
           duration: effect.duration, key: defaultKey('cheatDeath'),
+          healPct: effect.healPct,
+          healOnSave: effect.healPower != null ? Math.round(healAmount(ctx, caster.effAtk * effect.healPower)) : undefined,
+          healOnExpire: effect.expireHealPower != null ? Math.round(healAmount(ctx, caster.effAtk * effect.expireHealPower)) : undefined,
         });
+        emitBuffs(u);
+        break;
+      case 'undying': // 無敵護體：期間內任何致死傷害都留 1 血（不消耗、可連續），結算見 takeDamage/dealDirect
+        applyBuffN(u, { kind: 'undying', duration: effect.duration, key: defaultKey('undying') });
         emitBuffs(u);
         break;
       case 'energySteal': {

@@ -32,6 +32,7 @@ export class Unit {
     this.passives = stats.passives || [];
     this.bossTag = stats.bossTag ?? false; // Boss 保護：%最大生命效果改按攻擊力結算
     this.bossKit = stats.bossKit ?? null; // Boss 機制（階段/破盾/狂暴）
+    this.guardKit = stats.guardKit ?? null; // 反應式護體（單次直傷上限＋大傷全體反擊；見 effects.dealDamage）
     this.basicAttack = stats.basicAttack ?? null; // 普攻變體
     this.skillLv = stats.skillLv ?? 1; // 技能等級
     this.triggers = stats.triggers || []; // 觸發（亡語/受擊/血線…；引擎事件派發）
@@ -112,11 +113,18 @@ export class Unit {
     this._absorbed = incoming - toHp; // 護盾吃掉的量（統計歸攻擊者輸出；dealDamage 讀後即清）
     let dealt = Math.min(this.hp, toHp);
     if (dealt >= this.hp && this.hp > 0) {
+      const undying = this.buffs?.find((b) => b.kind === 'undying');
       const cd = this.buffs?.find((b) => b.kind === 'cheatDeath');
-      if (cd) {
+      if (undying) {
+        // 無敵：期間內任何致死傷害都留 1 血，且不消耗 buff（可連續生效整段期間）
+        dealt = this.hp - 1;
+        this._cheated = true;
+      } else if (cd) {
         this.buffs = this.buffs.filter((b) => b !== cd);
         dealt = this.hp - 1;
         this._cheated = true;
+        // 免死回血（consume）：healPct 最大生命 + healOnSave 定額，扣血後由 deal* 出口補
+        this._cheatHeal = (cd.healPct ? Math.round(this.maxHp * cd.healPct) : 0) + (cd.healOnSave ?? 0);
       }
     }
     this.hp -= dealt;
