@@ -70,6 +70,7 @@ export function deriveStats(cardInst) {
     skillLv: cardInst.skillLv ?? 1, // 技能等級（perLv 縮放；升級入口之後開）
     bossTag: card.bossTag ?? false,
     bossKit: card.bossKit ?? null, // Boss 機制（階段/破盾/狂暴；一般卡 null）
+    guardKit: card.guardKit ?? null, // 反應式護體（單次直傷上限＋大傷全體反擊；一般卡 null）
     onEnter: card.onEnter ?? null, // 進場被動（開天氣/場地）
   };
 }

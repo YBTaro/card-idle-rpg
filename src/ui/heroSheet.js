@@ -12,7 +12,7 @@ import { ELEMENT_LABEL } from '../data/elements.js';
 import { artFor } from '../data/assets.js';
 import { deriveStats, MAX_STARS, STAR_STAT_BONUS, STAR_MILESTONES } from '../core/stats.js';
 import { levelUp, levelUpCost, canLevelUp, MAX_LEVEL } from '../systems/leveling.js';
-import { skillInfoForCard, passiveInfoForCard, triggerInfoForCard, teamSkillInfoForCard, onEnterInfoForCard, basicInfoForCard } from '../battle/skillText.js';
+import { skillInfoForCard, passiveInfoForCard, triggerInfoForCard, teamSkillInfoForCard, onEnterInfoForCard, basicInfoForCard, guardKitInfoForCard } from '../battle/skillText.js';
 import { trackQuest } from '../systems/quests.js';
 import { icon } from './icons.js';
 
@@ -244,6 +244,8 @@ class HeroSheet {
       ]);
     const enter = onEnterInfoForCard(inst.cardId);
     if (enter) p.appendChild(skillRow('🌀', '進場', `<b>進場被動</b>${enter}`));
+    const guard = guardKitInfoForCard(inst.cardId);
+    if (guard) p.appendChild(skillRow('🛡', '護體', `<b>護體被動</b>${guard}`));
     for (const desc of passiveInfoForCard(inst.cardId)) {
       p.appendChild(skillRow('✨', '光環', `<b>光環被動</b>${desc}`));
     }

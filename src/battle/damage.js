@@ -24,7 +24,8 @@ export function computeDamage(attacker, defender, mult, rng, opts = {}) {
   const def = opts.ignoreDef ? 0 : Math.max(0, defender.effDef);
   const afterDef = base * (DEF_SOFTCAP / (DEF_SOFTCAP + def));
   const variance = rng ? 1 + (rng.next() * 2 - 1) * DAMAGE_VARIANCE : 1;
-  const critChance = Math.max(0, attacker.critChance - defender.critRes);
+  // opts.critBonus：技能單擊額外暴擊率（加在攻方；仍受守方抗暴 critRes 抵扣）
+  const critChance = Math.max(0, attacker.critChance + (opts.critBonus || 0) - defender.critRes);
   const isCrit = rng ? rng.next() < critChance : false;
   const critMult = isCrit ? attacker.critMult : 1;
   const elemRes = opts.noElement ? 1 : defender.elementRes(attacker.element);

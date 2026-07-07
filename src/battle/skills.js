@@ -135,11 +135,8 @@ export const SKILLS = {
     { type: 'hot', power: 2.0, duration: 2, scope: 'frontAllies' },
     { type: 'dispel', what: 'debuff', count: 1, scope: 'frontAllies' }, // 森林淨化：拔掉前排一個負面
   ]},
-  galeKicks: { name: '連風腿', target: 'singleEnemyByColumn', effects: [ // 亂舞三連腿＋回氣
-    { type: 'damage', mult: 0.9, scope: 'target' },
-    { type: 'damage', mult: 0.9, scope: 'target' },
-    { type: 'damage', mult: 0.9, scope: 'target' },
-    { type: 'energy', amount: 20, scope: 'self' },
+  galeKicks: { name: '亂風破', target: 'allEnemies', effects: [ // 全體橫掃，專破坦克
+    { type: 'damage', mult: 1.5, byClass: { tank: 3.5 }, scope: 'target' }, // 一般 150%、坦克 350%
   ]},
 
   // ---- 水 ----
@@ -155,8 +152,9 @@ export const SKILLS = {
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
     { type: 'shield', power: 2.8, duration: 3, scope: 'self' },
   ]},
-  abyssBite: { name: '淵噬', target: 'singleEnemyByColumn', effects: [ // 定位：吸血獠牙
-    { type: 'damage', mult: 2.2, scope: 'target', lifesteal: 0.5 }, // 妖＝汲取值最高
+  abyssBite: { name: '淵噬', target: 'allEnemies', effects: [ // 定位：全體突襲＋妖族暴擊開團
+    { type: 'damage', mult: 1.2, scope: 'target' }, // 對敵方全體 120%
+    { type: 'buff', stat: 'critChance', op: 'add', value: 0.3, duration: 2, scope: 'allAllies', where: { race: '妖' } }, // 我方妖族暴擊率 +30%（2 回合）
   ]},
   mistShift: { name: '霧化', target: 'enemyColumn', effects: [ // 屬性轉化：敵直排變火屬 → 水隊穩吃剋制（暴雨下再 -20%）
     { type: 'damage', mult: 1.3, scope: 'target' },
@@ -227,9 +225,9 @@ export const SKILLS = {
     { type: 'damage', mult: 2.1, scope: 'target', lifesteal: 0.4 }, // 妖＝汲取值最高
     { type: 'energy', amount: 15, scope: 'self' },
   ]},
-  voidBurst: { name: '虛爆', target: 'enemyColumn', effects: [
-    { type: 'damage', mult: 1.6, scope: 'target' },
-    { type: 'dot', power: 0.14, basis: 'targetMaxHp', duration: 2, scope: 'target' }, // 直排中毒：每跳 14% 最大生命
+  voidBurst: { name: '虛爆', target: 'enemyBackRow', effects: [ // 定位：後排斬殺＋虛空烙印（暴擊回能）
+    { type: 'damage', mult: 1.2, critBonus: 0.15, scope: 'target' }, // 對後排 120%，此擊暴擊率 +15%
+    { type: 'mark', duration: 3, scope: 'target' }, // 虛空烙印：帶印者被暴擊 → 自身 +20 能量（見 triggers）
   ]},
   webBind: { name: '縛絲', target: 'lowestHpEnemy', effects: [ // 補刀型選目標
     { type: 'damage', mult: 1.8, scope: 'target' },
@@ -284,9 +282,9 @@ export const SKILLS = {
     { type: 'damage', mult: 1.5, scope: 'target' },
     { type: 'nightmare', pct: 0.05, scope: 'target' }, // 受普攻/技能直傷時額外損失 5% 最大生命
   ]},
-  energyLeech: { name: '奪流', target: 'highestEnergyEnemy', effects: [ // 定位：竊能——專打快放大招的人
-    { type: 'damage', mult: 1.6, scope: 'target' },
-    { type: 'energySteal', scope: 'target' }, // 奪走全部能量 → 轉給我方能量最低者（可疊出超充）
+  energyLeech: { name: '奪流', target: 'enemyColumn', effects: [ // 定位：直排突襲＋隨機奪增益
+    { type: 'damage', mult: 1.8, scope: 'target' }, // 對敵方直排 180%
+    { type: 'stealBuff', count: 1, random: true, scope: 'target' }, // 隨機偷 1 個增益轉為己用
   ]},
 
   /* ================= 種族號令與種族補位（種族隊特色承載）=================
@@ -354,9 +352,9 @@ export const SKILLS = {
     { type: 'dot', power: 0.12, basis: 'targetMaxHp', duration: 2, scope: 'target' },
   ]},
   // 不死：不滅與亡語
-  undyingOath: { name: '不滅誓約', effects: [ // 定位：免死坦——致死傷害改留 1 血（不死的種族語言）
+  undyingOath: { name: '不滅誓約', effects: [ // 定位：無敵坦——1 回合內受到任何致死傷害都留 1 血
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
-    { type: 'cheatDeath', duration: 1, scope: 'self' }, // 免死只保護 1 回合
+    { type: 'undying', duration: 1, scope: 'self' }, // 無敵 1 回合：期間所有致死傷害都留 1 血（可連續）
   ]},
   spiteSlash: { name: '怨斬', target: 'singleEnemyByColumn', effects: [ // 定位：亡語刺客的主動軸（亡語見卡片觸發「遺恨爆發」）
     { type: 'damage', mult: 2.6, scope: 'target' },
@@ -376,23 +374,21 @@ export const SKILLS = {
     { type: 'damage', mult: 1.5, scope: 'target' },
     { type: 'control', control: 'taunt', duration: 2, scope: 'self' },
   ]},
-  lunarHowl: { name: '月吼', target: 'allEnemies', effects: [ // 定位：全體壓制+疊怒（每吼一次更兇）
-    { type: 'damage', mult: 1.1, scope: 'target' },
-    { type: 'buff', stat: 'atk', op: 'mul', value: 1.1, duration: 99, scope: 'self', stackable: true },
+  lunarHowl: { name: '月吼', target: 'allEnemies', effects: [ // 定位：全體壓制＋削弱敵方輸出
+    { type: 'damage', mult: 1.1, scope: 'target' }, // 對敵方全體 110%
+    { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 0.8, duration: 2, scope: 'target' }, // 命中者造成傷害 -20%（2 回合）
   ]},
   // 龍：龍息與超充推手
-  dragonflare: { name: '龍炎滅陣', target: 'allEnemies', effects: [ // 定位：全體吐息+回能（配蓄力普攻＝輸出循環）
-    { type: 'damage', mult: 1.4, scope: 'target' },
-    { type: 'energy', amount: 15, scope: 'self' },
+  dragonflare: { name: '龍炎滅陣', target: 'allEnemies', effects: [ // 定位：全體吐息，剋中毒目標（配進場毒霧）
+    { type: 'damage', mult: 1.2, vsDot: 2.4, scope: 'target' }, // 全體 120%；中毒（帶 dot）目標改吃 240%
   ]},
   dragonSurge: { name: '龍血沸騰', target: 'highestAtkAlly', effects: [ // 定位：超充推手——灌爆主 C 的能量條（溢出＝超充傷害）
     { type: 'energy', amount: 40, scope: 'target' },
     { type: 'buff', stat: 'dmgDealt', op: 'mul', value: 1.2, duration: 1, scope: 'target' },
   ]},
   // 神：奇蹟與聖域
-  miracleWard: { name: '神蹟', target: 'lowestHpAlly', effects: [ // 定位：免死護符（隊友版）唯一承載者+大治療
-    { type: 'cheatDeath', duration: 1, scope: 'target' }, // 免死只保護 1 回合
-    { type: 'heal', power: 2.2, scope: 'target' },
+  miracleWard: { name: '神蹟', target: 'lowestHpAlly', effects: [ // 定位：保命神諭——1 回合內致死則免死＋大治療；未觸發則到期減半治療
+    { type: 'cheatDeath', duration: 1, healPower: 2.2, expireHealPower: 1.1, scope: 'target' },
   ]},
   sanctumWall: { name: '聖域壁壘', effects: [ // 定位：聖域守護（不搶仇恨）——為前排張開格擋護符（免一次負面）＋自身盾
     { type: 'debuffBlock', charges: 1, duration: 3, scope: 'frontAllies' }, // 聖域帷幕：前排各彈開一個負面狀態
@@ -412,8 +408,8 @@ export const SKILLS = {
     { type: 'buff', stat: 'atk', op: 'mul', value: 1.2, duration: 2, scope: 'backAllies' },
     { type: 'hot', power: 0.8, duration: 2, scope: 'backAllies' },
   ]},
-  oathBlade: { name: '誓刃', target: 'singleEnemyByColumn', effects: [ // 定位：殺陣盟主的主動軸——乾淨的高倍率單體
-    { type: 'damage', mult: 2.4, scope: 'target' },
+  oathBlade: { name: '誓刃', target: 'lowestHpEnemy', effects: [ // 定位：殺陣盟主的主動軸——收割殘血
+    { type: 'damage', mult: 2.4, scope: 'target' }, // 對血量最低的敵人 240%
   ]},
 };
 
