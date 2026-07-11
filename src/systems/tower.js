@@ -58,12 +58,13 @@ function randomFloorCards(track, floor) {
   const take = (pool) => {
     for (let g = 0; g < 60; g += 1) {
       const c = rng.pick(pool);
-      if (c && !used.has(c.id)) { used.add(c.id); picks.push(c.id); return; }
+      if (c && !used.has(c.id)) { used.add(c.id); picks.push(c.id); return true; }
     }
+    return false; // 池已無可選（唯一卡耗盡）→ 讓呼叫端跳出，避免無限迴圈
   };
   take(tanks.length ? tanks : CARD_LIST.filter((c) => c.class === 'tank'));
-  while (picks.length < 4 && themed.length) take(themed);
-  while (picks.length < 6) take(CARD_LIST);
+  while (picks.length < 4 && themed.length) { if (!take(themed)) break; }
+  while (picks.length < 6) { if (!take(CARD_LIST)) break; }
   return picks;
 }
 

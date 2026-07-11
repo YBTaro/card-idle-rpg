@@ -126,6 +126,7 @@ export class TowerUI {
           const granted = claimTowerWin(res.trackId, res.floor);
           this.render();
           if (granted) this._winModal(floor, granted);
+          else toast('已首通過這層，無額外獎勵', { icon: '✓' });
         } else {
           toast('差一點！升級英雄、升星或換陣再來', { icon: '🗼' });
         }
