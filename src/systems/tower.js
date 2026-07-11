@@ -1,5 +1,6 @@
-// 試煉塔：單人 PvE 爬塔。一層一戰、首通給獎、每 5 層 Boss 里程碑。
-// 敵隊由樓層數確定性生成（同層永遠同隊 → 玩家可以針對性換隊 counter）。
+// 試煉塔：6 座屬性主題塔，各自獨立進度、一層一戰、首通給獎、每 5 層 Boss 里程碑。
+// 敵隊由 (塔, 樓層) 確定性生成（同塔同層永遠同隊 → 玩家可以針對性換隊 counter）。
+// Boss 層改查精心隊表（towerTeams.js）；路關仍隨機但確定性。
 // 單機內容：純前端模擬（與推關同原則），不經伺服器。
 import { store } from '../core/state.js';
 import { saveGame } from '../core/save.js';
@@ -7,62 +8,85 @@ import { simulateBattle } from '../battle/battleLog.js';
 import { Unit } from '../battle/unit.js';
 import { deriveStats } from '../core/stats.js';
 import { Rng } from '../core/rng.js';
-import { CARD_LIST } from '../data/cards.js';
-import { ELEMENTS } from '../data/elements.js';
+import { CARDS, CARD_LIST } from '../data/cards.js';
 import { buildPlayerUnits } from './battleSetup.js';
-import { towerEnv, envLabelOf } from '../battle/environments.js';
+import { TRACK_BY_ID, trackEnv } from '../data/towerTracks.js';
+import { bossTeamFor } from '../data/towerTeams.js';
+import { envLabelOf } from '../battle/environments.js';
 
-export const BOSS_EVERY = 5; // 每 5 層 Boss 層（強化 + 里程碑獎勵）
-
-// 樓層屬性主題：輪替五屬（玩家可帶剋制屬性隊伍）。
-export function themeOf(floor) {
-  return ELEMENTS[(floor - 1) % ELEMENTS.length];
-}
-
+export const BOSS_EVERY = 5;
+export const MAX_FLOOR = 80;
 export const isBossFloor = (floor) => floor % BOSS_EVERY === 0;
 
-// 敵隊等級曲線：首層新帳號（Lv1 初始隊）必須能贏，之後逐層拉開。
-export function enemyLevel(floor) {
-  return Math.max(1, Math.ceil(floor * 1.5) - 1); // 1F=1, 2F=2, 5F=7, 10F=14
+// 等級＝關數（玩家滿級 60，故 61–80 刻意超上限＝終局牆）。
+export function enemyLevel(floor) { return floor; }
+
+// 星級：每 12 關 +1、封頂 5（60 關滿星）。
+export function enemyStars(floor) {
+  return Math.max(0, Math.min(5, Math.floor(floor / 12)));
 }
 
-// 首通獎勵：金幣/精華隨層數成長；Boss 層追加召喚券。
+// Boss 三圍溢價：分三段愈後愈狠。
+export function bossPremium(floor) {
+  if (floor >= 60) return 1.35;
+  if (floor >= 30) return 1.25;
+  return 1.15;
+}
+
+// 首通獎勵：隨關數成長；Boss 追加召喚券。
 export function rewardsOf(floor) {
   const r = { gold: 200 + floor * 80, essence: 10 + floor * 4 };
-  if (isBossFloor(floor)) r.tickets = 1 + Math.floor(floor / 25); // 5,10,15… +1 券；25 層後 +2
+  if (isBossFloor(floor)) r.tickets = 1 + Math.floor(floor / 25);
   return r;
 }
 
-// 樓層敵隊（確定性）：主題屬性佔多數、坦克至少 1、Boss 層全隊 +15%。
-// 前兩層只出 5 名且整體 -15%（新手緩坡）。
-export function floorEnemies(floor) {
-  const rng = new Rng(floor * 7919 + 13);
-  const theme = themeOf(floor);
-  const themed = CARD_LIST.filter((c) => c.element === theme);
-  const tanks = CARD_LIST.filter((c) => c.class === 'tank');
-  const count = floor < 3 ? 5 : 6;
+// 字串雜湊（確定性 rng 種子用）。
+function hashStr(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i += 1) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+
+// 路關隨機卡：偏主題屬性（≥半數）、至少一坦、六名不重複、確定性。
+function randomFloorCards(track, floor) {
+  const rng = new Rng(hashStr(track.id) + floor * 7919 + 13);
+  const isElement = track.theme !== 'dot';
+  const themed = isElement ? CARD_LIST.filter((c) => c.element === track.theme) : CARD_LIST;
+  const tanks = (isElement ? themed : CARD_LIST).filter((c) => c.class === 'tank');
   const picks = [];
   const used = new Set();
   const take = (pool) => {
-    for (let guard = 0; guard < 50; guard += 1) {
+    for (let g = 0; g < 60; g += 1) {
       const c = rng.pick(pool);
-      if (!used.has(c.id)) { used.add(c.id); picks.push(c); return; }
+      if (c && !used.has(c.id)) { used.add(c.id); picks.push(c.id); return; }
     }
   };
-  take(tanks.filter((c) => c.element === theme).length ? tanks.filter((c) => c.element === theme) : tanks);
-  while (picks.length < Math.min(4, count - 1)) take(themed);
-  while (picks.length < count) take(CARD_LIST);
+  take(tanks.length ? tanks : CARD_LIST.filter((c) => c.class === 'tank'));
+  while (picks.length < 4 && themed.length) take(themed);
+  while (picks.length < 6) take(CARD_LIST);
+  return picks;
+}
 
+// 樓層敵隊：Boss 關查精心隊表（+1★、溢價）；路關確定性隨機。
+export function floorEnemies(trackId, floor) {
+  const track = TRACK_BY_ID[trackId];
+  if (!track) return [];
   const level = enemyLevel(floor);
-  const scale = (isBossFloor(floor) ? 1.15 : 1.0) * (floor < 3 ? 0.85 : 1.0);
+  const boss = isBossFloor(floor);
+  const stars = boss ? Math.min(5, enemyStars(floor) + 1) : enemyStars(floor);
+  const premium = boss ? bossPremium(floor) : 1.0;
+  const cardIds = boss ? bossTeamFor(trackId, floor) : randomFloorCards(track, floor);
+
   const front = [1, 2, 3];
   const back = [4, 5, 6];
   const units = [];
-  for (const card of picks) {
-    const stats = deriveStats({ cardId: card.id, level, stars: Math.min(5, Math.floor(floor / 15)) });
-    stats.hp = Math.round(stats.hp * scale);
-    stats.atk = Math.round(stats.atk * scale);
-    stats.def = Math.round(stats.def * scale);
+  for (const id of cardIds) {
+    const card = CARDS[id];
+    if (!card) continue;
+    const stats = deriveStats({ cardId: id, level, stars });
+    stats.hp = Math.round(stats.hp * premium);
+    stats.atk = Math.round(stats.atk * premium);
+    stats.def = Math.round(stats.def * premium);
     const wantBack = card.class === 'support' || card.attackStyle === 'ranged';
     const pos = wantBack ? (back.shift() ?? front.shift()) : (front.shift() ?? back.shift());
     if (pos == null) continue;
@@ -71,48 +95,51 @@ export function floorEnemies(floor) {
   return units;
 }
 
-// 樓層預覽資料（UI 用；不建 Unit 全量、只拿卡面資訊）。
-export function floorPreview(floor) {
-  const units = floorEnemies(floor);
-  const theme = themeOf(floor);
-  const env = towerEnv(floor, theme);
+function trackState(trackId, state) {
+  state.tower ??= { tracks: {} };
+  state.tower.tracks ??= {};
+  return (state.tower.tracks[trackId] ??= { cleared: [] });
+}
+
+export function isCleared(trackId, floor, state = store.state) {
+  return trackState(trackId, state).cleared.includes(floor);
+}
+
+export function floorPreview(trackId, floor, state = store.state) {
+  const units = floorEnemies(trackId, floor);
+  const env = trackEnv(trackId);
   return {
-    floor,
-    theme,
+    trackId, floor,
     isBoss: isBossFloor(floor),
     level: enemyLevel(floor),
+    stars: enemyStars(floor),
     rewards: rewardsOf(floor),
     env,
     envLabel: envLabelOf(env.weather, env.terrain),
     enemies: units.map((u) => ({ cardId: u.cardId, level: u.level, pos: u.pos })),
+    cleared: isCleared(trackId, floor, state),
   };
 }
 
-// 目前要挑戰的層（= 已通過最高層 + 1）。
-export function currentFloor(state = store.state) {
-  return state.tower?.floor ?? 1;
-}
-
-// 挑戰目前層：模擬戰鬥 → 回 {sim, win, floor, rewards}。獎勵不在這裡發
-//（等回放播完才入帳，見 claimTowerWin——避免玩家還沒看到勝利就先進帳）。
-export function challengeTower(state = store.state) {
+// 挑戰指定 (塔,關)：模擬戰鬥（獎勵不在這裡發，回放播完才 claim）。
+export function challengeTower(trackId, floor, state = store.state) {
   const player = buildPlayerUnits(state);
   if (player.length === 0) return null;
-  const floor = currentFloor(state);
-  const enemies = floorEnemies(floor);
-  const env = towerEnv(floor, themeOf(floor)); // 樓層環境：天氣連動主題、場地每 5 層一換
+  const enemies = floorEnemies(trackId, floor);
+  const env = trackEnv(trackId);
   const sim = simulateBattle(player, enemies, { rng: new Rng(), env });
-  return { sim, win: sim.winner === 0, floor, rewards: rewardsOf(floor), env };
+  return { sim, win: sim.winner === 0, trackId, floor, rewards: rewardsOf(floor), env };
 }
 
-// 首通入帳 + 推層。回傳發放的獎勵。
-export function claimTowerWin(floor, state = store.state) {
-  if (floor !== currentFloor(state)) return null; // 只認當前層（防重複入帳）
+// 首通入帳（每塔每關一次）。
+export function claimTowerWin(trackId, floor, state = store.state) {
+  const ts = trackState(trackId, state);
+  if (ts.cleared.includes(floor)) return null;
   const r = rewardsOf(floor);
   state.currencies.gold += r.gold;
   state.inventory.materials.essence = (state.inventory.materials.essence || 0) + r.essence;
   if (r.tickets) state.currencies.tickets += r.tickets;
-  state.tower.floor = floor + 1;
+  ts.cleared.push(floor);
   saveGame();
   store.notify();
   return r;
