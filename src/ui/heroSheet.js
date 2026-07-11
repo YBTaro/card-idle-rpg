@@ -208,7 +208,7 @@ class HeroSheet {
     }
     p.appendChild(starLine);
 
-    // 5) 技能區——固定呈現順序：普攻 → 絕技 → 進場 → 光環（含觸發）→ 隊伍技
+    // 5) 技能區——固定呈現順序：普攻 → 絕技 → 進場 → 光環（含護體、觸發）→ 隊伍技
     //   （星級里程碑屬第七類，顯示在上方星級區不重複列）
     p.appendChild(el('div', { class: 'hs-ribbon', text: '技能' }));
     // 普攻：每張卡固定顯示（標準卡寫「敵方單體 100%」、變體卡寫各自描述）
@@ -233,7 +233,7 @@ class HeroSheet {
         ])
       );
     }
-    // 被動類（進場 / 光環被動含觸發 / 隊伍技）
+    // 被動類（進場 / 光環被動含護體、觸發 / 隊伍技）
     const skillRow = (glyph, label, html) =>
       el('div', { class: 'hs-skills' }, [
         el('div', { class: 'hs-sk' }, [
@@ -245,7 +245,7 @@ class HeroSheet {
     const enter = onEnterInfoForCard(inst.cardId);
     if (enter) p.appendChild(skillRow('🌀', '進場', `<b>進場被動</b>${enter}`));
     const guard = guardKitInfoForCard(inst.cardId);
-    if (guard) p.appendChild(skillRow('🛡', '護體', `<b>護體被動</b>${guard}`));
+    if (guard) p.appendChild(skillRow('🛡', '光環', `<b>光環被動</b>${guard}`)); // 護體歸光環（活著才有的效果）；🛡 圖示保留為子類視覺提示
     for (const desc of passiveInfoForCard(inst.cardId)) {
       p.appendChild(skillRow('✨', '光環', `<b>光環被動</b>${desc}`));
     }
