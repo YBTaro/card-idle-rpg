@@ -3,6 +3,18 @@ import { store, createNewGame, SCHEMA_VERSION, DEV_RESOURCES } from './state.js'
 
 const SAVE_KEY = 'card-idle-rpg:save';
 
+// ---- tower 存檔遷移：舊 { floor: N } → 新 { tracks: { sunny: { cleared: [1..N-1] } } } ----
+export function migrateTower(data) {
+  data.tower ??= { tracks: {} };
+  data.tower.tracks ??= {};
+  if (typeof data.tower.floor === 'number') {
+    const cleared = [];
+    for (let f = 1; f < data.tower.floor; f += 1) cleared.push(f);
+    data.tower.tracks.sunny = { cleared };
+    delete data.tower.floor;
+  }
+}
+
 // ---- migrate：把舊版存檔升級到當前版本 ----
 function migrate(data) {
   const fromVersion = data.version || 0; // 進場版本（欄位補齊後再依此跑一次性升級）
@@ -61,7 +73,7 @@ function migrate(data) {
   }
   data.arena ??= { rating: 1000, day: '', used: 0, defense: [], reports: [] };
   // v5：試煉塔進度與商店每日購買記錄
-  data.tower ??= { floor: 1 };
+  migrateTower(data);
   data.shop ??= { day: '', bought: {} };
   data.teamPresets ??= []; // 隊伍預設槽（最多 10 組）
   // 裝備插座（E2）：每張卡帶 gear 陣列（裝備系統之後開；空陣列＝數值乘區 ×1 零影響）
