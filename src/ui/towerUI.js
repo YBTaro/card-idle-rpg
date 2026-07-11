@@ -1,6 +1,5 @@
-// 試煉塔頁：垂直塔軌（上面是未來樓層、最下面是當前層）＋右側我的隊伍/里程碑。
-// 動效：進場樓層由下往上交錯滑入（爬塔感）；勝利 → 獎勵飛入 → 塔軌上移推進。
-import { gsap } from 'gsap';
+// 試煉塔頁：兩級畫面。選塔頁（6 座主題塔）→ 關卡格頁（1–80 層，自由跳關）→ 樓層預覽/挑戰。
+// 動效：選塔卡/關卡格進場交錯滑入；勝利 → 徽章彈入 + 獎勵飛入。
 import { el, clear, toast, fmt } from './dom.js';
 import { icon } from './icons.js';
 import { store } from '../core/state.js';
@@ -10,15 +9,20 @@ import { ELEMENT_LABEL } from '../data/elements.js';
 import { cardFrame } from './cardFrame.js';
 import { openModal } from './modal.js';
 import { staggerIn, popIn, flyReward } from './anim.js';
-import { currentFloor, floorPreview, challengeTower, claimTowerWin, BOSS_EVERY } from '../systems/tower.js';
+import { TOWER_TRACKS } from '../data/towerTracks.js';
+import {
+  MAX_FLOOR, isBossFloor, enemyLevel, isCleared,
+  floorPreview, challengeTower, claimTowerWin,
+} from '../systems/tower.js';
 
-const ELEMENT_ICON = { fire: '🔥', wind: '🍃', water: '💧', light: '☀️', dark: '🌙' };
-const AHEAD = 4; // 顯示未來幾層
+const THEME_ICON = { fire: '🔥', wind: '🍃', water: '💧', light: '☀️', dark: '🌙', dot: '☠️' };
+const THEME_NAME = { ...ELEMENT_LABEL, dot: '毒' };
 
 export class TowerUI {
   constructor(root, battle) {
     this.root = root;
     this.battle = battle;
+    this.trackId = null; // null＝選塔頁
     this._busy = false;
   }
 
@@ -26,110 +30,104 @@ export class TowerUI {
 
   render() {
     clear(this.root);
+    if (!this.trackId) return this._renderSelect();
+    return this._renderFloors();
+  }
+
+  // ---- 選塔頁 ----
+  _renderSelect() {
     this.root.appendChild(el('div', { class: 'back-btn pressable', title: '回主城', onClick: () => nav.go('home') }, [icon('back', 22)]));
     this.root.appendChild(el('div', { class: 'page-title left', text: '試煉塔' }));
-
-    const s = store.state;
-    const cur = currentFloor(s);
-
-    // 頂欄：進度
-    this.root.appendChild(el('div', { class: 'tw-top' }, [
-      el('div', { class: 'tw-progress', text: `已登頂 ${cur - 1} 層` }),
-    ]));
-
-    const body = el('div', { class: 'tw-body' });
-
-    // 左：塔軌（由上到下＝未來 → 當前）
-    const track = el('div', { class: 'tw-track' });
-    for (let f = cur + AHEAD; f >= cur; f -= 1) {
-      track.appendChild(this._floorRow(floorPreview(f), f === cur));
+    const grid = el('div', { class: 'tw-select' });
+    for (const t of TOWER_TRACKS) {
+      const cleared = (store.state.tower?.tracks?.[t.id]?.cleared ?? []).length;
+      const card = el('div', {
+        class: 'tw-trackcard pressable',
+        onClick: () => { this.trackId = t.id; this.render(); },
+      }, [
+        el('div', { class: 'tw-trackicon', text: THEME_ICON[t.theme], style: `--tw-col:${t.color}` }),
+        el('div', { class: 'tw-trackname', text: t.name }),
+        el('div', { class: 'tw-tracksub', text: `吃香：${THEME_NAME[t.theme]}屬` }),
+        el('div', { class: 'tw-trackprog', text: `已通 ${cleared}/${MAX_FLOOR}` }),
+      ]);
+      grid.appendChild(card);
     }
-    // 已通關的最近 2 層（灰調、墊在最下面）
-    for (let f = cur - 1; f >= Math.max(1, cur - 2); f -= 1) {
-      const row = this._floorRow(floorPreview(f), false);
-      row.classList.add('cleared');
-      row.appendChild(el('div', { class: 'tw-clearmark', text: '✓' }));
-      track.appendChild(row);
-    }
-    body.appendChild(track);
-
-    // 右：我的隊伍 + 里程碑
-    const side = el('div', { class: 'tw-side' });
-    side.appendChild(el('div', { class: 'ar-sub', text: '我的隊伍' }));
-    const myGrid = el('div', { class: 'ar-defgrid' });
-    for (const e of s.formation) {
-      const inst = s.cards.find((c) => c.instanceId === e.instanceId);
-      const card = inst ? CARDS[inst.cardId] : null;
-      if (card) myGrid.appendChild(cardFrame(card, { level: inst.level, stars: inst.stars, size: 'mini' }));
-    }
-    side.appendChild(myGrid);
-    side.appendChild(el('button', { class: 'btn pressable', text: '🃏 調整隊伍', onClick: () => nav.go('team') }));
-
-    // 下個 Boss 里程碑預告
-    const nextBoss = Math.ceil(cur / BOSS_EVERY) * BOSS_EVERY;
-    const bossPrev = floorPreview(nextBoss);
-    side.appendChild(el('div', { class: 'ar-sub', text: '下個里程碑' }));
-    side.appendChild(el('div', { class: 'tw-mile' }, [
-      el('div', { class: 'm1', text: `第 ${nextBoss} 層 Boss` }),
-      el('div', { class: 'm2', text: `🎟️ 召喚券 ×${bossPrev.rewards.tickets ?? 1}` }),
-    ]));
-    body.appendChild(side);
-    this.root.appendChild(body);
-
-    // 進場動效：樓層由下（當前層）往上交錯滑入——爬塔的方向感
-    const rows = [...track.children].reverse();
-    staggerIn(rows, { dy: 22, step: 0.06 });
-    // 自動捲到當前層
-    requestAnimationFrame(() => { track.scrollTop = track.scrollHeight; });
+    this.root.appendChild(grid);
+    staggerIn([...grid.children], { dy: 18, step: 0.05 });
   }
 
-  _floorRow(fp, isCurrent) {
-    const row = el('div', { class: `tw-floor${isCurrent ? ' current' : ''}${fp.isBoss ? ' boss' : ''}` });
-    row.appendChild(el('div', { class: 'tw-fno' }, [
-      el('b', { text: `${fp.floor}` }),
-      el('span', { text: '層' }),
-    ]));
-    const themeCell = el('div', { class: 'tw-ftheme' }, [
-      el('div', { text: `${ELEMENT_ICON[fp.theme]} ${ELEMENT_LABEL[fp.theme]}屬威脅${fp.isBoss ? ' · 👹 BOSS' : ''}` }),
-    ]);
-    if (fp.envLabel) themeCell.appendChild(el('div', { class: 'tw-fenv', text: fp.envLabel }));
-    row.appendChild(themeCell);
-    const mini = el('div', { class: 'tw-fdef' });
-    for (const e of [...fp.enemies].sort((a, b) => a.pos - b.pos)) {
-      const card = CARDS[e.cardId];
-      if (card) mini.appendChild(cardFrame(card, { level: e.level, size: 'mini' }));
+  // ---- 關卡格頁 ----
+  _renderFloors() {
+    this.root.appendChild(el('div', { class: 'back-btn pressable', title: '選塔', onClick: () => { this.trackId = null; this.render(); } }, [icon('back', 22)]));
+    const track = TOWER_TRACKS.find((t) => t.id === this.trackId);
+    this.root.appendChild(el('div', { class: 'page-title left', text: track.name }));
+
+    const grid = el('div', { class: 'tw-grid' });
+    for (let f = 1; f <= MAX_FLOOR; f += 1) {
+      const done = isCleared(this.trackId, f);
+      const boss = isBossFloor(f);
+      const cell = el('div', {
+        class: `tw-cell${boss ? ' boss' : ''}${done ? ' cleared' : ''}`,
+        onClick: () => this._openFloor(f),
+      }, [
+        el('b', { text: `${f}` }),
+        el('span', { class: 'tw-celllv', text: `Lv${enemyLevel(f)}` }),
+        boss ? el('span', { class: 'tw-cellstar', text: '★' }) : null,
+        done ? el('span', { class: 'tw-cellok', text: '✓' }) : null,
+      ].filter(Boolean));
+      grid.appendChild(cell);
     }
-    row.appendChild(mini);
-    const chips = el('div', { class: 'tw-frw' }, [
-      el('span', { text: `🪙${fmt(fp.rewards.gold)}` }),
-      el('span', { text: `🔹${fp.rewards.essence}` }),
-    ]);
-    if (fp.rewards.tickets) chips.appendChild(el('span', { text: `🎟️×${fp.rewards.tickets}` }));
-    row.appendChild(chips);
-    if (isCurrent) {
-      row.appendChild(el('button', { class: 'btn btn-gold pressable tw-fight', text: '⚔ 挑戰', onClick: () => this._challenge() }));
-    }
-    return row;
+    this.root.appendChild(grid);
+    staggerIn([...grid.children].slice(0, 40), { dy: 8, step: 0.006 });
   }
 
-  _challenge() {
+  // ---- 樓層預覽 modal ----
+  _openFloor(floor) {
+    const fp = floorPreview(this.trackId, floor);
+    openModal({
+      className: 'ov-tower-floor',
+      build: (panel, close) => {
+        panel.appendChild(el('div', { class: 'ov-title', text: `第 ${floor} 層 · Lv${fp.level}${fp.isBoss ? ' · 👹 BOSS' : ''}` }));
+        if (fp.envLabel) panel.appendChild(el('div', { class: 'tw-fenv', text: fp.envLabel }));
+        const mini = el('div', { class: 'tw-fdef' });
+        for (const e of [...fp.enemies].sort((a, b) => a.pos - b.pos)) {
+          const card = CARDS[e.cardId];
+          if (card) mini.appendChild(cardFrame(card, { level: e.level, size: 'mini' }));
+        }
+        panel.appendChild(mini);
+        const chips = el('div', { class: 'tw-frw' }, [
+          el('span', { text: `🪙${fmt(fp.rewards.gold)}` }),
+          el('span', { text: `🔹${fp.rewards.essence}` }),
+        ]);
+        if (fp.rewards.tickets) chips.appendChild(el('span', { text: `🎟️×${fp.rewards.tickets}` }));
+        if (fp.cleared) chips.appendChild(el('span', { text: '✓ 已首通' }));
+        panel.appendChild(chips);
+        panel.appendChild(el('button', {
+          class: 'btn btn-gold pressable', text: '⚔ 挑戰',
+          onClick: () => { close(); this._challenge(floor); },
+        }));
+      },
+    });
+  }
+
+  _challenge(floor) {
     if (this._busy) return;
-    const res = challengeTower();
+    const res = challengeTower(this.trackId, floor);
     if (!res) { toast('請先到「隊伍」編排上陣'); return; }
     this._busy = true;
     nav.go('battle');
     this.battle.playCustom({ setup: res.sim.setup, log: res.sim.log }, {
-      title: `試煉塔 ${res.floor}F`,
+      title: `${TOWER_TRACKS.find((t) => t.id === this.trackId).name} ${floor}F`,
       env: res.env,
       onDone: () => {
         this._busy = false;
         nav.go('tower');
         if (res.win) {
-          const granted = claimTowerWin(res.floor);
-          this.render(); // 塔軌推進（重繪自帶爬升進場動效）
-          this._winModal(res.floor, granted);
+          const granted = claimTowerWin(res.trackId, res.floor);
+          this.render();
+          if (granted) this._winModal(floor, granted);
         } else {
-          toast('差一點！升級英雄或換屬性剋制隊再來', { icon: '🗼' });
+          toast('差一點！升級英雄、升星或換陣再來', { icon: '🗼' });
         }
       },
     });
@@ -139,11 +137,9 @@ export class TowerUI {
     openModal({
       className: 'ov-arena-result',
       build: (panel, close) => {
-        const badge = el('div', { class: 'ov-title', text: `🗼 登上第 ${floor + 1} 層！` });
-        panel.appendChild(badge);
-        popIn(badge);
-        const line = el('div', { class: 'arr-line', text: '首通獎勵' });
-        panel.appendChild(line);
+        const badge = el('div', { class: 'ov-title', text: `🗼 通過第 ${floor} 層！` });
+        panel.appendChild(badge); popIn(badge);
+        panel.appendChild(el('div', { class: 'arr-line', text: '首通獎勵' }));
         const chips = el('div', { class: 'tw-winrw' }, [
           el('span', { text: `🪙 ${fmt(rewards?.gold ?? 0)}` }),
           el('span', { text: `🔹 ${rewards?.essence ?? 0}` }),
@@ -152,7 +148,7 @@ export class TowerUI {
         panel.appendChild(chips);
         staggerIn(chips.children, { dy: 10, step: 0.1 });
         flyReward(rewards ?? {}, chips);
-        panel.appendChild(el('button', { class: 'btn btn-gold', text: '繼續攀登', onClick: () => close() }));
+        panel.appendChild(el('button', { class: 'btn btn-gold', text: '繼續挑戰', onClick: () => close() }));
       },
     });
   }

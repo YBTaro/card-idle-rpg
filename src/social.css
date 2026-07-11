@@ -311,6 +311,21 @@
 .tw-mile .m2 { font-size: 12.5px; color: var(--gold, #e8c46a); margin-top: 2px; }
 .tw-winrw { display: flex; justify-content: center; gap: 14px; font-size: 16px; font-weight: 800; margin: 10px 0 16px; }
 
+/* ---- 試煉塔：選塔頁 / 關卡格頁（兩級畫面） ---- */
+.tw-select { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; padding:16px; }
+.tw-trackcard { display:flex; flex-direction:column; gap:6px; align-items:center; padding:18px; border-radius:16px; background:rgba(255,255,255,.06); }
+.tw-trackicon { font-size:40px; filter:drop-shadow(0 0 10px var(--tw-col)); }
+.tw-trackname { font-weight:700; }
+.tw-tracksub, .tw-trackprog { font-size:12px; opacity:.8; }
+.tw-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:8px; padding:12px; overflow-y:auto; }
+.tw-cell { position:relative; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:12px; background:rgba(255,255,255,.06); cursor:pointer; }
+.tw-cell.boss { background:rgba(255,180,80,.18); box-shadow:inset 0 0 0 1px rgba(255,180,80,.5); }
+.tw-cell.cleared { opacity:.55; }
+.tw-cell b { font-size:16px; }
+.tw-celllv { font-size:10px; opacity:.75; }
+.tw-cellstar { position:absolute; top:2px; right:4px; color:#ffcf6b; font-size:11px; }
+.tw-cellok { position:absolute; bottom:2px; right:4px; color:#7ee29a; font-size:11px; }
+
 /* ---- 商店頁 ---- */
 .sh-body { position: absolute; inset: 56px 24px 20px; overflow-y: auto; }
 .sh-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
